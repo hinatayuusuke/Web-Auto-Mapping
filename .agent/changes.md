@@ -177,6 +177,35 @@
 - `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
 - Playwright でヘッダー、左右ペイン、情報行、Canvas 下部表示のフラット化を確認
 - Console の既知エラーが `favicon.ico` 404 のみであることを確認
+**2026-04-22 16:18 (Asia/Taipei) — 中央カラム余白を追加調整**
+
+### Summary
+- `MapCanvas` 周辺の余白をさらに詰め、中央作業領域の密度を上げた
+
+### Context / Goal
+- `MapCanvas` と他ブロックの間、`Floor Workspace` と Canvas 本体の間、`Canvas Status` の内側余白がまだ大きかった
+- 境界線は残しつつ、中央カラムの占有効率を上げる必要があった
+
+### Changes
+- 本文 3 カラムの `gap` を `3` 相当から `2` 相当へ縮小した
+- 中央セクション内の Canvas ラッパー余白を `p-3` 相当から `p-1` へ縮小した
+- `Canvas Status` バーの内側余白と行間を詰めた
+
+### Files Touched
+- `src/App.tsx` — 中央カラム周辺の `gap` と Canvas ラッパー余白を縮小
+- `src/components/MapCanvas.tsx` — `Canvas Status` の内側余白と行間を縮小
+
+### Behavioral Impact
+- 操作仕様は変わらず、中央のマップ表示に使える面積が少し増えた
+- `Floor Workspace`、Canvas 本体、`Canvas Status` の間隔がよりタイトになった
+
+### Risk & Mitigation
+- Risk: 余白を詰めすぎると、ヘッダー、描画面、ステータスバーの境界が曖昧になる
+- Mitigation: 各要素の境界線は維持し、余白のみを段階的に縮小した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 15:58 (Asia/Taipei) — 1 ページ固定レイアウト実装**
 
 ### Summary

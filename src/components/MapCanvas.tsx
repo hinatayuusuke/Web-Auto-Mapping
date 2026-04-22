@@ -209,7 +209,7 @@ export function MapCanvas() {
         onWheel={handleWheel}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(9,15,24,0.82)] px-4 py-3 backdrop-blur">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(9,15,24,0.82)] px-3 py-2 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
             Canvas Status
@@ -218,7 +218,7 @@ export function MapCanvas() {
             Zoom {Math.round(viewport.zoom * 100)}%
           </p>
         </div>
-        <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
+        <p className="mt-1 text-sm leading-5 text-[var(--color-text-soft)]">
           {mode === 'map'
             ? 'Map モードでは左クリックで配置、右クリックで削除します。ホイールでズーム、Alt+drag または middle drag でパンできます。'
             : 'Explore モードでは移動で床と通路が更新されます。ホイールでズーム、Alt+drag または middle drag で表示位置を調整できます。'}

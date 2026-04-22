@@ -292,7 +292,7 @@ function App() {
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto lg:grid lg:grid-cols-[300px_minmax(0,1fr)_300px] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:grid lg:grid-cols-[300px_minmax(0,1fr)_300px] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)_320px]">
           <ShellPanel
             title="Navigator"
             description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
@@ -434,7 +434,7 @@ function App() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 p-3">
+            <div className="min-h-0 flex-1 p-1">
               <MapCanvas />
             </div>
           </section>
