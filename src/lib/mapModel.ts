@@ -2,9 +2,12 @@ import {
   AutoMappingLevel,
   CellCoordinate,
   CellIcon,
+  CellIconKind,
   CellState,
   EdgeCoordinate,
+  EdgeEditIntent,
   EdgeIcon,
+  EdgeIconKind,
   EdgeState,
   Facing,
   FloorState,
@@ -76,10 +79,16 @@ export function updateFloorCellState(
       : [...row],
   );
 
-  return {
+  let nextFloor: FloorState = {
     ...floor,
     cells,
   };
+
+  if (nextState === 'unknown') {
+    nextFloor = removeCellIconAt(nextFloor, coordinate);
+  }
+
+  return nextFloor;
 }
 
 export function updateFloorEdgeState(
@@ -91,6 +100,8 @@ export function updateFloorEdgeState(
     return floor;
   }
 
+  let nextFloor: FloorState;
+
   if (coordinate.axis === 'horizontal') {
     const hEdges = floor.hEdges.map((row, rowIndex) =>
       rowIndex === coordinate.y
@@ -98,22 +109,28 @@ export function updateFloorEdgeState(
         : [...row],
     );
 
-    return {
+    nextFloor = {
       ...floor,
       hEdges,
     };
+  } else {
+    const vEdges = floor.vEdges.map((row, rowIndex) =>
+      rowIndex === coordinate.y
+        ? row.map((value, columnIndex) => (columnIndex === coordinate.x ? nextState : value))
+        : [...row],
+    );
+
+    nextFloor = {
+      ...floor,
+      vEdges,
+    };
   }
 
-  const vEdges = floor.vEdges.map((row, rowIndex) =>
-    rowIndex === coordinate.y
-      ? row.map((value, columnIndex) => (columnIndex === coordinate.x ? nextState : value))
-      : [...row],
-  );
+  if (nextState !== 'open') {
+    nextFloor = removeEdgeIconsAt(nextFloor, coordinate);
+  }
 
-  return {
-    ...floor,
-    vEdges,
-  };
+  return nextFloor;
 }
 
 export function updateFloorPlayer(
@@ -188,6 +205,178 @@ export function movePlayerInExploreMode(
   return nextFloor;
 }
 
+export function movePlayerInMapMode(floor: FloorState, facing: Facing): FloorState {
+  const origin = {
+    x: floor.player.x,
+    y: floor.player.y,
+  };
+  const destination = getCoordinateInDirection(origin, facing);
+  const edge = getEdgeBetweenCells(origin, destination);
+  let nextFloor = updateFloorPlayer(floor, { facing });
+
+  if (!isCellInBounds(nextFloor, destination)) {
+    return nextFloor;
+  }
+
+  if (getEdgeState(nextFloor, edge) === 'wall') {
+    return nextFloor;
+  }
+
+  if (nextFloor.cells[destination.y][destination.x] !== 'floor') {
+    return nextFloor;
+  }
+
+  return updateFloorPlayer(nextFloor, {
+    x: destination.x,
+    y: destination.y,
+  });
+}
+
+export function applyForwardEdgeEdit(
+  floor: FloorState,
+  intent: EdgeEditIntent,
+): FloorState {
+  return applyEdgeEditIntent(floor, getFrontEdgeCoordinate(floor), intent);
+}
+
+export function applyEdgeEditIntent(
+  floor: FloorState,
+  coordinate: EdgeCoordinate,
+  intent: EdgeEditIntent,
+): FloorState {
+  switch (intent) {
+    case 'wall':
+      return updateFloorEdgeState(floor, coordinate, 'wall');
+    case 'open':
+      return removeEdgeIconsAt(updateFloorEdgeState(floor, coordinate, 'open'), coordinate);
+    case 'unknown':
+      return removeEdgeIconsAt(updateFloorEdgeState(floor, coordinate, 'unknown'), coordinate);
+    case 'door':
+      return upsertEdgeIconAt(updateFloorEdgeState(floor, coordinate, 'open'), coordinate, 'door');
+  }
+}
+
+export function placeCellIconAt(
+  floor: FloorState,
+  coordinate: CellCoordinate,
+  kind: CellIconKind,
+): FloorState {
+  if (!isCellInBounds(floor, coordinate)) {
+    return floor;
+  }
+
+  const nextFloor = updateFloorCellState(floor, coordinate, 'floor');
+
+  return {
+    ...nextFloor,
+    cellIcons: [
+      ...nextFloor.cellIcons.filter((icon) => !isSameCell(icon.position, coordinate)),
+      {
+        id: `cell-${kind}-${coordinate.x}-${coordinate.y}`,
+        kind,
+        position: coordinate,
+      },
+    ],
+  };
+}
+
+export function removeCellIconAt(
+  floor: FloorState,
+  coordinate: CellCoordinate,
+): FloorState {
+  return {
+    ...floor,
+    cellIcons: floor.cellIcons.filter((icon) => !isSameCell(icon.position, coordinate)),
+  };
+}
+
+export function placeSelectedCellIconAtPlayer(
+  floor: FloorState,
+  kind: CellIconKind,
+): FloorState {
+  return placeCellIconAt(floor, { x: floor.player.x, y: floor.player.y }, kind);
+}
+
+export function placeSelectedCellIconInFront(
+  floor: FloorState,
+  kind: CellIconKind,
+): FloorState {
+  return placeCellIconAt(
+    floor,
+    getCoordinateInDirection(
+      {
+        x: floor.player.x,
+        y: floor.player.y,
+      },
+      floor.player.facing,
+    ),
+    kind,
+  );
+}
+
+export function applyCanvasPrimaryEdit(
+  floor: FloorState,
+  tool: string,
+  selectedCellIconKind: CellIconKind,
+  target:
+    | {
+        kind: 'cell';
+        coordinate: CellCoordinate;
+      }
+    | {
+        kind: 'edge';
+        coordinate: EdgeCoordinate;
+      },
+): FloorState {
+  if (target.kind === 'cell') {
+    if (tool === 'cell-floor') {
+      return updateFloorCellState(floor, target.coordinate, 'floor');
+    }
+
+    if (tool === 'cell-unknown') {
+      return updateFloorCellState(floor, target.coordinate, 'unknown');
+    }
+
+    if (tool === 'cell-icon') {
+      return placeCellIconAt(floor, target.coordinate, selectedCellIconKind);
+    }
+
+    return floor;
+  }
+
+  switch (tool) {
+    case 'edge-wall':
+      return applyEdgeEditIntent(floor, target.coordinate, 'wall');
+    case 'edge-door':
+      return applyEdgeEditIntent(floor, target.coordinate, 'door');
+    case 'edge-open':
+      return applyEdgeEditIntent(floor, target.coordinate, 'open');
+    case 'edge-unknown':
+      return applyEdgeEditIntent(floor, target.coordinate, 'unknown');
+    default:
+      return floor;
+  }
+}
+
+export function applyCanvasSecondaryEdit(
+  floor: FloorState,
+  target:
+    | {
+        kind: 'cell';
+        coordinate: CellCoordinate;
+      }
+    | {
+        kind: 'edge';
+        coordinate: EdgeCoordinate;
+      },
+): FloorState {
+  if (target.kind === 'cell') {
+    return removeCellIconAt(updateFloorCellState(floor, target.coordinate, 'unknown'), target.coordinate);
+  }
+
+  return applyEdgeEditIntent(floor, target.coordinate, 'unknown');
+}
+
 export function reconcileEdgesFromCells(floor: FloorState): FloorState {
   let nextFloor = {
     ...floor,
@@ -254,6 +443,19 @@ export function getCoordinateInDirection(
     x: coordinate.x + vector.x,
     y: coordinate.y + vector.y,
   };
+}
+
+export function getFrontEdgeCoordinate(floor: FloorState): EdgeCoordinate {
+  switch (floor.player.facing) {
+    case 'north':
+      return { axis: 'horizontal', x: floor.player.x, y: floor.player.y };
+    case 'east':
+      return { axis: 'vertical', x: floor.player.x + 1, y: floor.player.y };
+    case 'south':
+      return { axis: 'horizontal', x: floor.player.x, y: floor.player.y + 1 };
+    case 'west':
+      return { axis: 'vertical', x: floor.player.x, y: floor.player.y };
+  }
 }
 
 function applyBasicAutoMapping(floor: FloorState, coordinate: CellCoordinate): FloorState {
@@ -352,6 +554,34 @@ function getEdgeState(floor: FloorState, coordinate: EdgeCoordinate): EdgeState 
     : floor.vEdges[coordinate.y][coordinate.x];
 }
 
+function upsertEdgeIconAt(
+  floor: FloorState,
+  coordinate: EdgeCoordinate,
+  kind: EdgeIconKind,
+): FloorState {
+  return {
+    ...floor,
+    edgeIcons: [
+      ...floor.edgeIcons.filter((icon) => !isSameEdge(icon.edge, coordinate)),
+      {
+        id: `edge-${kind}-${coordinate.axis}-${coordinate.x}-${coordinate.y}`,
+        kind,
+        edge: coordinate,
+      },
+    ],
+  };
+}
+
+function removeEdgeIconsAt(
+  floor: FloorState,
+  coordinate: EdgeCoordinate,
+): FloorState {
+  return {
+    ...floor,
+    edgeIcons: floor.edgeIcons.filter((icon) => !isSameEdge(icon.edge, coordinate)),
+  };
+}
+
 function getVectorForFacing(facing: Facing) {
   switch (facing) {
     case 'north':
@@ -394,4 +624,12 @@ function isEdgeInBounds(floor: FloorState, coordinate: EdgeCoordinate): boolean 
     coordinate.y >= 0 &&
     coordinate.y < floor.height
   );
+}
+
+function isSameCell(left: CellCoordinate, right: CellCoordinate): boolean {
+  return left.x === right.x && left.y === right.y;
+}
+
+function isSameEdge(left: EdgeCoordinate, right: EdgeCoordinate): boolean {
+  return left.axis === right.axis && left.x === right.x && left.y === right.y;
 }

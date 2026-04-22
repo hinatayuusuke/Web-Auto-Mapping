@@ -14,6 +14,17 @@ export type EdgeIconKind = 'door' | 'secret-door' | 'one-way';
 
 export type EdgeAxis = 'horizontal' | 'vertical';
 
+export type EdgeEditIntent = 'wall' | 'door' | 'open' | 'unknown';
+
+export type EditTool =
+  | 'cell-floor'
+  | 'cell-unknown'
+  | 'edge-wall'
+  | 'edge-door'
+  | 'edge-open'
+  | 'edge-unknown'
+  | 'cell-icon';
+
 export type GridDimensions = {
   width: number;
   height: number;
@@ -27,6 +38,16 @@ export type CellCoordinate = {
 export type EdgeCoordinate = CellCoordinate & {
   axis: EdgeAxis;
 };
+
+export type MapInteractionTarget =
+  | {
+      kind: 'cell';
+      coordinate: CellCoordinate;
+    }
+  | {
+      kind: 'edge';
+      coordinate: EdgeCoordinate;
+    };
 
 export type PlayerState = {
   x: number;

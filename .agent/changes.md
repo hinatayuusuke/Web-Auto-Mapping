@@ -112,6 +112,45 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 14:21 (Asia/Taipei) — Phase 3 Map モードと編集導線実装**
+
+### Summary
+- Map モードの壁衝突、前方ショートカット編集、Canvas クリック編集、アイコン配置を実装した
+
+### Context / Goal
+- `Doc/Roadmap.md` の Phase 3 を実装し、探索結果を人手で補正しながら歩行確認できる編集体験が必要だった
+- Explore と Map の責務を分け、キーボードとマウスの両方で最小限の編集導線を成立させる
+
+### Changes
+- `EditTool`、前方エッジ編集 intent、Canvas interaction target を型に追加した
+- Map モード専用の移動制約を追加し、既知の `wall` を越えず、未知セルには入らない歩行確認を実装した
+- 前方エッジに対する `1:wall`, `2:door`, `3:open`, `0:unknown` のショートカット編集を追加した
+- `I`, `Alt+I`, `Backspace`, `[` , `]`, `Tab` を含むキーボード編集導線を追加した
+- Canvas でセル中心はセル、境界付近はエッジとして解釈し、左クリック配置 / 右クリック削除の Map モード編集を追加した
+- 右ペインに編集ツール選択とセルアイコンパレットを追加し、選択中ツール状態を UI へ反映した
+
+### Files Touched
+- `src/types/map.ts` — 編集ツールと interaction に必要な型を追加
+- `src/lib/mapModel.ts` — Map モード移動、前方エッジ編集、アイコン配置、Canvas 編集ロジックを追加
+- `src/store/appStore.ts` — 編集状態、Map モード action、ショートカット action を追加
+- `src/App.tsx` — キーボードショートカット、編集ツール UI、アイコンパレットを追加
+- `src/components/MapCanvas.tsx` — Map モード限定のクリック編集と前方フォーカス描画を追加
+
+### Behavioral Impact
+- Map モードで既知の壁を越えない移動確認ができるようになった
+- 前方境界の壁 / ドア / 開通 / unknown をキーボードで即時編集できるようになった
+- Map モードでセル、エッジ、セルアイコンをマウスから直接編集できるようになった
+- Explore モードでは引き続き移動による自動記録を優先し、Canvas クリック編集は受け付けない
+
+### Risk & Mitigation
+- Risk: 右クリック削除は単純化のためセルを `unknown`、エッジを `unknown` に戻す挙動としている
+- Mitigation: 削除ルールは `mapModel.ts` に集約し、後続フェーズでツール別削除へ拡張しやすい形にした
+- Risk: Map モード移動は未知セルを通さないため、探索用途としては厳しめの制約になっている
+- Mitigation: Explore と Map の役割分離を優先し、踏査は Explore、整合確認は Map に限定する仕様にした
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 14:05 (Asia/Taipei) — Phase 2 探索モード実装**
 
 ### Summary

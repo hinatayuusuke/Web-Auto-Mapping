@@ -1,6 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelectedFloor, useAppStore } from '../store/appStore';
-import { EdgeAxis, Facing, FloorState, ViewportState } from '../types/map';
+import {
+  EdgeAxis,
+  Facing,
+  FloorState,
+  MapInteractionTarget,
+  ViewportState,
+} from '../types/map';
 
 const GRID_PADDING = 24;
 
@@ -8,8 +14,27 @@ export function MapCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const mode = useAppStore((state) => state.mode);
   const selectedFloor = useSelectedFloor();
   const viewport = useAppStore((state) => state.viewport);
+  const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
+  const applyCanvasSecondaryInteraction = useAppStore(
+    (state) => state.applyCanvasSecondaryInteraction,
+  );
+
+  const layout = useMemo(() => {
+    if (!selectedFloor || size.width === 0 || size.height === 0) {
+      return null;
+    }
+
+    return calculateLayout({
+      width: size.width,
+      height: size.height,
+      floorWidth: selectedFloor.width,
+      floorHeight: selectedFloor.height,
+      viewport,
+    });
+  }, [selectedFloor, size.height, size.width, viewport]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -39,7 +64,7 @@ export function MapCanvas() {
   useEffect(() => {
     const canvas = canvasRef.current;
 
-    if (!canvas || !selectedFloor || size.width === 0 || size.height === 0) {
+    if (!canvas || !selectedFloor || !layout) {
       return;
     }
 
@@ -66,9 +91,31 @@ export function MapCanvas() {
       width: cssWidth,
       height: cssHeight,
       floor: selectedFloor,
-      viewport,
+      layout,
     });
-  }, [selectedFloor, size.height, size.width, viewport]);
+  }, [layout, selectedFloor, size.height, size.width]);
+
+  const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
+    if (!selectedFloor || !layout) {
+      return;
+    }
+
+    const target = getInteractionTarget(event, selectedFloor, layout);
+
+    if (!target) {
+      return;
+    }
+
+    if (event.button === 2) {
+      event.preventDefault();
+      applyCanvasSecondaryInteraction(target);
+      return;
+    }
+
+    if (event.button === 0) {
+      applyCanvasPrimaryInteraction(target);
+    }
+  };
 
   return (
     <div
@@ -78,12 +125,16 @@ export function MapCanvas() {
       <canvas
         ref={canvasRef}
         className="block h-full w-full"
+        onContextMenu={(event) => event.preventDefault()}
+        onMouseDown={handleMouseDown}
       />
 
       <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(9,15,24,0.78)] px-4 py-3 backdrop-blur">
         <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">Canvas Status</p>
         <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
-          Explore モードでは移動に応じて床と通路が即時更新されます。Map モードの衝突判定は次フェーズで追加します。
+          {mode === 'map'
+            ? 'Map モードでは左クリックで配置、右クリックで削除します。セル中心はセル、境界近くはエッジとして解釈します。'
+            : 'Explore モードでは移動に応じて床と通路が更新されます。Canvas クリック編集は Map モードで有効です。'}
         </p>
       </div>
     </div>
@@ -95,20 +146,12 @@ type DrawSceneArgs = {
   width: number;
   height: number;
   floor: FloorState;
-  viewport: ViewportState;
+  layout: GridLayout;
 };
 
-function drawScene({ context, width, height, floor, viewport }: DrawSceneArgs) {
+function drawScene({ context, width, height, floor, layout }: DrawSceneArgs) {
   context.fillStyle = '#0b1320';
   context.fillRect(0, 0, width, height);
-
-  const layout = calculateLayout({
-    width,
-    height,
-    floorWidth: floor.width,
-    floorHeight: floor.height,
-    viewport,
-  });
 
   drawGridBackground(context, layout.originX, layout.originY, layout.gridWidth, layout.gridHeight);
   drawCells(context, floor, layout);
@@ -116,6 +159,7 @@ function drawScene({ context, width, height, floor, viewport }: DrawSceneArgs) {
   drawEdges(context, floor, layout, 'horizontal');
   drawEdges(context, floor, layout, 'vertical');
   drawIcons(context, floor, layout);
+  drawPlayerFocus(context, floor, layout);
   drawPlayer(context, floor, layout);
 }
 
@@ -309,6 +353,35 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   }
 }
 
+function drawPlayerFocus(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
+  const currentLeft = layout.originX + floor.player.x * layout.cellSize;
+  const currentTop = layout.originY + floor.player.y * layout.cellSize;
+
+  context.strokeStyle = 'rgba(246, 213, 141, 0.88)';
+  context.lineWidth = 2;
+  context.strokeRect(currentLeft + 2, currentTop + 2, layout.cellSize - 4, layout.cellSize - 4);
+
+  const front = getFrontEdge(floor);
+
+  context.beginPath();
+  context.strokeStyle = 'rgba(246, 213, 141, 0.92)';
+  context.lineWidth = Math.max(2, layout.cellSize * 0.12);
+
+  if (front.axis === 'horizontal') {
+    const startX = layout.originX + front.x * layout.cellSize;
+    const startY = layout.originY + front.y * layout.cellSize;
+    context.moveTo(startX, startY);
+    context.lineTo(startX + layout.cellSize, startY);
+  } else {
+    const startX = layout.originX + front.x * layout.cellSize;
+    const startY = layout.originY + front.y * layout.cellSize;
+    context.moveTo(startX, startY);
+    context.lineTo(startX, startY + layout.cellSize);
+  }
+
+  context.stroke();
+}
+
 function drawPlayer(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
   const centerX = layout.originX + floor.player.x * layout.cellSize + layout.cellSize / 2;
   const centerY = layout.originY + floor.player.y * layout.cellSize + layout.cellSize / 2;
@@ -332,6 +405,65 @@ function drawPlayer(context: CanvasRenderingContext2D, floor: FloorState, layout
   context.lineTo(centerX - sideX * radius * 0.72, centerY - sideY * radius * 0.72);
   context.closePath();
   context.fill();
+}
+
+function getInteractionTarget(
+  event: MouseEvent<HTMLCanvasElement>,
+  floor: FloorState,
+  layout: GridLayout,
+): MapInteractionTarget | null {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const localX = event.clientX - rect.left;
+  const localY = event.clientY - rect.top;
+  const gridX = localX - layout.originX;
+  const gridY = localY - layout.originY;
+
+  if (gridX < 0 || gridY < 0 || gridX > layout.gridWidth || gridY > layout.gridHeight) {
+    return null;
+  }
+
+  const cellX = Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1);
+  const cellY = Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1);
+  const offsetX = gridX - cellX * layout.cellSize;
+  const offsetY = gridY - cellY * layout.cellSize;
+  const threshold = Math.max(6, layout.cellSize * 0.18);
+  const distances = [
+    { side: 'left', value: offsetX },
+    { side: 'right', value: layout.cellSize - offsetX },
+    { side: 'top', value: offsetY },
+    { side: 'bottom', value: layout.cellSize - offsetY },
+  ].sort((left, right) => left.value - right.value);
+
+  if (distances[0].value <= threshold) {
+    switch (distances[0].side) {
+      case 'left':
+        return { kind: 'edge', coordinate: { axis: 'vertical', x: cellX, y: cellY } };
+      case 'right':
+        return { kind: 'edge', coordinate: { axis: 'vertical', x: cellX + 1, y: cellY } };
+      case 'top':
+        return { kind: 'edge', coordinate: { axis: 'horizontal', x: cellX, y: cellY } };
+      case 'bottom':
+        return { kind: 'edge', coordinate: { axis: 'horizontal', x: cellX, y: cellY + 1 } };
+    }
+  }
+
+  return {
+    kind: 'cell',
+    coordinate: { x: cellX, y: cellY },
+  };
+}
+
+function getFrontEdge(floor: FloorState) {
+  switch (floor.player.facing) {
+    case 'north':
+      return { axis: 'horizontal' as const, x: floor.player.x, y: floor.player.y };
+    case 'east':
+      return { axis: 'vertical' as const, x: floor.player.x + 1, y: floor.player.y };
+    case 'south':
+      return { axis: 'horizontal' as const, x: floor.player.x, y: floor.player.y + 1 };
+    case 'west':
+      return { axis: 'vertical' as const, x: floor.player.x, y: floor.player.y };
+  }
 }
 
 function getFacingVector(facing: Facing) {
