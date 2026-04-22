@@ -255,7 +255,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-app)] text-[var(--color-text)]">
+    <div className="h-[100dvh] overflow-hidden bg-[var(--color-app)] text-[var(--color-text)]">
       <input
         ref={fileInputRef}
         className="hidden"
@@ -264,24 +264,24 @@ function App() {
         onChange={handleImportFile}
       />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <header className="mb-4 flex flex-col gap-4 rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-5 py-4 shadow-[var(--shadow-soft)] backdrop-blur">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.32em] text-[var(--color-muted)]">
-                Phase 5 Workflow Resilience
-              </p>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
+      <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col px-3 py-3 sm:px-4 lg:px-5">
+        <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-3">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
                   Web Auto Mapping
                 </h1>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--color-text-soft)]">
-                  Undo / Redo、ズーム / パン、右 / 下拡張、状態表示を追加し、長時間のマッピング作業を続けやすくしました。
-                </p>
+                <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                  One Page Layout
+                </span>
               </div>
+              <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
+                左右は独立スクロール、中央は常時表示のままホイールでズームします。
+              </p>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-6">
+            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
               <StatusChip label="Mode" value={mode} />
               <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
               <StatusChip label="Auto Map" value={autoMapping} />
@@ -292,7 +292,7 @@ function App() {
           </div>
         </header>
 
-        <main className="grid flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
+        <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto lg:grid lg:grid-cols-[300px_minmax(0,1fr)_300px] lg:overflow-hidden xl:grid-cols-[320px_minmax(0,1fr)_320px]">
           <ShellPanel
             title="Navigator"
             description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
@@ -405,18 +405,18 @@ function App() {
             </section>
           </ShellPanel>
 
-          <section className="flex min-h-[420px] flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-soft)]">
-            <div className="flex flex-col gap-3 border-b border-[var(--color-border)] px-3 py-3 xl:flex-row xl:items-center xl:justify-between">
+          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] lg:min-h-0">
+            <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--color-border)] px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
                   Map Canvas
                 </p>
-                <h2 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+                <h2 className="mt-1 text-base font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
                   Floor Workspace
                 </h2>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-6">
+              <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 <ShortcutButton label="Undo" onClick={undo} disabled={!canUndo} />
                 <ShortcutButton label="Redo" onClick={redo} disabled={!canRedo} />
                 <ShortcutButton
@@ -434,7 +434,7 @@ function App() {
               </div>
             </div>
 
-            <div className="flex-1 p-3">
+            <div className="min-h-0 flex-1 p-3">
               <MapCanvas />
             </div>
           </section>
@@ -626,7 +626,7 @@ function StatusChip({ label, value }: StatusChipProps) {
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
       <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{label}</p>
-      <p className="mt-1 text-sm font-medium capitalize text-[var(--color-text-strong)]">{value}</p>
+      <p className="mt-1 text-xs font-medium capitalize text-[var(--color-text-strong)] sm:text-sm">{value}</p>
     </div>
   );
 }

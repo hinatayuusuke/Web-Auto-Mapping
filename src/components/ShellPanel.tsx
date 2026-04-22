@@ -7,15 +7,17 @@ type ShellPanelProps = PropsWithChildren<{
 
 export function ShellPanel({ title, description, children }: ShellPanelProps) {
   return (
-    <aside className="flex flex-col gap-5 rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-soft)]">
-      <header className="border-b border-[var(--color-border)] pb-4">
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]">
+      <header className="shrink-0 border-b border-[var(--color-border)] px-5 py-4">
         <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">Panel</p>
-        <h2 className="mt-2 text-xl font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+        <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
           {title}
         </h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">{description}</p>
+        <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">{description}</p>
       </header>
-      <div className="grid gap-5">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+        <div className="grid gap-5">{children}</div>
+      </div>
     </aside>
   );
 }

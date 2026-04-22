@@ -112,6 +112,72 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 15:49 (Asia/Taipei) — 1 ページ固定レイアウト実装案を追加**
+
+### Summary
+- ヘッダー圧縮と 1 ページ固定レイアウト化の実装案を `Doc` に追加した
+
+### Context / Goal
+- 全体スクロールをやめて、左右ペイン独立スクロールと中央 Canvas 優先のレイアウトへ変更する方針整理が必要だった
+- 実装前に、ゴール、非ゴール、影響範囲、段階的な変更手順を明文化する
+
+### Changes
+- デスクトップ向け 1 画面固定レイアウト案を文書化した
+- ヘッダー圧縮、左右ペイン `overflow-y-auto`、中央 Canvas の残り高優先、狭幅フォールバック方針を整理した
+
+### Files Touched
+- `Doc/OnePageLayoutProposal.md` — 1 ページ固定レイアウトの実装案を新規追加
+
+### Behavioral Impact
+- アプリ挙動自体は未変更
+- 次の実装作業で採るレイアウト変更方針が `Doc` から参照できるようになった
+
+### Risk & Mitigation
+- Risk: 提案だけ先行し、実装時に狭幅フォールバックの扱いが曖昧になる
+- Mitigation: 文書内でデスクトップ優先と狭幅フォールバックを非ゴール / 前提として明記した
+
+### Tests / Verification
+- 未実施
+- 理由: 今回はドキュメント追加のみで、コード変更は行っていない
+**2026-04-22 15:58 (Asia/Taipei) — 1 ページ固定レイアウト実装**
+
+### Summary
+- ページ全体スクロールを止め、左右独立スクロールと中央 Canvas 優先の 1 ページレイアウトへ変更した
+
+### Context / Goal
+- `Doc/OnePageLayoutProposal.md` に沿って、ヘッダー圧縮と 3 カラム固定レイアウトを実装する必要があった
+- 左 `Navigator`、右 `Workspace` は個別スクロール、中央 `Map Canvas` は常時表示のままホイールズームを維持する
+
+### Changes
+- ルートを `100dvh` 基準へ変更し、`body` のページ全体スクロールを無効化した
+- ヘッダーを 1 段のコンパクトな構成へ詰め、カード装飾と縦余白を削減した
+- 本文を `min-h-0` 前提の 3 カラム構成へ整理し、中央 Canvas が残り高を優先的に使うよう変更した
+- `ShellPanel` に独立スクロール責務を持たせ、左右ペイン内部のみ `overflow-y-auto` と `overscroll-contain` を有効化した
+- 狭幅では `main` だけを縦スクロールするフォールバックを残しつつ、デスクトップでは全体 1 ページ固定になるようにした
+
+### Files Touched
+- `src/App.tsx` — ヘッダー圧縮、1 ページ固定レイアウト、中央 Canvas 領域の高さ制御へ変更
+- `src/components/ShellPanel.tsx` — 左右ペインの独立スクロールと高さ制御を追加
+- `src/styles.css` — `html/body/#root` の高さ固定と `body` の `overflow: hidden` を追加
+
+### Behavioral Impact
+- デスクトップ幅ではブラウザ全体の縦スクロールが発生しなくなった
+- 左右ペインはホイール時にそれぞれ独立してスクロールし、中央 Canvas は常時画面内に残る
+- ヘッダーの占有が減り、初期表示からマップ作業領域が見えやすくなった
+
+### Risk & Mitigation
+- Risk: 高さ固定に伴い、狭幅画面で全要素を同じ方法で表示すると窮屈になる
+- Mitigation: `main` は狭幅時のみ内部縦スクロールへフォールバックし、デスクトップ優先の固定レイアウトと両立させた
+- Risk: 独立スクロール化で親コンテナの `min-h-0` が不足すると高さ計算が破綻する
+- Mitigation: ルート、本文、中央セクション、左右ペインに `min-h-0` / `overflow-hidden` を明示した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright でレイアウト表示を確認
+- Playwright `eval` で `bodyScrollHeight === innerHeight` および `bodyOverflow === hidden` を確認
+- Playwright `eval` で左右 `aside` のスクロール領域が `overflowY: auto` かつ `scrollHeight > clientHeight` であることを確認
+- Console の既知エラーが `favicon.ico` 404 のみであることを確認
 **2026-04-22 15:34 (Asia/Taipei) — Phase 5 操作性強化実装**
 
 ### Summary
