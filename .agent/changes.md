@@ -112,6 +112,35 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:27 (Asia/Taipei) — Floor Workspace と Canvas Status の高さを縮小**
+
+### Summary
+- 中央カラム上部と下部の占有高さをさらに詰めた
+
+### Context / Goal
+- `Floor Workspace` ヘッダーと `Canvas Status` バーがまだ少し高く、Canvas の実表示面積を圧迫していた
+- 情報は残したまま、上下の固定占有をさらに減らす必要があった
+
+### Changes
+- `Floor Workspace` ヘッダーの `gap` と上下 padding を縮小した
+- `Floor Workspace` 見出しの行間を詰め、寸法表示ボックスの上下 padding を縮小した
+- `Canvas Status` の上下 padding と説明文の上余白を縮小した
+
+### Files Touched
+- `src/App.tsx` — `Floor Workspace` ヘッダーの高さを縮小
+- `src/components/MapCanvas.tsx` — `Canvas Status` バーの高さを縮小
+
+### Behavioral Impact
+- 操作仕様は変わらず、中央の Canvas がわずかに高く使えるようになった
+- `Floor Workspace` と `Canvas Status` の表示は維持したまま、上下の固定占有が減った
+
+### Risk & Mitigation
+- Risk: 高さを詰めすぎるとヘッダーとステータスの情報が窮屈に見える
+- Mitigation: テキストサイズは維持し、余白のみを段階的に削減した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 16:20 (Asia/Taipei) — 左右ペイン幅を縮小**
 
 ### Summary

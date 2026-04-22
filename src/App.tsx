@@ -406,12 +406,12 @@ function App() {
           </ShellPanel>
 
           <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent lg:min-h-0">
-            <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--color-border)] px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
                   Map Canvas
                 </p>
-                <h2 className="mt-1 text-base font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+                <h2 className="mt-0.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
                   Floor Workspace
                 </h2>
               </div>
@@ -428,7 +428,7 @@ function App() {
                   onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
                 />
                 <ShortcutButton label="Reset View" onClick={resetViewport} />
-                <div className="px-1 py-3 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                <div className="px-1 py-2 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
                   {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
                 </div>
               </div>
