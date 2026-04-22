@@ -112,6 +112,60 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:34 (Asia/Taipei) — Floor Workspace と MapCanvas の二重線を解消**
+
+### Summary
+- `Floor Workspace` と `MapCanvas` の間に見えていた二重線と隙間を解消した
+
+### Context / Goal
+- 中央セクションのヘッダー下に 2 本の線が見え、その間にわずかなスペースが残っていた
+- 境界線を 1 本だけにし、ヘッダー直下からそのまま Canvas が始まる見え方にする必要があった
+
+### Changes
+- 中央セクション内の Canvas ラッパー padding を `p-0` に変更した
+- `MapCanvas` 外枠の上 border を削除し、左右と下の border のみを維持した
+
+### Files Touched
+- `src/App.tsx` — 中央の Canvas ラッパー余白を削除
+- `src/components/MapCanvas.tsx` — `MapCanvas` の上 border を削除
+
+### Behavioral Impact
+- `Floor Workspace` ヘッダー下の境界が 1 本だけになった
+- `MapCanvas` とヘッダーの間の不要な隙間がなくなった
+
+### Risk & Mitigation
+- Risk: 上 border を削ることで、中央セクションの囲いが弱く見える可能性がある
+- Mitigation: ヘッダー側の `border-b` は維持し、左右と下の枠線も残した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:30 (Asia/Taipei) — MapCanvas 内余白を削除**
+
+### Summary
+- `MapCanvas` 全体とマップ表示の間にあった内部余白を削除した
+
+### Context / Goal
+- `MapCanvas` の外枠と実際のマップ描画の間に余白があり、表示面積を無駄にしていた
+- マップ自体を外枠いっぱいまで使って表示したい
+
+### Changes
+- `MapCanvas` の描画計算で使う `GRID_PADDING` と `GRID_TOP_PADDING` を `0` に変更した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — マップ描画の内部余白定数を削除
+
+### Behavioral Impact
+- マップ表示が `MapCanvas` の外枠により近い位置まで広がるようになった
+- ズームやパンの仕様自体は変わらない
+
+### Risk & Mitigation
+- Risk: 外周の線やプレイヤー位置によっては、端の見え方が以前より詰まって見える
+- Mitigation: 今回は余白定数だけを変更し、必要なら後続で最小限の片側余白だけ戻せる形を維持した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 16:27 (Asia/Taipei) — Floor Workspace と Canvas Status の高さを縮小**
 
 ### Summary

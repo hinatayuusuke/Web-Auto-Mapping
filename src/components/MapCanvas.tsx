@@ -8,8 +8,8 @@ import {
   ViewportState,
 } from '../types/map';
 
-const GRID_PADDING = 24;
-const GRID_TOP_PADDING = 24;
+const GRID_PADDING = 0;
+const GRID_TOP_PADDING = 0;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 
@@ -196,7 +196,7 @@ export function MapCanvas() {
   return (
     <div
       ref={frameRef}
-      className="relative h-full min-h-[360px] overflow-hidden border border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
+      className="relative h-full min-h-[360px] overflow-hidden border-x border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
     >
       <canvas
         ref={canvasRef}

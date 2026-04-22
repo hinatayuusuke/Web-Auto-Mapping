@@ -434,7 +434,7 @@ function App() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 p-1">
+            <div className="min-h-0 flex-1 p-0">
               <MapCanvas />
             </div>
           </section>
