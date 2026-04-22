@@ -112,6 +112,33 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 17:33 (Asia/Taipei) — セルアイコン背景の丸を拡大**
+
+### Summary
+- セルアイコン背景の丸を、セル内に収まる範囲ぎりぎりまで大きくした
+
+### Context / Goal
+- セルアイコン用の丸が小さく、ズーム時や一覧視認時に目立ちにくかった
+- セル境界からはみ出さない範囲で、背景丸の存在感を上げたかった
+
+### Changes
+- セルアイコンの半径計算を見直し、セルサイズの 46% を基準にしつつ、セル内上限で clamp するようにした
+- 固定の小さい半径指定をやめ、低ズームでも大きめに見えるようにした
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — セルアイコン背景円の半径計算を更新
+
+### Behavioral Impact
+- セルアイコン背景の丸がセルいっぱい近くまで広がり、識別しやすくなった
+- セル外へのはみ出しは抑えたまま表示サイズだけを拡大した
+
+### Risk & Mitigation
+- Risk: 丸を大きくしすぎるとグリフ文字が窮屈に見える可能性がある
+- Mitigation: 半径はセル内上限で clamp し、テキストサイズ自体は変えずにバランスを保った
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 17:19 (Asia/Taipei) — Floor List をコンボボックス化**
 
 ### Summary

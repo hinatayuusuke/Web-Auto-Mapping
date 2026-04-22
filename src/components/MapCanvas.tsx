@@ -514,10 +514,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   for (const icon of floor.cellIcons) {
     const centerX = layout.originX + icon.position.x * layout.cellSize + layout.cellSize / 2;
     const centerY = layout.originY + icon.position.y * layout.cellSize + layout.cellSize / 2;
+    const iconRadius = Math.min(layout.cellSize * 0.5 - 1, Math.max(4, layout.cellSize * 0.46));
 
     context.fillStyle = '#f6d58d';
     context.beginPath();
-    context.arc(centerX, centerY, Math.max(4, layout.cellSize * 0.16), 0, Math.PI * 2);
+    context.arc(centerX, centerY, iconRadius, 0, Math.PI * 2);
     context.fill();
 
     context.fillStyle = '#0b1320';
