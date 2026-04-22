@@ -75,6 +75,26 @@ export function MapCanvas() {
   }, []);
 
   useEffect(() => {
+    const frame = frameRef.current;
+
+    if (!frame) {
+      return undefined;
+    }
+
+    // WHY: 縦長モードでは body 全体がスクロール可能になるため、Canvas 上のホイールは
+    // React の onWheel だけでなくネイティブ側でも止めて page scroll へ漏れないようにする。
+    const preventPageScroll = (event: globalThis.WheelEvent) => {
+      event.preventDefault();
+    };
+
+    frame.addEventListener('wheel', preventPageScroll, { passive: false });
+
+    return () => {
+      frame.removeEventListener('wheel', preventPageScroll);
+    };
+  }, []);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
 
     if (!canvas || !selectedFloor || !layout) {
@@ -165,6 +185,7 @@ export function MapCanvas() {
     }
 
     event.preventDefault();
+    event.stopPropagation();
 
     const nextZoom = clampZoom(viewport.zoom + (event.deltaY < 0 ? 0.12 : -0.12));
 
@@ -197,7 +218,7 @@ export function MapCanvas() {
   return (
     <div
       ref={frameRef}
-      className="relative h-full min-h-[360px] overflow-hidden border-x border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
+      className="relative h-full min-h-[360px] overflow-hidden overscroll-contain border-x border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
     >
       <canvas
         ref={canvasRef}

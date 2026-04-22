@@ -408,7 +408,7 @@ function App() {
   const mapSection = (
     <section
       className={`flex min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent ${
-        isTallViewport ? 'h-[clamp(420px,56dvh,720px)]' : 'min-h-[360px] lg:min-h-0'
+        isTallViewport ? 'h-[clamp(420px,56dvh,720px)]' : 'h-full min-h-0'
       }`}
     >
       <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2 xl:flex-row xl:items-center xl:justify-between">
@@ -680,7 +680,7 @@ function App() {
             </div>
           </main>
         ) : (
-          <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:grid lg:grid-cols-[264px_minmax(0,1fr)_264px] lg:overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+          <main className="grid min-h-0 flex-1 gap-2 overflow-y-auto [grid-template-columns:minmax(220px,264px)_minmax(0,1fr)_minmax(220px,264px)] overflow-x-hidden xl:[grid-template-columns:280px_minmax(0,1fr)_280px]">
             {navigatorPanel}
             {mapSection}
             {workspacePanel}

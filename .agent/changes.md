@@ -112,6 +112,61 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 18:18 (Asia/Taipei) — MapCanvas のホイールでページスクロールが漏れる問題を修正**
+
+### Summary
+- `MapCanvas` 上のホイール操作で縦長モードのページ全体スクロールが反応しないようにした
+
+### Context / Goal
+- 縦長モードでは `body` の縦スクロールを許可しているため、`MapCanvas` のズーム中にページ全体スクロールが漏れていた
+- Canvas 上のホイールはズーム専用に固定し、`body` 側へスクロールを渡さない必要があった
+
+### Changes
+- `MapCanvas` のフレーム要素へ、`passive: false` のネイティブ `wheel` リスナーを追加して `preventDefault()` を強制した
+- React 側の `handleWheel` でも `stopPropagation()` を追加した
+- `MapCanvas` 外枠に `overscroll-contain` を追加した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — ネイティブ `wheel` 抑止、`stopPropagation()`、`overscroll-contain` を追加
+
+### Behavioral Impact
+- 縦長モードでも `MapCanvas` 上のホイールはズームだけが反応し、ページ全体スクロールへ漏れにくくなった
+- 通常モードでの `MapCanvas` ズーム挙動はそのまま維持する
+
+### Risk & Mitigation
+- Risk: `MapCanvas` 上では通常スクロールを完全に止めるため、将来的に Canvas 内スクロールを入れる場合は調整が必要
+- Mitigation: 抑止は `MapCanvas` フレーム内に限定し、ページ全体や左右ペインのスクロール制御とは分離した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 18:14 (Asia/Taipei) — 通常モードの幅依存縦積みを解消**
+
+### Summary
+- 縦長専用モードと通常レイアウトの条件を揃え、通常モードでは幅だけで左右ペインが下へ落ちないようにした
+
+### Context / Goal
+- ヘッダーが残ったまま左右ペインだけ下へ落ちる途中状態は、縦長判定とは別に `lg` 未満で通常レイアウトが縦積みしていたことが原因だった
+- 縦長専用モードへ入った時だけ並び替えが起きるように、条件を一本化する必要があった
+
+### Changes
+- 通常モードの `main` を、`lg:` ブレークポイント依存の縦積みではなく常時 3 カラム grid に変更した
+- 通常モードの中央 `MapCanvas` カラムも、`lg:min-h-0` ではなく通常モード内で素直に伸縮する高さ設定へ見直した
+
+### Files Touched
+- `src/App.tsx` — 通常モードの 3 カラム構成を幅依存からレイアウトモード依存へ変更
+
+### Behavioral Impact
+- 通常モードでは画面幅が `lg` 未満でも、ヘッダーあり + 3 カラムのまま表示される
+- 左右ペインが下へ移るのは縦長専用モードに入ったときだけになる
+
+### Risk & Mitigation
+- Risk: 横長だが幅が狭い環境では、3 カラム維持により横方向が窮屈になる可能性がある
+- Mitigation: 左右ペイン幅は `minmax(220px, 264px)` に抑え、中央列を `minmax(0,1fr)` で確保した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 18:01 (Asia/Taipei) — 縦長簡易レイアウト案を追加**
 
 ### Summary
