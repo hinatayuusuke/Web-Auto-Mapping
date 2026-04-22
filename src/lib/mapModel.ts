@@ -1,10 +1,12 @@
 import {
+  AutoMappingLevel,
   CellCoordinate,
   CellIcon,
   CellState,
   EdgeCoordinate,
   EdgeIcon,
   EdgeState,
+  Facing,
   FloorState,
   FloorStats,
   GridDimensions,
@@ -38,64 +40,23 @@ export function createEmptyFloorState(
   };
 }
 
-export function createDemoFloorState(
+export function createExploreSeedFloorState(
   id: string,
   name: string,
   dimensions: GridDimensions,
+  autoMapping: AutoMappingLevel,
 ): FloorState {
   let floor = createEmptyFloorState(id, name, dimensions);
+  const start = {
+    x: floor.player.x,
+    y: floor.player.y,
+  };
 
-  const roomA = [
-    { x: 4, y: 4 },
-    { x: 5, y: 4 },
-    { x: 6, y: 4 },
-    { x: 4, y: 5 },
-    { x: 5, y: 5 },
-    { x: 6, y: 5 },
-    { x: 4, y: 6 },
-    { x: 5, y: 6 },
-    { x: 6, y: 6 },
-  ];
-  const corridor = [
-    { x: 7, y: 5 },
-    { x: 8, y: 5 },
-    { x: 9, y: 5 },
-    { x: 9, y: 6 },
-    { x: 9, y: 7 },
-    { x: 9, y: 8 },
-  ];
-  const roomB = [
-    { x: 8, y: 8 },
-    { x: 9, y: 8 },
-    { x: 10, y: 8 },
-    { x: 11, y: 8 },
-    { x: 8, y: 9 },
-    { x: 9, y: 9 },
-    { x: 10, y: 9 },
-    { x: 11, y: 9 },
-    { x: 8, y: 10 },
-    { x: 9, y: 10 },
-    { x: 10, y: 10 },
-    { x: 11, y: 10 },
-  ];
+  floor = updateFloorCellState(floor, start, 'floor');
 
-  const knownCells = [...roomA, ...corridor, ...roomB];
-
-  for (const cell of knownCells) {
-    floor = updateFloorCellState(floor, cell, 'floor');
+  if (autoMapping !== 'off') {
+    floor = applyBasicAutoMapping(floor, start);
   }
-
-  floor = reconcileEdgesFromCells(floor);
-  floor = updateFloorPlayer(floor, { x: 9, y: 8, facing: 'east' });
-  floor = updateFloorCellIcons(floor, [
-    { id: 'chest-01', kind: 'chest', position: { x: 5, y: 5 } },
-    { id: 'marker-01', kind: 'marker', position: { x: 9, y: 6 } },
-    { id: 'stairs-01', kind: 'stairs', position: { x: 10, y: 9 } },
-  ]);
-  floor = updateFloorEdgeIcons(floor, [
-    { id: 'door-01', kind: 'door', edge: { axis: 'vertical', x: 7, y: 5 } },
-    { id: 'secret-01', kind: 'secret-door', edge: { axis: 'vertical', x: 12, y: 9 } },
-  ]);
 
   return floor;
 }
@@ -191,6 +152,42 @@ export function updateFloorEdgeIcons(floor: FloorState, icons: EdgeIcon[]): Floo
   };
 }
 
+export function movePlayerInExploreMode(
+  floor: FloorState,
+  facing: Facing,
+  autoMapping: AutoMappingLevel,
+): FloorState {
+  const origin = {
+    x: floor.player.x,
+    y: floor.player.y,
+  };
+  const nextPosition = getCoordinateInDirection(origin, facing);
+  let nextFloor = updateFloorPlayer(floor, { facing });
+
+  if (!isCellInBounds(nextFloor, nextPosition)) {
+    return nextFloor;
+  }
+
+  nextFloor = updateFloorCellState(nextFloor, origin, 'floor');
+  nextFloor = updateFloorCellState(nextFloor, nextPosition, 'floor');
+  nextFloor = updateFloorEdgeState(nextFloor, getEdgeBetweenCells(origin, nextPosition), 'open');
+  nextFloor = updateFloorPlayer(nextFloor, {
+    x: nextPosition.x,
+    y: nextPosition.y,
+    facing,
+  });
+
+  if (autoMapping === 'basic' || autoMapping === 'corridor') {
+    nextFloor = applyBasicAutoMapping(nextFloor, nextPosition);
+  }
+
+  if (autoMapping === 'corridor') {
+    nextFloor = applyCorridorAutoMapping(nextFloor, origin, nextPosition);
+  }
+
+  return nextFloor;
+}
+
 export function reconcileEdgesFromCells(floor: FloorState): FloorState {
   let nextFloor = {
     ...floor,
@@ -245,6 +242,127 @@ export function getFloorStats(floor: FloorState): FloorStats {
     cellIcons: floor.cellIcons.length,
     edgeIcons: floor.edgeIcons.length,
   };
+}
+
+export function getCoordinateInDirection(
+  coordinate: CellCoordinate,
+  facing: Facing,
+): CellCoordinate {
+  const vector = getVectorForFacing(facing);
+
+  return {
+    x: coordinate.x + vector.x,
+    y: coordinate.y + vector.y,
+  };
+}
+
+function applyBasicAutoMapping(floor: FloorState, coordinate: CellCoordinate): FloorState {
+  let nextFloor = floor;
+
+  for (const edge of getEdgesAroundCell(coordinate)) {
+    nextFloor = updateUnknownEdge(nextFloor, edge, 'wall');
+  }
+
+  return nextFloor;
+}
+
+function applyCorridorAutoMapping(
+  floor: FloorState,
+  origin: CellCoordinate,
+  destination: CellCoordinate,
+): FloorState {
+  let nextFloor = floor;
+
+  for (const edge of getCorridorSideEdges(origin, destination)) {
+    nextFloor = updateUnknownEdge(nextFloor, edge, 'wall');
+  }
+
+  return nextFloor;
+}
+
+function updateUnknownEdge(
+  floor: FloorState,
+  coordinate: EdgeCoordinate,
+  nextState: EdgeState,
+): FloorState {
+  const currentState = getEdgeState(floor, coordinate);
+
+  if (currentState !== 'unknown') {
+    return floor;
+  }
+
+  return updateFloorEdgeState(floor, coordinate, nextState);
+}
+
+function getEdgesAroundCell(coordinate: CellCoordinate): EdgeCoordinate[] {
+  return [
+    { axis: 'horizontal', x: coordinate.x, y: coordinate.y },
+    { axis: 'horizontal', x: coordinate.x, y: coordinate.y + 1 },
+    { axis: 'vertical', x: coordinate.x, y: coordinate.y },
+    { axis: 'vertical', x: coordinate.x + 1, y: coordinate.y },
+  ];
+}
+
+function getCorridorSideEdges(
+  origin: CellCoordinate,
+  destination: CellCoordinate,
+): EdgeCoordinate[] {
+  const horizontalMove = destination.x !== origin.x;
+
+  if (horizontalMove) {
+    return [
+      { axis: 'horizontal', x: origin.x, y: origin.y },
+      { axis: 'horizontal', x: origin.x, y: origin.y + 1 },
+      { axis: 'horizontal', x: destination.x, y: destination.y },
+      { axis: 'horizontal', x: destination.x, y: destination.y + 1 },
+    ];
+  }
+
+  return [
+    { axis: 'vertical', x: origin.x, y: origin.y },
+    { axis: 'vertical', x: origin.x + 1, y: origin.y },
+    { axis: 'vertical', x: destination.x, y: destination.y },
+    { axis: 'vertical', x: destination.x + 1, y: destination.y },
+  ];
+}
+
+function getEdgeBetweenCells(from: CellCoordinate, to: CellCoordinate): EdgeCoordinate {
+  if (from.x !== to.x) {
+    return {
+      axis: 'vertical',
+      x: Math.max(from.x, to.x),
+      y: from.y,
+    };
+  }
+
+  return {
+    axis: 'horizontal',
+    x: from.x,
+    y: Math.max(from.y, to.y),
+  };
+}
+
+function getEdgeState(floor: FloorState, coordinate: EdgeCoordinate): EdgeState | null {
+  if (!isEdgeInBounds(floor, coordinate)) {
+    return null;
+  }
+
+  return coordinate.axis === 'horizontal'
+    ? floor.hEdges[coordinate.y][coordinate.x]
+    : floor.vEdges[coordinate.y][coordinate.x];
+}
+
+function getVectorForFacing(facing: Facing) {
+  switch (facing) {
+    case 'north':
+      return { x: 0, y: -1 };
+    case 'east':
+      return { x: 1, y: 0 };
+    case 'south':
+      return { x: 0, y: 1 };
+    case 'west':
+      return { x: -1, y: 0 };
+  }
 }
 
 function createMatrix<T>(height: number, width: number, initialValue: T): T[][] {

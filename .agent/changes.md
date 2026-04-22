@@ -112,3 +112,39 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 14:05 (Asia/Taipei) — Phase 2 探索モード実装**
+
+### Summary
+- Explore モードの移動、床 / 通路自動記録、オート補完レベル切替を実装した
+
+### Context / Goal
+- `Doc/Roadmap.md` の Phase 2 を実装し、探索しながら地図が埋まるコア体験を成立させる必要があった
+- 移動入力、`floor / open` 自動記録、`Off / Basic / Corridor` の補完を同じ状態モデル上で動かす
+
+### Changes
+- 探索開始向けの初期フロア生成を追加し、現在地だけ既知の状態からマッピングを始められるようにした
+- Explore モードの移動 action を追加し、移動元 / 移動先の床化と移動境界の `open` 更新を実装した
+- `Basic` で現在地周辺の unknown 境界を壁候補化し、`Corridor` で移動軸の側壁も追加補完するようにした
+- `W/A/S/D` と矢印キーによる移動入力を追加し、画面上の移動パッドからも同じ action を呼べるようにした
+- オート補完レベル切替 UI と探索向けの状態表示を追加した
+
+### Files Touched
+- `src/lib/mapModel.ts` — 探索開始フロア生成、移動更新、オート補完ロジックを追加
+- `src/store/appStore.ts` — Explore モード用の `moveInDirection` action と初期状態へ更新
+- `src/App.tsx` — キーボード移動、移動パッド、オート補完切替 UI を追加
+- `src/components/MapCanvas.tsx` — 現在の探索挙動に合わせて説明表示を更新
+
+### Behavioral Impact
+- Explore モードで移動するたびに床と通路が自動で記録されるようになった
+- `Basic` と `Corridor` の設定差分がエッジ補完として反映されるようになった
+- Map モード時の壁衝突や編集制約はまだ未実装で、現時点では向き変更だけを保持する
+
+### Risk & Mitigation
+- Risk: `Corridor` 補完は仕様文からの実装解釈を含み、移動元 / 移動先の側壁を補完する挙動にしている
+- Mitigation: 補完ロジックを `mapModel.ts` に集約し、必要なら Phase 3 以降で局所的に調整できる形にした
+- Risk: 境界外への移動は現時点で無視されるため、グリッド拡張前は端で探索が止まる
+- Mitigation: これは Phase 5 のグリッド拡張までの暫定仕様とし、範囲外では向きだけ更新する
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

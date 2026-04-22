@@ -83,7 +83,7 @@ export function MapCanvas() {
       <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(9,15,24,0.78)] px-4 py-3 backdrop-blur">
         <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">Canvas Status</p>
         <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
-          Phase 1 ではセル、壁、アイコン、プレイヤーの描画を同期させています。次はこのモデルに探索更新を載せます。
+          Explore モードでは移動に応じて床と通路が即時更新されます。Map モードの衝突判定は次フェーズで追加します。
         </p>
       </div>
     </div>

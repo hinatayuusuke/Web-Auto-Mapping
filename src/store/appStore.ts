@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import {
-  createDemoFloorState,
+  createExploreSeedFloorState,
   getFloorStats,
+  movePlayerInExploreMode,
   updateFloorCellState,
   updateFloorEdgeState,
   updateFloorPlayer,
@@ -28,6 +29,7 @@ type AppState = {
 };
 
 type AppActions = {
+  moveInDirection: (facing: Facing) => void;
   setAutoMapping: (level: AutoMappingLevel) => void;
   setMode: (mode: AppMode) => void;
   setSelectedFloor: (floorId: string) => void;
@@ -45,10 +47,16 @@ const DEFAULT_GRID: GridDimensions = {
   height: 16,
 };
 
-const initialFloor = createDemoFloorState('floor-01', 'B1F', DEFAULT_GRID);
+const DEFAULT_AUTO_MAPPING: AutoMappingLevel = 'basic';
+const initialFloor = createExploreSeedFloorState(
+  'floor-01',
+  'B1F',
+  DEFAULT_GRID,
+  DEFAULT_AUTO_MAPPING,
+);
 
 export const useAppStore = create<AppStore>((set) => ({
-  autoMapping: 'basic',
+  autoMapping: DEFAULT_AUTO_MAPPING,
   floors: [initialFloor],
   mode: 'explore',
   selectedFloorId: initialFloor.id,
@@ -57,6 +65,14 @@ export const useAppStore = create<AppStore>((set) => ({
     offsetX: 0,
     offsetY: 0,
   },
+  moveInDirection: (facing) =>
+    set((state) => ({
+      floors: updateSelectedFloor(state, (floor) =>
+        state.mode === 'explore'
+          ? movePlayerInExploreMode(floor, facing, state.autoMapping)
+          : updateFloorPlayer(floor, { facing }),
+      ),
+    })),
   setAutoMapping: (level) => set({ autoMapping: level }),
   setMode: (mode) => set({ mode }),
   setSelectedFloor: (floorId) => set({ selectedFloorId: floorId }),
