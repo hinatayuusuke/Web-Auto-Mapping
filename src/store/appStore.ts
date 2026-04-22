@@ -1,7 +1,19 @@
 import { create } from 'zustand';
 import {
+  createDemoFloorState,
+  getFloorStats,
+  updateFloorCellState,
+  updateFloorEdgeState,
+  updateFloorPlayer,
+} from '../lib/mapModel';
+import {
   AppMode,
   AutoMappingLevel,
+  CellCoordinate,
+  CellState,
+  EdgeCoordinate,
+  EdgeState,
+  Facing,
   FloorState,
   GridDimensions,
   ViewportState,
@@ -20,6 +32,10 @@ type AppActions = {
   setMode: (mode: AppMode) => void;
   setSelectedFloor: (floorId: string) => void;
   setViewport: (viewport: Partial<ViewportState>) => void;
+  setPlayerPosition: (coordinate: CellCoordinate) => void;
+  setPlayerFacing: (facing: Facing) => void;
+  setSelectedFloorCellState: (coordinate: CellCoordinate, state: CellState) => void;
+  setSelectedFloorEdgeState: (coordinate: EdgeCoordinate, state: EdgeState) => void;
 };
 
 type AppStore = AppState & AppActions;
@@ -29,21 +45,7 @@ const DEFAULT_GRID: GridDimensions = {
   height: 16,
 };
 
-function createFloorState(id: string, name: string, dimensions: GridDimensions): FloorState {
-  return {
-    id,
-    name,
-    width: dimensions.width,
-    height: dimensions.height,
-    player: {
-      x: Math.floor(dimensions.width / 2),
-      y: Math.floor(dimensions.height / 2),
-      facing: 'north',
-    },
-  };
-}
-
-const initialFloor = createFloorState('floor-01', 'B1F', DEFAULT_GRID);
+const initialFloor = createDemoFloorState('floor-01', 'B1F', DEFAULT_GRID);
 
 export const useAppStore = create<AppStore>((set) => ({
   autoMapping: 'basic',
@@ -65,4 +67,50 @@ export const useAppStore = create<AppStore>((set) => ({
         ...viewport,
       },
     })),
+  setPlayerPosition: (coordinate) =>
+    set((state) => ({
+      floors: updateSelectedFloor(state, (floor) =>
+        updateFloorPlayer(floor, {
+          x: coordinate.x,
+          y: coordinate.y,
+        }),
+      ),
+    })),
+  setPlayerFacing: (facing) =>
+    set((state) => ({
+      floors: updateSelectedFloor(state, (floor) => updateFloorPlayer(floor, { facing })),
+    })),
+  setSelectedFloorCellState: (coordinate, nextState) =>
+    set((state) => ({
+      floors: updateSelectedFloor(state, (floor) =>
+        updateFloorCellState(floor, coordinate, nextState),
+      ),
+    })),
+  setSelectedFloorEdgeState: (coordinate, nextState) =>
+    set((state) => ({
+      floors: updateSelectedFloor(state, (floor) =>
+        updateFloorEdgeState(floor, coordinate, nextState),
+      ),
+    })),
 }));
+
+export function useSelectedFloor() {
+  return useAppStore((state) => state.floors.find((floor) => floor.id === state.selectedFloorId));
+}
+
+export function useSelectedFloorStats() {
+  return useAppStore((state) => {
+    const selectedFloor = state.floors.find((floor) => floor.id === state.selectedFloorId);
+
+    return selectedFloor ? getFloorStats(selectedFloor) : null;
+  });
+}
+
+function updateSelectedFloor(
+  state: AppState,
+  updater: (floor: FloorState) => FloorState,
+): FloorState[] {
+  return state.floors.map((floor) =>
+    floor.id === state.selectedFloorId ? updater(floor) : floor,
+  );
+}

@@ -12,6 +12,8 @@ export type CellIconKind = 'stairs' | 'pit' | 'chest' | 'marker';
 
 export type EdgeIconKind = 'door' | 'secret-door' | 'one-way';
 
+export type EdgeAxis = 'horizontal' | 'vertical';
+
 export type GridDimensions = {
   width: number;
   height: number;
@@ -22,20 +24,49 @@ export type CellCoordinate = {
   y: number;
 };
 
+export type EdgeCoordinate = CellCoordinate & {
+  axis: EdgeAxis;
+};
+
 export type PlayerState = {
   x: number;
   y: number;
   facing: Facing;
 };
 
+export type CellIcon = {
+  id: string;
+  kind: CellIconKind;
+  position: CellCoordinate;
+};
+
+export type EdgeIcon = {
+  id: string;
+  kind: EdgeIconKind;
+  edge: EdgeCoordinate;
+};
+
 export type FloorState = GridDimensions & {
   id: string;
   name: string;
   player: PlayerState;
+  cells: CellState[][];
+  hEdges: EdgeState[][];
+  vEdges: EdgeState[][];
+  cellIcons: CellIcon[];
+  edgeIcons: EdgeIcon[];
 };
 
 export type ViewportState = {
   zoom: number;
   offsetX: number;
   offsetY: number;
+};
+
+export type FloorStats = {
+  knownCells: number;
+  openEdges: number;
+  wallEdges: number;
+  cellIcons: number;
+  edgeIcons: number;
 };

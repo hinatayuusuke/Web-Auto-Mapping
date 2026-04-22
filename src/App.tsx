@@ -1,14 +1,18 @@
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
-import { useAppStore } from './store/appStore';
+import { useAppStore, useSelectedFloor, useSelectedFloorStats } from './store/appStore';
+import { Facing } from './types/map';
+
+const FACINGS: Facing[] = ['north', 'east', 'south', 'west'];
 
 function App() {
   const mode = useAppStore((state) => state.mode);
-  const selectedFloorId = useAppStore((state) => state.selectedFloorId);
-  const floors = useAppStore((state) => state.floors);
   const autoMapping = useAppStore((state) => state.autoMapping);
-
-  const selectedFloor = floors.find((floor) => floor.id === selectedFloorId);
+  const floors = useAppStore((state) => state.floors);
+  const selectedFloor = useSelectedFloor();
+  const selectedFloorStats = useSelectedFloorStats();
+  const setMode = useAppStore((state) => state.setMode);
+  const setPlayerFacing = useAppStore((state) => state.setPlayerFacing);
 
   return (
     <div className="min-h-screen bg-[var(--color-app)] text-[var(--color-text)]">
@@ -17,23 +21,27 @@ function App() {
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.32em] text-[var(--color-muted)]">
-                Phase 0 Foundation
+                Phase 1 Core Map Model
               </p>
               <div>
                 <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
                   Web Auto Mapping
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--color-text-soft)]">
-                  Explore / Map の 2 モードを載せる前提で、レイアウト、型、状態、Canvas
-                  の土台だけを先に成立させた実装ベース。
+                  セル、境界線、アイコン、プレイヤーを分離した状態モデルに切り替え、
+                  Canvas と即時同期する基盤まで拡張しました。
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-4">
               <StatusChip label="Mode" value={mode} />
               <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
               <StatusChip label="Auto Map" value={autoMapping} />
+              <StatusChip
+                label="Known Cells"
+                value={`${selectedFloorStats?.knownCells ?? 0}`}
+              />
             </div>
           </div>
         </header>
@@ -41,13 +49,13 @@ function App() {
         <main className="grid flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
           <ShellPanel
             title="Navigator"
-            description="モード、階層、現在地など、探索の基礎情報を集約する領域。"
+            description="選択中フロアの座標、向き、コア状態の概要を確認する領域。"
           >
             <section className="space-y-3">
               <PanelHeading
                 eyebrow="Current Setup"
                 title="Session"
-                body="探索モードの既定値と現在のプレイヤー状態を確認します。"
+                body="Phase 1 ではプレイヤー、セル、エッジの状態を同じストアで保持します。"
               />
               <dl className="grid gap-3">
                 <KeyValueRow label="Active Mode" value={mode} />
@@ -62,15 +70,30 @@ function App() {
 
             <section className="space-y-3">
               <PanelHeading
-                eyebrow="Milestone"
-                title="Phase 0 Scope"
-                body="実装済みの土台と、次フェーズで差し込むべき領域を切り分けています。"
+                eyebrow="State Check"
+                title="Quick Controls"
+                body="Canvas がストアの変化を即時反映することを、この最小操作で確認できます。"
               />
-              <ul className="space-y-2 text-sm leading-6 text-[var(--color-text-soft)]">
-                <li>固定サイズのグリッドを Canvas へ描画</li>
-                <li>マップ、プレイヤー、UI 設定の型と Zustand ストアを配置</li>
-                <li>左右ペイン + 中央キャンバスのベースレイアウトを構築</li>
-              </ul>
+              <div className="grid gap-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <ActionButton
+                    active={mode === 'explore'}
+                    label="Explore"
+                    onClick={() => setMode('explore')}
+                  />
+                  <ActionButton active={mode === 'map'} label="Map" onClick={() => setMode('map')} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {FACINGS.map((facing) => (
+                    <ActionButton
+                      key={facing}
+                      active={selectedFloor?.player.facing === facing}
+                      label={facing}
+                      onClick={() => setPlayerFacing(facing)}
+                    />
+                  ))}
+                </div>
+              </div>
             </section>
           </ShellPanel>
 
@@ -96,32 +119,34 @@ function App() {
 
           <ShellPanel
             title="Workspace"
-            description="ツール、表示設定、次の実装フックを置く右ペイン。"
+            description="マップ構造の内訳と、次フェーズで差し込む探索更新の足場。"
           >
             <section className="space-y-3">
               <PanelHeading
-                eyebrow="Tools"
-                title="Reserved Panels"
-                body="Phase 1 以降で編集ツールと表示設定を差し込むためのプレースホルダです。"
+                eyebrow="Data Model"
+                title="Selected Floor"
+                body="セル、エッジ、アイコンを分離したので、以降の操作ルールを局所化できます。"
               />
-              <div className="grid gap-3">
-                <GhostCard title="Editing Tools" description="壁、ドア、アイコン操作の UI をここへ追加します。" />
-                <GhostCard title="Viewport" description="ズーム、パン、表示オプションの制御をここへ追加します。" />
-                <GhostCard title="Persistence" description="保存、読込、自動保存設定の入口をここへ追加します。" />
-              </div>
+              <dl className="grid gap-3">
+                <KeyValueRow label="Floors" value={`${floors.length}`} />
+                <KeyValueRow label="Known Cells" value={`${selectedFloorStats?.knownCells ?? 0}`} />
+                <KeyValueRow label="Open Edges" value={`${selectedFloorStats?.openEdges ?? 0}`} />
+                <KeyValueRow label="Wall Edges" value={`${selectedFloorStats?.wallEdges ?? 0}`} />
+                <KeyValueRow label="Icons" value={`${(selectedFloorStats?.cellIcons ?? 0) + (selectedFloorStats?.edgeIcons ?? 0)}`} />
+              </dl>
             </section>
 
             <section className="space-y-3">
               <PanelHeading
-                eyebrow="Data Model"
-                title="Store Shape"
-                body="Phase 1 のセル / エッジ分離に備えて、状態の責務だけ先に固定しています。"
+                eyebrow="Phase 2 Ready"
+                title="Next Hooks"
+                body="探索更新はこのモデルに対して床・通路・向きを書き込むだけで済む状態です。"
               />
-              <dl className="grid gap-3">
-                <KeyValueRow label="Floors" value={`${floors.length}`} />
-                <KeyValueRow label="Grid Expansion" value="pending" />
-                <KeyValueRow label="Undo / Redo" value="pending" />
-              </dl>
+              <div className="grid gap-3">
+                <GhostCard title="Movement" description="プレイヤー移動と通路開通を store action として追加します。" />
+                <GhostCard title="Auto Mapping" description="Basic / Corridor の自動壁補完を現在のエッジモデルへ載せます。" />
+                <GhostCard title="Explore Rules" description="移動した事実を優先する更新規則をここから組み込みます。" />
+              </div>
             </section>
           </ShellPanel>
         </main>
@@ -139,7 +164,7 @@ function StatusChip({ label, value }: StatusChipProps) {
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
       <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{label}</p>
-      <p className="mt-1 text-sm font-medium text-[var(--color-text-strong)]">{value}</p>
+      <p className="mt-1 text-sm font-medium capitalize text-[var(--color-text-strong)]">{value}</p>
     </div>
   );
 }
@@ -171,7 +196,7 @@ function KeyValueRow({ label, value }: KeyValueRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
       <dt className="text-sm text-[var(--color-text-soft)]">{label}</dt>
-      <dd className="text-sm font-medium text-[var(--color-text-strong)]">{value}</dd>
+      <dd className="text-sm font-medium capitalize text-[var(--color-text-strong)]">{value}</dd>
     </div>
   );
 }
@@ -187,6 +212,28 @@ function GhostCard({ title, description }: GhostCardProps) {
       <h3 className="text-sm font-medium text-[var(--color-text-strong)]">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">{description}</p>
     </article>
+  );
+}
+
+type ActionButtonProps = {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+};
+
+function ActionButton({ active, label, onClick }: ActionButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border px-4 py-3 text-sm font-medium capitalize transition ${
+        active
+          ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)]'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
