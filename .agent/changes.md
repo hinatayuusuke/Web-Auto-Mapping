@@ -112,6 +112,45 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 15:08 (Asia/Taipei) — Phase 4 階層管理と保存再開実装**
+
+### Summary
+- 階層管理、JSON 保存 / 読込、localStorage 自動保存と再開を実装した
+
+### Context / Goal
+- `Doc/Spec.md` と `Doc/Roadmap.md` を再確認し、Phase 4 の継続利用可能版を実装する必要があった
+- 複数階層を独立して扱い、保存した状態を JSON または localStorage から再開できるようにする
+
+### Changes
+- 永続化フォーマットを `PersistedDocument` として定義し、タイトル、設定、階層、選択中階層、ビューポートを保存対象にした
+- localStorage の自動保存と起動時復元を store レベルへ追加した
+- 階層の追加、複製、削除、選択、名前変更 action を追加した
+- JSON の書き出しと読込 UI を追加し、形式不正時は読み込まないようにした
+- 左ペインに階層一覧、右ペインに保存 / 読込領域を追加し、Phase 4 の操作導線を成立させた
+
+### Files Touched
+- `src/types/map.ts` — 永続化フォーマット型を追加
+- `src/lib/persistence.ts` — JSON / localStorage 永続化ロジックを新規追加
+- `src/store/appStore.ts` — 階層管理、起動時復元、自動保存 action を追加
+- `src/App.tsx` — 階層一覧、タイトル編集、JSON 保存 / 読込 UI を追加
+- `.agent/changes.md` — 今回の作業内容を追記
+
+### Behavioral Impact
+- 複数階層を独立して持てるようになり、選択階層ごとに編集状態を切り替えられるようになった
+- 状態更新ごとに localStorage へ保存され、再読込時に前回状態から再開できるようになった
+- 現在のマップ状態を JSON で書き出し、同形式の JSON を読み戻せるようになった
+
+### Risk & Mitigation
+- Risk: 永続化フォーマット検証は構造の最小確認に留めており、壊れた内部配列までは厳密検証していない
+- Mitigation: `version` と主要フィールドを検証し、不正フォーマットは fail fast で拒否する形にした
+- Risk: HMR 中に自動保存購読が重複すると localStorage 書込が増える可能性がある
+- Mitigation: `window` に初期化フラグを置いて多重購読を防いだ
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright で画面を開き、階層一覧と保存 / 読込 UI が表示されることを確認
+- Console の致命エラーがないことを確認（`favicon.ico` 404 のみ）
 **2026-04-22 14:53 (Asia/Taipei) — 黒画面の無限再レンダー修正**
 
 ### Summary

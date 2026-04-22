@@ -91,3 +91,19 @@ export type FloorStats = {
   cellIcons: number;
   edgeIcons: number;
 };
+
+export type PersistedSettings = {
+  autoMapping: AutoMappingLevel;
+  mode: AppMode;
+  selectedCellIconKind: CellIconKind;
+  selectedTool: EditTool;
+};
+
+export type PersistedDocument = {
+  version: number;
+  title: string;
+  settings: PersistedSettings;
+  floors: FloorState[];
+  selectedFloorId: string;
+  viewport: ViewportState;
+};

@@ -1,33 +1,54 @@
-import { useEffect, useMemo } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
 import { getFloorStats } from './lib/mapModel';
+import { createPersistedDocument, parsePersistedDocument, STORAGE_KEY } from './lib/persistence';
 import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
 
 const FACINGS: Facing[] = ['north', 'east', 'south', 'west'];
 const AUTO_MAPPING_LEVELS: AutoMappingLevel[] = ['off', 'basic', 'corridor'];
 const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
+const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
+  { label: 'cell floor', value: 'cell-floor' },
+  { label: 'cell unknown', value: 'cell-unknown' },
+  { label: 'edge wall', value: 'edge-wall' },
+  { label: 'edge door', value: 'edge-door' },
+  { label: 'edge open', value: 'edge-open' },
+  { label: 'edge unknown', value: 'edge-unknown' },
+  { label: 'cell icon', value: 'cell-icon' },
+];
 
 function App() {
-  const mode = useAppStore((state) => state.mode);
+  const [ioMessage, setIoMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autoMapping = useAppStore((state) => state.autoMapping);
   const floors = useAppStore((state) => state.floors);
+  const mapTitle = useAppStore((state) => state.mapTitle);
+  const mode = useAppStore((state) => state.mode);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedFloor = useSelectedFloor();
   const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
+  const addFloor = useAppStore((state) => state.addFloor);
   const cycleSelectedCellIcon = useAppStore((state) => state.cycleSelectedCellIcon);
+  const duplicateSelectedFloor = useAppStore((state) => state.duplicateSelectedFloor);
+  const loadPersistedDocument = useAppStore((state) => state.loadPersistedDocument);
   const moveInDirection = useAppStore((state) => state.moveInDirection);
   const placeSelectedIconAtCurrentCell = useAppStore((state) => state.placeSelectedIconAtCurrentCell);
   const placeSelectedIconAtForwardCell = useAppStore((state) => state.placeSelectedIconAtForwardCell);
   const removeCurrentCellIcon = useAppStore((state) => state.removeCurrentCellIcon);
+  const removeFloor = useAppStore((state) => state.removeFloor);
+  const renameFloor = useAppStore((state) => state.renameFloor);
   const setAutoMapping = useAppStore((state) => state.setAutoMapping);
+  const setMapTitle = useAppStore((state) => state.setMapTitle);
   const setMode = useAppStore((state) => state.setMode);
   const setPlayerFacing = useAppStore((state) => state.setPlayerFacing);
   const setSelectedCellIconKind = useAppStore((state) => state.setSelectedCellIconKind);
+  const setSelectedFloor = useAppStore((state) => state.setSelectedFloor);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
   const toggleMode = useAppStore((state) => state.toggleMode);
+
   const selectedFloorStats = useMemo(
     () => (selectedFloor ? getFloorStats(selectedFloor) : null),
     [selectedFloor],
@@ -126,22 +147,73 @@ function App() {
     toggleMode,
   ]);
 
+  const handleExport = () => {
+    const documentState = createPersistedDocument(useAppStore.getState());
+    const blob = new Blob([JSON.stringify(documentState, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = url;
+    anchor.download = `${slugify(documentState.title)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setIoMessage('JSON を書き出しました。');
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const parsed = parsePersistedDocument(JSON.parse(text));
+
+      if (!parsed) {
+        setIoMessage('JSON の形式が不正です。');
+        return;
+      }
+
+      const loaded = loadPersistedDocument(parsed);
+      setIoMessage(loaded ? 'JSON を読み込みました。' : 'JSON の読込に失敗しました。');
+    } catch {
+      setIoMessage('JSON の読込に失敗しました。');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--color-app)] text-[var(--color-text)]">
+      <input
+        ref={fileInputRef}
+        className="hidden"
+        type="file"
+        accept="application/json,.json"
+        onChange={handleImportFile}
+      />
+
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="mb-4 flex flex-col gap-4 rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-5 py-4 shadow-[var(--shadow-soft)] backdrop-blur">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.32em] text-[var(--color-muted)]">
-                Phase 3 Map Mode And Editing
+                Phase 4 Floors Persistence Resume
               </p>
               <div>
                 <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
                   Web Auto Mapping
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--color-text-soft)]">
-                  Map モードで既知の壁を越えない移動確認、前方エッジのショートカット編集、
-                  Canvas クリックによるセル / 境界 / アイコン編集を追加しました。
+                  階層の追加 / 複製 / 削除、JSON 保存 / 読込、localStorage への自動保存と再開を追加しました。
                 </p>
               </div>
             </div>
@@ -159,23 +231,71 @@ function App() {
         <main className="grid flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
           <ShellPanel
             title="Navigator"
-            description="移動、モード、前方編集ショートカットをまとめた操作パネル。"
+            description="探索操作と階層一覧をまとめた左ペイン。"
           >
             <section className="space-y-3">
               <PanelHeading
-                eyebrow="Session"
-                title="Movement"
-                body="Explore は自動記録、Map は既知の壁を越えない歩行確認に使います。`Tab` でモード切替できます。"
+                eyebrow="Document"
+                title="Map Title"
+                body="保存 JSON と localStorage に入るタイトルです。空欄にはできません。"
               />
-              <dl className="grid gap-3">
-                <KeyValueRow label="Active Mode" value={mode} />
-                <KeyValueRow label="Selected Floor" value={selectedFloor?.name ?? '未選択'} />
-                <KeyValueRow
-                  label="Player"
-                  value={`${selectedFloor?.player.x ?? 0}, ${selectedFloor?.player.y ?? 0}`}
+              <label className="grid gap-2">
+                <span className="text-sm text-[var(--color-text-soft)]">Title</span>
+                <input
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+                  value={mapTitle}
+                  onChange={(event) => setMapTitle(event.target.value)}
                 />
-                <KeyValueRow label="Facing" value={selectedFloor?.player.facing ?? 'north'} />
-              </dl>
+              </label>
+            </section>
+
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="Floors"
+                title="Floor List"
+                body="各階層は独立した `cells / edges / icons` を持ちます。"
+              />
+              <div className="grid gap-2">
+                {floors.map((floor) => (
+                  <button
+                    key={floor.id}
+                    type="button"
+                    onClick={() => setSelectedFloor(floor.id)}
+                    className={`rounded-2xl border px-4 py-3 text-left transition ${
+                      floor.id === selectedFloor?.id
+                        ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)]'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium text-[var(--color-text-strong)]">
+                        {floor.name}
+                      </span>
+                      <span className="text-xs text-[var(--color-muted)]">
+                        {floor.width} x {floor.height}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <ShortcutButton label="Add" onClick={addFloor} />
+                <ShortcutButton label="Duplicate" onClick={duplicateSelectedFloor} />
+                <ShortcutButton
+                  label="Delete"
+                  onClick={() => selectedFloor && removeFloor(selectedFloor.id)}
+                />
+              </div>
+              {selectedFloor ? (
+                <label className="grid gap-2">
+                  <span className="text-sm text-[var(--color-text-soft)]">Selected Floor Name</span>
+                  <input
+                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+                    value={selectedFloor.name}
+                    onChange={(event) => renameFloor(selectedFloor.id, event.target.value)}
+                  />
+                </label>
+              ) : null}
             </section>
 
             <section className="space-y-3">
@@ -230,8 +350,24 @@ function App() {
 
           <ShellPanel
             title="Workspace"
-            description="クリック編集とアイコン配置をまとめた右ペイン。"
+            description="保存 / 読込と編集設定をまとめた右ペイン。"
           >
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="Persistence"
+                title="Save / Load"
+                body="変更は自動で localStorage に保存され、ページ再読込時に復元されます。JSON でも入出力できます。"
+              />
+              <div className="grid gap-2">
+                <ShortcutButton label="Save JSON" onClick={handleExport} />
+                <ShortcutButton label="Load JSON" onClick={handleImportClick} />
+              </div>
+              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
+                <p>Auto save key: `{STORAGE_KEY}`</p>
+                <p>{ioMessage ?? 'Auto save は状態更新ごとに localStorage へ書き込みます。'}</p>
+              </div>
+            </section>
+
             <section className="space-y-3">
               <PanelHeading
                 eyebrow="Map Stats"
@@ -343,16 +479,6 @@ function App() {
     </div>
   );
 }
-
-const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
-  { label: 'cell floor', value: 'cell-floor' },
-  { label: 'cell unknown', value: 'cell-unknown' },
-  { label: 'edge wall', value: 'edge-wall' },
-  { label: 'edge door', value: 'edge-door' },
-  { label: 'edge open', value: 'edge-open' },
-  { label: 'edge unknown', value: 'edge-unknown' },
-  { label: 'cell icon', value: 'cell-icon' },
-];
 
 type StatusChipProps = {
   label: string;
@@ -489,6 +615,12 @@ function getFacingFromKeyboardEvent(event: KeyboardEvent): Facing | null {
     default:
       return null;
   }
+}
+
+function slugify(value: string) {
+  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  return normalized.length > 0 ? normalized : 'web-auto-mapping';
 }
 
 export default App;

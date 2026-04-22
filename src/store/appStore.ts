@@ -14,6 +14,12 @@ import {
   updateFloorPlayer,
 } from '../lib/mapModel';
 import {
+  createPersistedDocument,
+  loadPersistedDocumentFromStorage,
+  parsePersistedDocument,
+  savePersistedDocumentToStorage,
+} from '../lib/persistence';
+import {
   AppMode,
   AutoMappingLevel,
   CellCoordinate,
@@ -27,12 +33,14 @@ import {
   FloorState,
   GridDimensions,
   MapInteractionTarget,
+  PersistedDocument,
   ViewportState,
 } from '../types/map';
 
 type AppState = {
   autoMapping: AutoMappingLevel;
   floors: FloorState[];
+  mapTitle: string;
   mode: AppMode;
   selectedCellIconKind: CellIconKind;
   selectedFloorId: string;
@@ -41,15 +49,21 @@ type AppState = {
 };
 
 type AppActions = {
+  addFloor: () => void;
   applyCanvasPrimaryInteraction: (target: MapInteractionTarget) => void;
   applyCanvasSecondaryInteraction: (target: MapInteractionTarget) => void;
   applyForwardEdgeShortcut: (intent: EdgeEditIntent) => void;
   cycleSelectedCellIcon: (direction: 1 | -1) => void;
+  duplicateSelectedFloor: () => void;
+  loadPersistedDocument: (document: PersistedDocument) => boolean;
   moveInDirection: (facing: Facing) => void;
   placeSelectedIconAtCurrentCell: () => void;
   placeSelectedIconAtForwardCell: () => void;
   removeCurrentCellIcon: () => void;
+  removeFloor: (floorId: string) => void;
+  renameFloor: (floorId: string, name: string) => void;
   setAutoMapping: (level: AutoMappingLevel) => void;
+  setMapTitle: (title: string) => void;
   setMode: (mode: AppMode) => void;
   setPlayerFacing: (facing: Facing) => void;
   setPlayerPosition: (coordinate: CellCoordinate) => void;
@@ -70,26 +84,34 @@ const DEFAULT_GRID: GridDimensions = {
 };
 
 const DEFAULT_AUTO_MAPPING: AutoMappingLevel = 'basic';
+const DEFAULT_VIEWPORT: ViewportState = {
+  zoom: 1,
+  offsetX: 0,
+  offsetY: 0,
+};
+const DEFAULT_TITLE = 'Untitled Map';
 const CELL_ICON_ORDER: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
-const initialFloor = createExploreSeedFloorState(
-  'floor-01',
-  'B1F',
-  DEFAULT_GRID,
-  DEFAULT_AUTO_MAPPING,
-);
+
+const initialDocument = loadPersistedDocumentFromStorage() ?? createDefaultDocument();
+const initialState = toAppState(initialDocument);
 
 export const useAppStore = create<AppStore>((set) => ({
-  autoMapping: DEFAULT_AUTO_MAPPING,
-  floors: [initialFloor],
-  mode: 'explore',
-  selectedCellIconKind: 'stairs',
-  selectedFloorId: initialFloor.id,
-  selectedTool: 'cell-floor',
-  viewport: {
-    zoom: 1,
-    offsetX: 0,
-    offsetY: 0,
-  },
+  ...initialState,
+  addFloor: () =>
+    set((state) => {
+      const nextIndex = state.floors.length + 1;
+      const nextFloor = createExploreSeedFloorState(
+        createFloorId(),
+        `B${nextIndex}F`,
+        DEFAULT_GRID,
+        state.autoMapping,
+      );
+
+      return {
+        floors: [...state.floors, nextFloor],
+        selectedFloorId: nextFloor.id,
+      };
+    }),
   applyCanvasPrimaryInteraction: (target) =>
     set((state) => ({
       floors: updateSelectedFloor(state, (floor) =>
@@ -112,6 +134,36 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({
       selectedCellIconKind: cycleIconKind(state.selectedCellIconKind, direction),
     })),
+  duplicateSelectedFloor: () =>
+    set((state) => {
+      const selectedFloor = getSelectedFloorFromState(state);
+
+      if (!selectedFloor) {
+        return {};
+      }
+
+      const duplicate = cloneFloorState(
+        selectedFloor,
+        createFloorId(),
+        `${selectedFloor.name} Copy`,
+      );
+
+      return {
+        floors: [...state.floors, duplicate],
+        selectedFloorId: duplicate.id,
+      };
+    }),
+  loadPersistedDocument: (document) => {
+    const parsed = parsePersistedDocument(document);
+
+    if (!parsed) {
+      return false;
+    }
+
+    set(toAppState(parsed));
+
+    return true;
+  },
   moveInDirection: (facing) =>
     set((state) => ({
       floors: updateSelectedFloor(state, (floor) =>
@@ -138,7 +190,34 @@ export const useAppStore = create<AppStore>((set) => ({
         removeCellIconAt(floor, { x: floor.player.x, y: floor.player.y }),
       ),
     })),
+  removeFloor: (floorId) =>
+    set((state) => {
+      if (state.floors.length <= 1) {
+        return {};
+      }
+
+      const nextFloors = state.floors.filter((floor) => floor.id !== floorId);
+
+      if (nextFloors.length === state.floors.length) {
+        return {};
+      }
+
+      const nextSelectedFloorId =
+        state.selectedFloorId === floorId ? nextFloors[0].id : state.selectedFloorId;
+
+      return {
+        floors: nextFloors,
+        selectedFloorId: nextSelectedFloorId,
+      };
+    }),
+  renameFloor: (floorId, name) =>
+    set((state) => ({
+      floors: state.floors.map((floor) =>
+        floor.id === floorId ? { ...floor, name: sanitizeFloorName(name, floor.name) } : floor,
+      ),
+    })),
   setAutoMapping: (level) => set({ autoMapping: level }),
+  setMapTitle: (title) => set({ mapTitle: sanitizeDocumentTitle(title) }),
   setMode: (mode) => set({ mode }),
   setPlayerFacing: (facing) =>
     set((state) => ({
@@ -153,8 +232,14 @@ export const useAppStore = create<AppStore>((set) => ({
         }),
       ),
     })),
-  setSelectedCellIconKind: (kind) => set({ selectedCellIconKind: kind, selectedTool: 'cell-icon' }),
-  setSelectedFloor: (floorId) => set({ selectedFloorId: floorId }),
+  setSelectedCellIconKind: (kind) =>
+    set({ selectedCellIconKind: kind, selectedTool: 'cell-icon' }),
+  setSelectedFloor: (floorId) =>
+    set((state) => ({
+      selectedFloorId: state.floors.some((floor) => floor.id === floorId)
+        ? floorId
+        : state.selectedFloorId,
+    })),
   setSelectedFloorCellState: (coordinate, nextState) =>
     set((state) => ({
       floors: updateSelectedFloor(state, (floor) =>
@@ -181,6 +266,8 @@ export const useAppStore = create<AppStore>((set) => ({
     })),
 }));
 
+initializeAutoSave();
+
 export function useSelectedFloor() {
   return useAppStore((state) => state.floors.find((floor) => floor.id === state.selectedFloorId));
 }
@@ -200,4 +287,93 @@ function cycleIconKind(current: CellIconKind, direction: 1 | -1): CellIconKind {
     (currentIndex + direction + CELL_ICON_ORDER.length) % CELL_ICON_ORDER.length;
 
   return CELL_ICON_ORDER[nextIndex];
+}
+
+function initializeAutoSave() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const guardedWindow = window as Window & {
+    __wam_auto_save_initialized__?: boolean;
+  };
+
+  if (guardedWindow.__wam_auto_save_initialized__) {
+    return;
+  }
+
+  guardedWindow.__wam_auto_save_initialized__ = true;
+
+  useAppStore.subscribe((state) => {
+    savePersistedDocumentToStorage(createPersistedDocument(state));
+  });
+}
+
+function toAppState(document: PersistedDocument): AppState {
+  const fallbackFloor = document.floors[0] ?? createDefaultDocument().floors[0];
+  const selectedFloorId = document.floors.some((floor) => floor.id === document.selectedFloorId)
+    ? document.selectedFloorId
+    : fallbackFloor.id;
+
+  return {
+    autoMapping: document.settings.autoMapping,
+    floors: document.floors.length > 0 ? document.floors : [fallbackFloor],
+    mapTitle: sanitizeDocumentTitle(document.title),
+    mode: document.settings.mode,
+    selectedCellIconKind: document.settings.selectedCellIconKind,
+    selectedFloorId,
+    selectedTool: document.settings.selectedTool,
+    viewport: document.viewport,
+  };
+}
+
+function createDefaultDocument(): PersistedDocument {
+  const floor = createExploreSeedFloorState(
+    createFloorId(),
+    'B1F',
+    DEFAULT_GRID,
+    DEFAULT_AUTO_MAPPING,
+  );
+
+  return {
+    version: 1,
+    title: DEFAULT_TITLE,
+    settings: {
+      autoMapping: DEFAULT_AUTO_MAPPING,
+      mode: 'explore',
+      selectedCellIconKind: 'stairs',
+      selectedTool: 'cell-floor',
+    },
+    floors: [floor],
+    selectedFloorId: floor.id,
+    viewport: DEFAULT_VIEWPORT,
+  };
+}
+
+function createFloorId() {
+  return `floor-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function cloneFloorState(floor: FloorState, nextId: string, nextName: string): FloorState {
+  return {
+    ...structuredClone(floor),
+    id: nextId,
+    name: nextName,
+  };
+}
+
+function getSelectedFloorFromState(state: AppState) {
+  return state.floors.find((floor) => floor.id === state.selectedFloorId);
+}
+
+function sanitizeDocumentTitle(title: string) {
+  const normalized = title.trim();
+
+  return normalized.length > 0 ? normalized : DEFAULT_TITLE;
+}
+
+function sanitizeFloorName(name: string, fallback: string) {
+  const normalized = name.trim();
+
+  return normalized.length > 0 ? normalized : fallback;
 }
