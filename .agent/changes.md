@@ -112,6 +112,34 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 17:19 (Asia/Taipei) — Floor List をコンボボックス化**
+
+### Summary
+- 左ペインの Floor List をカード一覧からコンボボックスへ置き換え、名前編集 input は維持した
+
+### Context / Goal
+- 1 ページ固定レイアウトでは階層カード一覧が縦スペースを圧迫しやすかった
+- 階層選択を圧縮しつつ、選択中フロア名の編集は従来どおりすぐ行える状態を保ちたかった
+
+### Changes
+- `Floor List` セクションを `Floor Selector` に変更した
+- 階層選択 UI を、階層名とグリッドサイズを表示する `select` へ置き換えた
+- `Selected Floor Name` の編集 input と `Add / Duplicate / Delete` ボタン群はそのまま残した
+
+### Files Touched
+- `src/App.tsx` — Floor 選択 UI をカード一覧からコンボボックスへ更新
+
+### Behavioral Impact
+- 階層切替はコンボボックスから行う形になり、左ペインの縦使用量が減った
+- フロア名の編集方法と階層操作ボタンの使い方は変わらない
+
+### Risk & Mitigation
+- Risk: 一覧カードよりは各階層の一覧性が下がる
+- Mitigation: `option` に階層名と `width x height` を併記し、選択中フロア名の編集欄を直下に残した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 17:12 (Asia/Taipei) — 開いたドア / 閉じたドアを分離**
 
 ### Summary

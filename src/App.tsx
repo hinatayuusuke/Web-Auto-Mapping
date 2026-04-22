@@ -333,32 +333,23 @@ function App() {
             <section className="space-y-3">
               <PanelHeading
                 eyebrow="Floors"
-                title="Floor List"
-                body="各階層は独立した `cells / edges / icons` を持ちます。削除後も Undo で戻せます。"
+                title="Floor Selector"
+                body="各階層は独立した `cells / edges / icons` を持ちます。選択はコンボボックス、名前変更は下の入力欄で行います。"
               />
-              <div className="grid gap-2">
-                {floors.map((floor) => (
-                  <button
-                    key={floor.id}
-                    type="button"
-                    onClick={() => setSelectedFloor(floor.id)}
-                    className={`rounded-2xl border px-4 py-3 text-left transition ${
-                      floor.id === selectedFloor?.id
-                        ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)]'
-                        : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium text-[var(--color-text-strong)]">
-                        {floor.name}
-                      </span>
-                      <span className="text-xs text-[var(--color-muted)]">
-                        {floor.width} x {floor.height}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <label className="grid gap-2">
+                <span className="text-sm text-[var(--color-text-soft)]">Selected Floor</span>
+                <select
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+                  value={selectedFloor?.id ?? ''}
+                  onChange={(event) => setSelectedFloor(event.target.value)}
+                >
+                  {floors.map((floor) => (
+                    <option key={floor.id} value={floor.id}>
+                      {floor.name} ({floor.width} x {floor.height})
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="grid grid-cols-3 gap-2">
                 <ShortcutButton label="Add" onClick={addFloor} />
                 <ShortcutButton label="Duplicate" onClick={duplicateSelectedFloor} />
