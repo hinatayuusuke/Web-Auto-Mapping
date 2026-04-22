@@ -1,13 +1,21 @@
 import { PropsWithChildren } from 'react';
 
 type ShellPanelProps = PropsWithChildren<{
+  className?: string;
   title: string;
   description: string;
 }>;
 
-export function ShellPanel({ title, description, children }: ShellPanelProps) {
+export function ShellPanel({
+  className = '',
+  title,
+  description,
+  children,
+}: ShellPanelProps) {
   return (
-    <aside className="flex min-h-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent">
+    <aside
+      className={`flex min-h-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent ${className}`}
+    >
       <header className="shrink-0 border-b border-[var(--color-border)] px-5 py-4">
         <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">Panel</p>
         <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">

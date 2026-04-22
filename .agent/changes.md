@@ -112,6 +112,65 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 18:01 (Asia/Taipei) — 縦長簡易レイアウト案を追加**
+
+### Summary
+- 縦長時の簡易表示案を `Doc/TallViewportCompactProposal.md` として新規追加した
+
+### Context / Goal
+- 縦長時は `MapCanvas` 優先、ヘッダー非表示、下段 2 列パネル、内部スクロールという方向性で仕様整理が必要だった
+- `MapCanvas` のズームや左右ペインの単独スクロール時にページ全体スクロールが反応しない条件まで含めて設計文書化したかった
+
+### Changes
+- 縦長専用モードのゴール / 非ゴール、前提、構成、スクロール方針、段階実装を提案書へ整理した
+- `Navigator` / `Workspace` の固定高さ + 単独スクロール、`MapCanvas` 最上段、ヘッダー非表示を明文化した
+
+### Files Touched
+- `Doc/TallViewportCompactProposal.md` — 縦長簡易レイアウトの実装案を新規追加
+
+### Behavioral Impact
+- 実装はまだ変えていない
+- 次段階で縦長レイアウトを実装する際の基準文書が追加された
+
+### Risk & Mitigation
+- Risk: 文書だけ先行すると、実装側が別解釈になる可能性がある
+- Mitigation: レイアウト優先順位、固定高さ、内部スクロール、ホイール競合抑止を DoD まで落として明文化した
+
+### Tests / Verification
+- 未実施（ドキュメント追加のみ）
+**2026-04-22 18:08 (Asia/Taipei) — 縦長簡易レイアウトを実装**
+
+### Summary
+- 縦長時はヘッダーを隠し、`MapCanvas` を最上段、`Navigator / Workspace` を下段 2 列の固定高さスクロールへ切り替えるようにした
+
+### Context / Goal
+- `Doc/TallViewportCompactProposal.md` に沿って、縦長時でも `MapCanvas` を最優先で見せつつ、補助 UI は下段で圧縮表示したかった
+- `MapCanvas` のズームや左右ペインの単独スクロール中にページ全体スクロールが反応しにくい構成へ寄せる必要があった
+
+### Changes
+- `App.tsx` で縦長 / 横長の 2 レイアウトへ分岐し、縦長時はヘッダー非表示、`MapCanvas` 最上段、下段 2 列レイアウトへ変更した
+- 縦長時の `MapCanvas` に専用の固定高さを与え、下段パネルも `clamp()` ベースの固定高さにした
+- `Navigator` と `Workspace` は `repeat(auto-fit, minmax(260px, 280px))` による細い 2 列で中央寄せし、幅不足時だけ 1 列へフォールバックするようにした
+- `ShellPanel` に外側クラスを渡せるようにし、固定高さ付きでも内部 `overflow-y-auto overscroll-contain` を維持できるようにした
+
+### Files Touched
+- `src/App.tsx` — 縦長専用の並び替え、ヘッダー非表示、上段 / 下段レイアウト、固定高さクラスを追加
+- `src/components/ShellPanel.tsx` — 固定高さクラスを受け取れるように拡張
+
+### Behavioral Impact
+- 横長時は従来どおりの 3 カラム固定レイアウトを維持する
+- 縦長時はヘッダーが消え、`MapCanvas` が最上段、その下に `Navigator / Workspace` が細い 2 列で並ぶ
+- 縦長時の `Navigator / Workspace` は固定高さの内部スクロールになる
+
+### Risk & Mitigation
+- Risk: 下段 2 列の最小幅を満たせない環境では窮屈になる可能性がある
+- Mitigation: `auto-fit + minmax(260px, 280px)` を使い、幅不足時は自動で 1 列へ落ちるようにした
+- Risk: ホイール競合はブラウザ差異が残る可能性がある
+- Mitigation: `MapCanvas` の `preventDefault()` と `ShellPanel` 内の `overscroll-contain` をそのまま維持した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 17:53 (Asia/Taipei) — 縦長時のページ全体スクロールを有効化**
 
 ### Summary

@@ -292,6 +292,337 @@ function App() {
     }
   };
 
+  const navigatorPanel = (
+    <ShellPanel
+      className={isTallViewport ? 'h-[clamp(320px,34dvh,420px)]' : ''}
+      title="Navigator"
+      description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
+    >
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Document"
+          title="Map Title"
+          body="保存 JSON と localStorage に入るタイトルです。空欄にはできません。"
+        />
+        <label className="grid gap-2">
+          <span className="text-sm text-[var(--color-text-soft)]">Title</span>
+          <input
+            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+            value={mapTitle}
+            onChange={(event) => setMapTitle(event.target.value)}
+          />
+        </label>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Floors"
+          title="Floor Selector"
+          body="各階層は独立した `cells / edges / icons` を持ちます。選択はコンボボックス、名前変更は下の入力欄で行います。"
+        />
+        <label className="grid gap-2">
+          <span className="text-sm text-[var(--color-text-soft)]">Selected Floor</span>
+          <select
+            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+            value={selectedFloor?.id ?? ''}
+            onChange={(event) => setSelectedFloor(event.target.value)}
+          >
+            {floors.map((floor) => (
+              <option key={floor.id} value={floor.id}>
+                {floor.name} ({floor.width} x {floor.height})
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          <ShortcutButton label="Add" onClick={addFloor} />
+          <ShortcutButton label="Duplicate" onClick={duplicateSelectedFloor} />
+          <ShortcutButton
+            label="Delete"
+            onClick={() => selectedFloor && removeFloor(selectedFloor.id)}
+            disabled={!selectedFloor}
+          />
+        </div>
+        {selectedFloor ? (
+          <label className="grid gap-2">
+            <span className="text-sm text-[var(--color-text-soft)]">Selected Floor Name</span>
+            <input
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+              value={selectedFloor.name}
+              onChange={(event) => renameFloor(selectedFloor.id, event.target.value)}
+            />
+          </label>
+        ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Grid"
+          title="Expand Grid"
+          body="右 / 下は末尾へ、上 / 左は既存要素を平行移動して 4 マスずつ拡張します。"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <ShortcutButton label="+4 Left" onClick={() => expandSelectedFloorLeft()} />
+          <ShortcutButton label="+4 Up" onClick={() => expandSelectedFloorUp()} />
+          <ShortcutButton label="+4 Right" onClick={() => expandSelectedFloorRight()} />
+          <ShortcutButton label="+4 Down" onClick={() => expandSelectedFloorDown()} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Keyboard"
+          title="Movement"
+          body="`W / ↑` で前進、`A / ←` と `D / →` で方向変更、`S / ↓` で後ろを向きます。"
+        />
+        <MovementPad
+          currentFacing={currentFacing}
+          onForward={() => moveInDirection(currentFacing)}
+          onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Shortcuts"
+          title="Forward Edge"
+          body="前方境界を `1:wall`, `2:open door`, `3:open`, `4:closed door`, `0:unknown` で即時編集できます。"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <ShortcutButton label="1 wall" onClick={() => applyForwardEdgeShortcut('wall')} />
+          <ShortcutButton label="2 open door" onClick={() => applyForwardEdgeShortcut('door')} />
+          <ShortcutButton label="3 open" onClick={() => applyForwardEdgeShortcut('open')} />
+          <ShortcutButton
+            label="4 closed door"
+            onClick={() => applyForwardEdgeShortcut('closed-door')}
+          />
+          <ShortcutButton
+            label="0 unknown"
+            onClick={() => applyForwardEdgeShortcut('unknown')}
+          />
+        </div>
+      </section>
+    </ShellPanel>
+  );
+
+  const mapSection = (
+    <section
+      className={`flex min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent ${
+        isTallViewport ? 'h-[clamp(420px,56dvh,720px)]' : 'min-h-[360px] lg:min-h-0'
+      }`}
+    >
+      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
+            Map Canvas
+          </p>
+          <h2 className="mt-0.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+            Floor Workspace
+          </h2>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          <ShortcutButton label="Undo" onClick={undo} disabled={!canUndo} />
+          <ShortcutButton label="Redo" onClick={redo} disabled={!canRedo} />
+          <ShortcutButton
+            label="Zoom -"
+            onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
+          />
+          <ShortcutButton
+            label="Zoom +"
+            onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
+          />
+          <ShortcutButton label="Reset View" onClick={resetViewport} />
+          <div className="px-1 py-2 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
+            {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 p-0">
+        <MapCanvas />
+      </div>
+    </section>
+  );
+
+  const workspacePanel = (
+    <ShellPanel
+      className={isTallViewport ? 'h-[clamp(320px,34dvh,420px)]' : ''}
+      title="Workspace"
+      description="保存 / 読込、履歴、viewport、編集設定をまとめた右ペイン。"
+    >
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="State"
+          title="Current Status"
+          body="選択中のツール、アイコン、階層状態をここで見失わないようにします。"
+        />
+        <div className="grid gap-2">
+          <KeyValueRow label="Selected Tool" value={selectedTool} />
+          <KeyValueRow label="Selected Icon" value={selectedCellIconKind} />
+          <KeyValueRow label="Current Floor" value={selectedFloor?.name ?? 'N/A'} />
+          <KeyValueRow label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
+        </div>
+        {mapStateNotice ? (
+          <NoticeCard message={mapStateNotice.message} tone={mapStateNotice.tone} />
+        ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Persistence"
+          title="Save / Load"
+          body="変更は自動で localStorage に保存され、ページ再読込時に復元されます。JSON でも入出力できます。"
+        />
+        <div className="grid gap-2">
+          <ShortcutButton label="Save JSON" onClick={handleExport} />
+          <ShortcutButton label="Load JSON" onClick={handleImportClick} />
+        </div>
+        <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
+          <p>Auto save key: `{STORAGE_KEY}`</p>
+          <p>Auto save は状態更新ごとに localStorage へ書き込みます。</p>
+        </div>
+        {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="History"
+          title="Undo / Redo"
+          body="`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` に対応します。編集、移動、階層操作、グリッド拡張を巻き戻せます。"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <ActionButton active={canUndo} label="Undo" onClick={undo} disabled={!canUndo} />
+          <ActionButton active={canRedo} label="Redo" onClick={redo} disabled={!canRedo} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Viewport"
+          title="Zoom / Pan"
+          body="ホイールでズーム、Canvas 上では Alt+drag または middle drag でパンできます。ボタンからも調整できます。"
+        />
+        <div className="grid grid-cols-3 gap-2">
+          <ActionButton
+            active={false}
+            label="Left"
+            onClick={() => setViewport({ offsetX: viewport.offsetX - VIEWPORT_PAN_STEP })}
+          />
+          <ActionButton active={false} label="Center" onClick={resetViewport} />
+          <ActionButton
+            active={false}
+            label="Right"
+            onClick={() => setViewport({ offsetX: viewport.offsetX + VIEWPORT_PAN_STEP })}
+          />
+          <ActionButton
+            active={false}
+            label="Up"
+            onClick={() => setViewport({ offsetY: viewport.offsetY - VIEWPORT_PAN_STEP })}
+          />
+          <ActionButton
+            active={false}
+            label="Zoom -"
+            onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
+          />
+          <ActionButton
+            active={false}
+            label="Down"
+            onClick={() => setViewport({ offsetY: viewport.offsetY + VIEWPORT_PAN_STEP })}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Map Stats"
+          title="Selected Floor"
+          body="編集で変わるセル、通路、壁、アイコン数をここで確認できます。"
+        />
+        <dl className="grid gap-3">
+          <KeyValueRow label="Floors" value={`${floors.length}`} />
+          <KeyValueRow label="Known Cells" value={`${selectedFloorStats?.knownCells ?? 0}`} />
+          <KeyValueRow label="Open Edges" value={`${selectedFloorStats?.openEdges ?? 0}`} />
+          <KeyValueRow label="Wall Edges" value={`${selectedFloorStats?.wallEdges ?? 0}`} />
+          <KeyValueRow
+            label="Icons"
+            value={`${(selectedFloorStats?.cellIcons ?? 0) + (selectedFloorStats?.edgeIcons ?? 0)}`}
+          />
+        </dl>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Mode"
+          title="Explore / Map"
+          body="Map モード時のみ Canvas クリック編集を受け付けます。Explore は踏査入力を優先します。"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <ActionButton
+            active={mode === 'explore'}
+            label="Explore"
+            onClick={() => setMode('explore')}
+          />
+          <ActionButton active={mode === 'map'} label="Map" onClick={() => setMode('map')} />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Mouse"
+          title="Edit Tool"
+          body="左クリックで配置、右クリックで削除です。セル中心はセル、境界近くはエッジとして解釈します。"
+        />
+        <div className="grid gap-2">
+          {EDIT_TOOL_OPTIONS.map((tool) => (
+            <ActionButton
+              key={tool.value}
+              active={selectedTool === tool.value}
+              label={tool.label}
+              onClick={() => setSelectedTool(tool.value)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Palette"
+          title="Cell Icons"
+          body="`[` `]` で巡回、`I` で足元、`Alt+I` で前方セルへ配置、`Backspace` で足元アイコン削除です。"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          {CELL_ICON_KINDS.map((kind) => (
+            <ActionButton
+              key={kind}
+              active={selectedCellIconKind === kind}
+              label={kind}
+              onClick={() => setSelectedCellIconKind(kind)}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Auto Mapping"
+          title="Completion Level"
+          body="Explore モードの移動時のみ効く設定です。Map 編集では自動変更しません。"
+        />
+        <div className="grid gap-2">
+          {AUTO_MAPPING_LEVELS.map((level) => (
+            <ActionButton
+              key={level}
+              active={autoMapping === level}
+              label={level}
+              onClick={() => setAutoMapping(level)}
+            />
+          ))}
+        </div>
+      </section>
+    </ShellPanel>
+  );
+
   return (
     <div
       className={`bg-[var(--color-app)] text-[var(--color-text)] ${
@@ -311,337 +642,50 @@ function App() {
           isTallViewport ? 'min-h-[100dvh]' : 'h-full'
         }`}
       >
-        <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-2">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
-                  Web Auto Mapping
-                </h1>
-                <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
-                  One Page Layout
-                </span>
-              </div>
-              <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
-                左右は独立スクロール、中央は常時表示のままホイールでズームします。
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-              <StatusChip label="Mode" value={mode} />
-              <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
-              <StatusChip label="Auto Map" value={autoMapping} />
-              <StatusChip label="Tool" value={selectedTool} />
-              <StatusChip label="Icon" value={selectedCellIconKind} />
-              <StatusChip label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
-            </div>
-          </div>
-        </header>
-
-        <main
-          className={`flex flex-1 flex-col gap-2 lg:grid lg:grid-cols-[264px_minmax(0,1fr)_264px] xl:grid-cols-[280px_minmax(0,1fr)_280px] ${
-            isTallViewport ? '' : 'min-h-0 overflow-y-auto lg:overflow-hidden'
-          }`}
-        >
-          <ShellPanel
-            title="Navigator"
-            description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
-          >
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Document"
-                title="Map Title"
-                body="保存 JSON と localStorage に入るタイトルです。空欄にはできません。"
-              />
-              <label className="grid gap-2">
-                <span className="text-sm text-[var(--color-text-soft)]">Title</span>
-                <input
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
-                  value={mapTitle}
-                  onChange={(event) => setMapTitle(event.target.value)}
-                />
-              </label>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Floors"
-                title="Floor Selector"
-                body="各階層は独立した `cells / edges / icons` を持ちます。選択はコンボボックス、名前変更は下の入力欄で行います。"
-              />
-              <label className="grid gap-2">
-                <span className="text-sm text-[var(--color-text-soft)]">Selected Floor</span>
-                <select
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
-                  value={selectedFloor?.id ?? ''}
-                  onChange={(event) => setSelectedFloor(event.target.value)}
-                >
-                  {floors.map((floor) => (
-                    <option key={floor.id} value={floor.id}>
-                      {floor.name} ({floor.width} x {floor.height})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <ShortcutButton label="Add" onClick={addFloor} />
-                <ShortcutButton label="Duplicate" onClick={duplicateSelectedFloor} />
-                <ShortcutButton
-                  label="Delete"
-                  onClick={() => selectedFloor && removeFloor(selectedFloor.id)}
-                  disabled={!selectedFloor}
-                />
-              </div>
-              {selectedFloor ? (
-                <label className="grid gap-2">
-                  <span className="text-sm text-[var(--color-text-soft)]">Selected Floor Name</span>
-                  <input
-                    className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
-                    value={selectedFloor.name}
-                    onChange={(event) => renameFloor(selectedFloor.id, event.target.value)}
-                  />
-                </label>
-              ) : null}
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Grid"
-                title="Expand Grid"
-                body="右 / 下は末尾へ、上 / 左は既存要素を平行移動して 4 マスずつ拡張します。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <ShortcutButton label="+4 Left" onClick={() => expandSelectedFloorLeft()} />
-                <ShortcutButton label="+4 Up" onClick={() => expandSelectedFloorUp()} />
-                <ShortcutButton label="+4 Right" onClick={() => expandSelectedFloorRight()} />
-                <ShortcutButton label="+4 Down" onClick={() => expandSelectedFloorDown()} />
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Keyboard"
-                title="Movement"
-                body="`W / ↑` で前進、`A / ←` と `D / →` で方向変更、`S / ↓` で後ろを向きます。"
-              />
-              <MovementPad
-                currentFacing={currentFacing}
-                onForward={() => moveInDirection(currentFacing)}
-                onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
-              />
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Shortcuts"
-                title="Forward Edge"
-                body="前方境界を `1:wall`, `2:open door`, `3:open`, `4:closed door`, `0:unknown` で即時編集できます。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <ShortcutButton label="1 wall" onClick={() => applyForwardEdgeShortcut('wall')} />
-                <ShortcutButton label="2 open door" onClick={() => applyForwardEdgeShortcut('door')} />
-                <ShortcutButton label="3 open" onClick={() => applyForwardEdgeShortcut('open')} />
-                <ShortcutButton
-                  label="4 closed door"
-                  onClick={() => applyForwardEdgeShortcut('closed-door')}
-                />
-                <ShortcutButton
-                  label="0 unknown"
-                  onClick={() => applyForwardEdgeShortcut('unknown')}
-                />
-              </div>
-            </section>
-          </ShellPanel>
-
-          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent lg:min-h-0">
-            <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
-                  Map Canvas
+        {!isTallViewport ? (
+          <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-2">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
+                    Web Auto Mapping
+                  </h1>
+                  <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
+                    One Page Layout
+                  </span>
+                </div>
+                <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
+                  左右は独立スクロール、中央は常時表示のままホイールでズームします。
                 </p>
-                <h2 className="mt-0.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
-                  Floor Workspace
-                </h2>
               </div>
 
               <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-                <ShortcutButton label="Undo" onClick={undo} disabled={!canUndo} />
-                <ShortcutButton label="Redo" onClick={redo} disabled={!canRedo} />
-                <ShortcutButton
-                  label="Zoom -"
-                  onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
-                />
-                <ShortcutButton
-                  label="Zoom +"
-                  onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
-                />
-                <ShortcutButton label="Reset View" onClick={resetViewport} />
-                <div className="px-1 py-2 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
-                  {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
-                </div>
+                <StatusChip label="Mode" value={mode} />
+                <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
+                <StatusChip label="Auto Map" value={autoMapping} />
+                <StatusChip label="Tool" value={selectedTool} />
+                <StatusChip label="Icon" value={selectedCellIconKind} />
+                <StatusChip label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
               </div>
             </div>
+          </header>
+        ) : null}
 
-            <div className="min-h-0 flex-1 p-0">
-              <MapCanvas />
+        {isTallViewport ? (
+          <main className="grid content-start gap-2">
+            {mapSection}
+            <div className="grid justify-center gap-2 [grid-template-columns:repeat(auto-fit,minmax(260px,280px))]">
+              {navigatorPanel}
+              {workspacePanel}
             </div>
-          </section>
-
-          <ShellPanel
-            title="Workspace"
-            description="保存 / 読込、履歴、viewport、編集設定をまとめた右ペイン。"
-          >
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="State"
-                title="Current Status"
-                body="選択中のツール、アイコン、階層状態をここで見失わないようにします。"
-              />
-              <div className="grid gap-2">
-                <KeyValueRow label="Selected Tool" value={selectedTool} />
-                <KeyValueRow label="Selected Icon" value={selectedCellIconKind} />
-                <KeyValueRow label="Current Floor" value={selectedFloor?.name ?? 'N/A'} />
-                <KeyValueRow label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
-              </div>
-              {mapStateNotice ? (
-                <NoticeCard message={mapStateNotice.message} tone={mapStateNotice.tone} />
-              ) : null}
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Persistence"
-                title="Save / Load"
-                body="変更は自動で localStorage に保存され、ページ再読込時に復元されます。JSON でも入出力できます。"
-              />
-              <div className="grid gap-2">
-                <ShortcutButton label="Save JSON" onClick={handleExport} />
-                <ShortcutButton label="Load JSON" onClick={handleImportClick} />
-              </div>
-              <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
-                <p>Auto save key: `{STORAGE_KEY}`</p>
-                <p>Auto save は状態更新ごとに localStorage へ書き込みます。</p>
-              </div>
-              {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="History"
-                title="Undo / Redo"
-                body="`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` に対応します。編集、移動、階層操作、グリッド拡張を巻き戻せます。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <ActionButton active={canUndo} label="Undo" onClick={undo} disabled={!canUndo} />
-                <ActionButton active={canRedo} label="Redo" onClick={redo} disabled={!canRedo} />
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Viewport"
-                title="Zoom / Pan"
-                body="ホイールでズーム、Canvas 上では Alt+drag または middle drag でパンできます。ボタンからも調整できます。"
-              />
-              <div className="grid grid-cols-3 gap-2">
-                <ActionButton active={false} label="Left" onClick={() => setViewport({ offsetX: viewport.offsetX - VIEWPORT_PAN_STEP })} />
-                <ActionButton active={false} label="Center" onClick={resetViewport} />
-                <ActionButton active={false} label="Right" onClick={() => setViewport({ offsetX: viewport.offsetX + VIEWPORT_PAN_STEP })} />
-                <ActionButton active={false} label="Up" onClick={() => setViewport({ offsetY: viewport.offsetY - VIEWPORT_PAN_STEP })} />
-                <ActionButton active={false} label="Zoom -" onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })} />
-                <ActionButton active={false} label="Down" onClick={() => setViewport({ offsetY: viewport.offsetY + VIEWPORT_PAN_STEP })} />
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Map Stats"
-                title="Selected Floor"
-                body="編集で変わるセル、通路、壁、アイコン数をここで確認できます。"
-              />
-              <dl className="grid gap-3">
-                <KeyValueRow label="Floors" value={`${floors.length}`} />
-                <KeyValueRow label="Known Cells" value={`${selectedFloorStats?.knownCells ?? 0}`} />
-                <KeyValueRow label="Open Edges" value={`${selectedFloorStats?.openEdges ?? 0}`} />
-                <KeyValueRow label="Wall Edges" value={`${selectedFloorStats?.wallEdges ?? 0}`} />
-                <KeyValueRow
-                  label="Icons"
-                  value={`${(selectedFloorStats?.cellIcons ?? 0) + (selectedFloorStats?.edgeIcons ?? 0)}`}
-                />
-              </dl>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Mode"
-                title="Explore / Map"
-                body="Map モード時のみ Canvas クリック編集を受け付けます。Explore は踏査入力を優先します。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <ActionButton
-                  active={mode === 'explore'}
-                  label="Explore"
-                  onClick={() => setMode('explore')}
-                />
-                <ActionButton active={mode === 'map'} label="Map" onClick={() => setMode('map')} />
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Mouse"
-                title="Edit Tool"
-                body="左クリックで配置、右クリックで削除です。セル中心はセル、境界近くはエッジとして解釈します。"
-              />
-              <div className="grid gap-2">
-                {EDIT_TOOL_OPTIONS.map((tool) => (
-                  <ActionButton
-                    key={tool.value}
-                    active={selectedTool === tool.value}
-                    label={tool.label}
-                    onClick={() => setSelectedTool(tool.value)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Palette"
-                title="Cell Icons"
-                body="`[` `]` で巡回、`I` で足元、`Alt+I` で前方セルへ配置、`Backspace` で足元アイコン削除です。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                {CELL_ICON_KINDS.map((kind) => (
-                  <ActionButton
-                    key={kind}
-                    active={selectedCellIconKind === kind}
-                    label={kind}
-                    onClick={() => setSelectedCellIconKind(kind)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
-                eyebrow="Auto Mapping"
-                title="Completion Level"
-                body="Explore モードの移動時のみ効く設定です。Map 編集では自動変更しません。"
-              />
-              <div className="grid gap-2">
-                {AUTO_MAPPING_LEVELS.map((level) => (
-                  <ActionButton
-                    key={level}
-                    active={autoMapping === level}
-                    label={level}
-                    onClick={() => setAutoMapping(level)}
-                  />
-                ))}
-              </div>
-            </section>
-          </ShellPanel>
-        </main>
+          </main>
+        ) : (
+          <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:grid lg:grid-cols-[264px_minmax(0,1fr)_264px] lg:overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+            {navigatorPanel}
+            {mapSection}
+            {workspacePanel}
+          </main>
+        )}
       </div>
     </div>
   );
