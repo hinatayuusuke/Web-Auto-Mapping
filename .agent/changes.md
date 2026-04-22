@@ -112,6 +112,64 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:41 (Asia/Taipei) — Zoom 25% が実描画へ反映されない問題を修正**
+
+### Summary
+- Zoom 表示だけ変わり、実際のマップが 50% 未満へ縮まらない問題を修正した
+
+### Context / Goal
+- `MIN_ZOOM` を 25% に下げても、実際の描画サイズは 50% 未満でほぼ変化しなかった
+- 原因は `MapCanvas` 側のセルサイズ計算に別の下限があり、表示値と実描画倍率が一致していなかったため
+
+### Changes
+- `calculateCellSize()` の最終セルサイズ計算から整数丸めと `14px` 下限を外し、より小さく連続的に縮小できるようにした
+- セルサイズ下限を `MIN_CELL_SIZE = 4` に変更し、25% 付近まで実際に縮小できるようにした
+- 既存コメントを追加し、zoom 表示と実描画倍率を一致させる意図を明記した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — セルサイズ計算を連続値ベースへ変更し、下限を引き下げた
+
+### Behavioral Impact
+- Zoom 25% まで実際にマップ表示が縮小されるようになった
+- これまで 50% 未満で止まっていた見た目の頭打ちが解消された
+
+### Risk & Mitigation
+- Risk: 非常に小さい zoom ではセル線やアイコンが見づらくなる
+- Mitigation: 最小セルサイズ `4px` は維持し、完全に潰れない最低限の視認性を残した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright で `Zoom -` を複数回実行し、表示が `25%` まで下がることを確認
+- 同確認時に、実際のマップ見た目も縮小されていることを確認
+**2026-04-22 16:36 (Asia/Taipei) — Zoom 下限を 25% に変更**
+
+### Summary
+- ズーム下限を 50% から 25% に変更した
+
+### Context / Goal
+- より大きく引いた表示で全体を確認できるように、ズーム下限を 25% まで下げる必要があった
+- 描画側と store 側の clamp を揃えて変更する
+
+### Changes
+- `MapCanvas` 側の `MIN_ZOOM` を `0.25` に変更した
+- `sanitizeViewport` 側の zoom 下限 clamp を `0.25` に変更した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — ホイールズーム下限を 25% に変更
+- `src/store/appStore.ts` — viewport 保存 / 復元時の zoom 下限を 25% に変更
+
+### Behavioral Impact
+- ズームアウトの下限が 25% まで広がった
+- 保存済み viewport や UI ボタン経由の zoom 値も 25% 未満にはならない
+
+### Risk & Mitigation
+- Risk: かなり小さく引いた表示では、セルやアイコンが視認しづらくなる
+- Mitigation: これは閲覧自由度を優先した変更で、必要なら Zoom + やホイールで即時に戻せる
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 16:34 (Asia/Taipei) — Floor Workspace と MapCanvas の二重線を解消**
 
 ### Summary

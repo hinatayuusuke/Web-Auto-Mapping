@@ -577,7 +577,7 @@ function sanitizeFloorName(name: string, fallback: string) {
 
 function sanitizeViewport(viewport: ViewportState): ViewportState {
   return {
-    zoom: Math.min(3, Math.max(0.5, Number.isFinite(viewport.zoom) ? viewport.zoom : DEFAULT_VIEWPORT.zoom)),
+    zoom: Math.min(3, Math.max(0.25, Number.isFinite(viewport.zoom) ? viewport.zoom : DEFAULT_VIEWPORT.zoom)),
     offsetX: Number.isFinite(viewport.offsetX) ? viewport.offsetX : DEFAULT_VIEWPORT.offsetX,
     offsetY: Number.isFinite(viewport.offsetY) ? viewport.offsetY : DEFAULT_VIEWPORT.offsetY,
   };

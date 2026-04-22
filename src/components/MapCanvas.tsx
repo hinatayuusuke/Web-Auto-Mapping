@@ -10,8 +10,9 @@ import {
 
 const GRID_PADDING = 0;
 const GRID_TOP_PADDING = 0;
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
+const MIN_CELL_SIZE = 4;
 
 type PanState = {
   offsetX: number;
@@ -314,10 +315,11 @@ function calculateCellSize({
   const drawableHeight = Math.max(height - GRID_PADDING * 2, 120);
   const baseCellSize = Math.max(
     18,
-    Math.floor(Math.min(drawableWidth / floorWidth, drawableHeight / floorHeight)),
+    Math.min(drawableWidth / floorWidth, drawableHeight / floorHeight),
   );
 
-  return Math.max(14, Math.floor(baseCellSize * zoom));
+  // WHY: zoom 表示と実描画倍率を一致させるため、セルサイズの下限だけを残して連続的に縮小する。
+  return Math.max(MIN_CELL_SIZE, baseCellSize * zoom);
 }
 
 function drawGridBackground(
