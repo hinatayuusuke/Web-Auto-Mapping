@@ -112,6 +112,33 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:20 (Asia/Taipei) — 左右ペイン幅を縮小**
+
+### Summary
+- `Navigator` と `Workspace` の固定幅をさらに詰めた
+
+### Context / Goal
+- 中央の `MapCanvas` 領域を広げるため、左右ペインの占有幅をさらに削りたかった
+- 変更対象は 3 カラム grid の列幅だけに限定し、影響を小さく抑える
+
+### Changes
+- `lg` 時の左右ペイン幅を `300px` から `264px` へ変更した
+- `xl` 時の左右ペイン幅を `320px` から `280px` へ変更した
+
+### Files Touched
+- `src/App.tsx` — 3 カラム grid の左右列幅を縮小
+
+### Behavioral Impact
+- 左 `Navigator` と右 `Workspace` が以前より細くなり、中央のマップ表示領域が広がった
+- 操作仕様やスクロール構造は変わらない
+
+### Risk & Mitigation
+- Risk: 左右ペインが狭くなりすぎると、長いラベルや説明文が折り返しやすくなる
+- Mitigation: 今回は列幅のみを段階的に縮小し、必要なら後続で文言圧縮や非表示整理へ進める
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 15:49 (Asia/Taipei) — 1 ページ固定レイアウト実装案を追加**
 
 ### Summary
