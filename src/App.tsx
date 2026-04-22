@@ -6,7 +6,6 @@ import { createPersistedDocument, parsePersistedDocument, STORAGE_KEY } from './
 import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
 
-const FACINGS: Facing[] = ['north', 'east', 'south', 'west'];
 const AUTO_MAPPING_LEVELS: AutoMappingLevel[] = ['off', 'basic', 'corridor'];
 const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
 const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
@@ -24,6 +23,8 @@ type NoticeState = {
   message: string;
   tone: 'info' | 'success' | 'error';
 };
+
+type RelativeControlAction = 'forward' | 'turn-left' | 'turn-right' | 'turn-back';
 
 function App() {
   const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
@@ -65,6 +66,7 @@ function App() {
   const setViewport = useAppStore((state) => state.setViewport);
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
+  const currentFacing = selectedFloor?.player.facing ?? 'north';
 
   const selectedFloorStats = useMemo(
     () => (selectedFloor ? getFloorStats(selectedFloor) : null),
@@ -175,14 +177,20 @@ function App() {
         return;
       }
 
-      const nextFacing = getFacingFromKeyboardEvent(event);
+      const controlAction = getRelativeControlActionFromKeyboardEvent(event);
 
-      if (!nextFacing) {
+      if (!controlAction) {
         return;
       }
 
       event.preventDefault();
-      moveInDirection(nextFacing);
+
+      if (controlAction === 'forward') {
+        moveInDirection(currentFacing);
+        return;
+      }
+
+      setPlayerFacing(getFacingAfterTurn(currentFacing, controlAction));
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -191,11 +199,13 @@ function App() {
   }, [
     applyForwardEdgeShortcut,
     cycleSelectedCellIcon,
+    currentFacing,
     moveInDirection,
     placeSelectedIconAtCurrentCell,
     placeSelectedIconAtForwardCell,
     redo,
     removeCurrentCellIcon,
+    setPlayerFacing,
     toggleMode,
     undo,
   ]);
@@ -383,11 +393,12 @@ function App() {
               <PanelHeading
                 eyebrow="Keyboard"
                 title="Movement"
-                body="`W/A/S/D` または矢印キーで移動します。Map モードでは `wall` を越えず、未知セルには入りません。"
+                body="`W / ↑` で前進、`A / ←` と `D / →` で方向変更、`S / ↓` で後ろを向きます。"
               />
               <MovementPad
-                currentFacing={selectedFloor?.player.facing ?? 'north'}
-                onMove={moveInDirection}
+                currentFacing={currentFacing}
+                onForward={() => moveInDirection(currentFacing)}
+                onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
               />
             </section>
 
@@ -581,24 +592,6 @@ function App() {
 
             <section className="space-y-3">
               <PanelHeading
-                eyebrow="Facing"
-                title="Manual Turn"
-                body="移動せず向きだけ変えたい場合の確認用操作です。"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                {FACINGS.map((facing) => (
-                  <ActionButton
-                    key={facing}
-                    active={selectedFloor?.player.facing === facing}
-                    label={facing}
-                    onClick={() => setPlayerFacing(facing)}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <PanelHeading
                 eyebrow="Auto Mapping"
                 title="Completion Level"
                 body="Explore モードの移動時のみ効く設定です。Map 編集では自動変更しません。"
@@ -735,54 +728,64 @@ function ShortcutButton({ disabled = false, label, onClick }: ShortcutButtonProp
 
 type MovementPadProps = {
   currentFacing: Facing;
-  onMove: (facing: Facing) => void;
+  onForward: () => void;
+  onTurn: (action: Exclude<RelativeControlAction, 'forward'>) => void;
 };
 
-function MovementPad({ currentFacing, onMove }: MovementPadProps) {
+function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
   return (
     <div className="grid gap-2">
       <div className="flex justify-center">
-        <ActionButton
-          active={currentFacing === 'north'}
-          label="north"
-          onClick={() => onMove('north')}
-        />
+        <ActionButton active={false} label="forward" onClick={onForward} />
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <ActionButton active={currentFacing === 'west'} label="west" onClick={() => onMove('west')} />
+        <ActionButton active={false} label="turn left" onClick={() => onTurn('turn-left')} />
         <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-[var(--color-muted)]">
-          Move
+          Facing {currentFacing}
         </div>
-        <ActionButton active={currentFacing === 'east'} label="east" onClick={() => onMove('east')} />
+        <ActionButton active={false} label="turn right" onClick={() => onTurn('turn-right')} />
       </div>
       <div className="flex justify-center">
-        <ActionButton
-          active={currentFacing === 'south'}
-          label="south"
-          onClick={() => onMove('south')}
-        />
+        <ActionButton active={false} label="turn back" onClick={() => onTurn('turn-back')} />
       </div>
     </div>
   );
 }
 
-function getFacingFromKeyboardEvent(event: KeyboardEvent): Facing | null {
+function getRelativeControlActionFromKeyboardEvent(
+  event: KeyboardEvent,
+): RelativeControlAction | null {
   switch (event.key.toLowerCase()) {
     case 'w':
     case 'arrowup':
-      return 'north';
+      return 'forward';
     case 'd':
     case 'arrowright':
-      return 'east';
+      return 'turn-right';
     case 's':
     case 'arrowdown':
-      return 'south';
+      return 'turn-back';
     case 'a':
     case 'arrowleft':
-      return 'west';
+      return 'turn-left';
     default:
       return null;
   }
+}
+
+function getFacingAfterTurn(
+  facing: Facing,
+  action: Exclude<RelativeControlAction, 'forward'>,
+): Facing {
+  if (action === 'turn-back') {
+    return getFacingAfterTurn(getFacingAfterTurn(facing, 'turn-left'), 'turn-left');
+  }
+
+  const facings: Facing[] = ['north', 'east', 'south', 'west'];
+  const currentIndex = facings.indexOf(facing);
+  const offset = action === 'turn-right' ? 1 : -1;
+
+  return facings[(currentIndex + offset + facings.length) % facings.length];
 }
 
 function slugify(value: string) {
