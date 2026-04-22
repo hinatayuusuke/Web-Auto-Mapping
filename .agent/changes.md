@@ -139,6 +139,44 @@
 ### Tests / Verification
 - 未実施
 - 理由: 今回はドキュメント追加のみで、コード変更は行っていない
+**2026-04-22 16:09 (Asia/Taipei) — フラット化 UI 実装**
+
+### Summary
+- ボタン以外の重いカード装飾を削減し、線ベースの軽い UI へ寄せた
+
+### Context / Goal
+- `Doc/FlatChromeProposal.md` に沿って、1 ページ固定レイアウトを圧迫していたカード表現を減らす必要があった
+- ボタンや入力の操作性は維持しつつ、ヘッダー、ペイン、情報行、通知を軽量化する
+
+### Changes
+- ヘッダーの補助バッジとカード感を弱め、状態表示も箱より行に近い見え方へ変更した
+- `ShellPanel` の背景面、角丸、影を削り、区切り線ベースの軽い外枠へ変更した
+- `KeyValueRow` を箱型の情報カードから、`border-b` ベースの情報行へ変更した
+- `NoticeCard` を大きな面付き通知から左ボーダー主体の軽量通知へ変更した
+- 中央 Canvas セクションと Canvas 下部ステータスも、丸角カードから線主体の補助表示へ寄せた
+- 保存キー表示ボックスや中央ヘッダー内の寸法表示ボックスを簡素化した
+
+### Files Touched
+- `src/App.tsx` — ヘッダー、中央セクション、情報行、通知、補助表示のカード感を削減
+- `src/components/ShellPanel.tsx` — 左右ペインの外枠をフラット化
+- `src/components/MapCanvas.tsx` — Canvas 下部ステータスバーを線主体の表示へ変更
+
+### Behavioral Impact
+- アプリの操作仕様は変わらず、見た目だけが軽量化された
+- 同じ 1 ページ固定でも、左右ペインと中央の有効スペースが以前より広く見えるようになった
+- 非操作要素の主張が下がり、ボタンや入力へ視線が集まりやすくなった
+
+### Risk & Mitigation
+- Risk: フラット化で区切りが弱くなり、情報のまとまりが見えにくくなる
+- Mitigation: 各セクション見出しは維持し、情報行には `border-b`、通知には左ボーダーを残した
+- Risk: 中央 Canvas 周辺の囲いを落としすぎると作業領域の境界が曖昧になる
+- Mitigation: Canvas 本体の境界線と上部操作バーの区切りは維持した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright でヘッダー、左右ペイン、情報行、Canvas 下部表示のフラット化を確認
+- Console の既知エラーが `favicon.ico` 404 のみであることを確認
 **2026-04-22 15:58 (Asia/Taipei) — 1 ページ固定レイアウト実装**
 
 ### Summary
@@ -178,6 +216,33 @@
 - Playwright `eval` で `bodyScrollHeight === innerHeight` および `bodyOverflow === hidden` を確認
 - Playwright `eval` で左右 `aside` のスクロール領域が `overflowY: auto` かつ `scrollHeight > clientHeight` であることを確認
 - Console の既知エラーが `favicon.ico` 404 のみであることを確認
+**2026-04-22 16:05 (Asia/Taipei) — フラット化実装案を追加**
+
+### Summary
+- ボタン以外のカード装飾を削減する実装案を `Doc` に追加した
+
+### Context / Goal
+- 1 ページ固定レイアウトで、カード装飾が占有するスペースと視線コストを下げる必要があった
+- 実装前に、削る対象、残す対象、段階的な変更順を整理する
+
+### Changes
+- ヘッダー、ペイン、情報行、通知をフラット化する実装方針を文書化した
+- 「面から線へ置き換える」方針、優先順位、影響範囲、リスクを整理した
+
+### Files Touched
+- `Doc/FlatChromeProposal.md` — ボタン以外のカードデザイン削減に関する実装案を新規追加
+
+### Behavioral Impact
+- アプリ挙動自体は未変更
+- 次の UI 微調整で採る装飾削減方針が `Doc` から参照できるようになった
+
+### Risk & Mitigation
+- Risk: 実装前提が曖昧なままフラット化を進めると、区切りまで消して可読性を落としやすい
+- Mitigation: 文書内で「残すもの」と「削るもの」を分け、段階実装の順番を明記した
+
+### Tests / Verification
+- 未実施
+- 理由: 今回はドキュメント追加のみで、コード変更は行っていない
 **2026-04-22 15:34 (Asia/Taipei) — Phase 5 操作性強化実装**
 
 ### Summary

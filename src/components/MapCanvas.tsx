@@ -196,7 +196,7 @@ export function MapCanvas() {
   return (
     <div
       ref={frameRef}
-      className="relative h-full min-h-[360px] overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
+      className="relative h-full min-h-[360px] overflow-hidden border border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
     >
       <canvas
         ref={canvasRef}
@@ -209,7 +209,7 @@ export function MapCanvas() {
         onWheel={handleWheel}
       />
 
-      <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(9,15,24,0.78)] px-4 py-3 backdrop-blur">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 border-t border-[rgba(255,255,255,0.08)] bg-[rgba(9,15,24,0.82)] px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
             Canvas Status

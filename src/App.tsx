@@ -265,14 +265,14 @@ function App() {
       />
 
       <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col px-3 py-3 sm:px-4 lg:px-5">
-        <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-3">
+        <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-2">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
                   Web Auto Mapping
                 </h1>
-                <span className="rounded-full border border-[var(--color-border)] px-2 py-1 text-[10px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+                <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
                   One Page Layout
                 </span>
               </div>
@@ -405,7 +405,7 @@ function App() {
             </section>
           </ShellPanel>
 
-          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] lg:min-h-0">
+          <section className="flex min-h-[360px] min-w-0 flex-col overflow-hidden border border-[var(--color-border)] bg-transparent lg:min-h-0">
             <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--color-border)] px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
@@ -428,7 +428,7 @@ function App() {
                   onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
                 />
                 <ShortcutButton label="Reset View" onClick={resetViewport} />
-                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-3 py-3 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                <div className="px-1 py-3 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
                   {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
                 </div>
               </div>
@@ -470,7 +470,7 @@ function App() {
                 <ShortcutButton label="Save JSON" onClick={handleExport} />
                 <ShortcutButton label="Load JSON" onClick={handleImportClick} />
               </div>
-              <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
+              <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
                 <p>Auto save key: `{STORAGE_KEY}`</p>
                 <p>Auto save は状態更新ごとに localStorage へ書き込みます。</p>
               </div>
@@ -624,7 +624,7 @@ type StatusChipProps = {
 
 function StatusChip({ label, value }: StatusChipProps) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2">
+    <div className="border-b border-[var(--color-border)] px-1 py-2 last:border-b-0">
       <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{label}</p>
       <p className="mt-1 text-xs font-medium capitalize text-[var(--color-text-strong)] sm:text-sm">{value}</p>
     </div>
@@ -656,7 +656,7 @@ type KeyValueRowProps = {
 
 function KeyValueRow({ label, value }: KeyValueRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] py-2 last:border-b-0">
       <dt className="text-sm text-[var(--color-text-soft)]">{label}</dt>
       <dd className="text-sm font-medium capitalize text-[var(--color-text-strong)]">{value}</dd>
     </div>
@@ -668,13 +668,13 @@ type NoticeCardProps = NoticeState;
 function NoticeCard({ message, tone }: NoticeCardProps) {
   const toneClass =
     tone === 'success'
-      ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
+      ? 'border-emerald-400/60 text-emerald-100'
       : tone === 'error'
-        ? 'border-rose-400/30 bg-rose-500/10 text-rose-100'
-        : 'border-sky-400/30 bg-sky-500/10 text-sky-100';
+        ? 'border-rose-400/60 text-rose-100'
+        : 'border-sky-400/60 text-sky-100';
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${toneClass}`}>
+    <div className={`border-l-2 pl-3 text-sm leading-6 ${toneClass}`}>
       {message}
     </div>
   );
