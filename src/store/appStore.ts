@@ -62,6 +62,8 @@ type AppActions = {
   applyForwardEdgeShortcut: (intent: EdgeEditIntent) => void;
   cycleSelectedCellIcon: (direction: 1 | -1) => void;
   duplicateSelectedFloor: () => void;
+  expandSelectedFloorLeft: (amount?: number) => void;
+  expandSelectedFloorUp: (amount?: number) => void;
   expandSelectedFloorDown: (amount?: number) => void;
   expandSelectedFloorRight: (amount?: number) => void;
   loadPersistedDocument: (document: PersistedDocument) => boolean;
@@ -179,6 +181,18 @@ export const useAppStore = create<AppStore>((set) => ({
           selectedFloorId: duplicate.id,
         };
       }),
+    ),
+  expandSelectedFloorLeft: (amount = GRID_EXPAND_STEP) =>
+    set((state) =>
+      applyTrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, (floor) => expandFloorGrid(floor, { left: amount })),
+      })),
+    ),
+  expandSelectedFloorUp: (amount = GRID_EXPAND_STEP) =>
+    set((state) =>
+      applyTrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, (floor) => expandFloorGrid(floor, { up: amount })),
+      })),
     ),
   expandSelectedFloorDown: (amount = GRID_EXPAND_STEP) =>
     set((state) =>

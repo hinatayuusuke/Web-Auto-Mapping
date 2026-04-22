@@ -42,6 +42,8 @@ function App() {
   const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
   const cycleSelectedCellIcon = useAppStore((state) => state.cycleSelectedCellIcon);
   const duplicateSelectedFloor = useAppStore((state) => state.duplicateSelectedFloor);
+  const expandSelectedFloorLeft = useAppStore((state) => state.expandSelectedFloorLeft);
+  const expandSelectedFloorUp = useAppStore((state) => state.expandSelectedFloorUp);
   const expandSelectedFloorDown = useAppStore((state) => state.expandSelectedFloorDown);
   const expandSelectedFloorRight = useAppStore((state) => state.expandSelectedFloorRight);
   const loadPersistedDocument = useAppStore((state) => state.loadPersistedDocument);
@@ -366,10 +368,12 @@ function App() {
             <section className="space-y-3">
               <PanelHeading
                 eyebrow="Grid"
-                title="Expand Right / Down"
-                body="端まで到達したら右または下へ 4 マスずつ拡張します。既存座標はずれません。"
+                title="Expand Grid"
+                body="右 / 下は末尾へ、上 / 左は既存要素を平行移動して 4 マスずつ拡張します。"
               />
               <div className="grid grid-cols-2 gap-2">
+                <ShortcutButton label="+4 Left" onClick={() => expandSelectedFloorLeft()} />
+                <ShortcutButton label="+4 Up" onClick={() => expandSelectedFloorUp()} />
                 <ShortcutButton label="+4 Right" onClick={() => expandSelectedFloorRight()} />
                 <ShortcutButton label="+4 Down" onClick={() => expandSelectedFloorDown()} />
               </div>

@@ -112,6 +112,37 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 16:46 (Asia/Taipei) — 上 / 左グリッド拡張を追加**
+
+### Summary
+- 既存の右 / 下拡張に加えて、上 / 左へも 4 マス単位で拡張できるようにした
+
+### Context / Goal
+- グリッド拡張を右 / 下だけでなく上 / 左にも広げ、探索や編集の余白を四方向で確保したかった
+- 上 / 左拡張時もプレイヤー、アイコン、境界座標の整合を崩さず扱う必要があった
+
+### Changes
+- `expandFloorGrid` を四方向対応に拡張し、上 / 左追加時は既存要素を平行移動するようにした
+- プレイヤー位置、セルアイコン、エッジアイコンの座標と ID を拡張量に応じて更新するようにした
+- store に `expandSelectedFloorLeft` / `expandSelectedFloorUp` を追加した
+- Navigator の Grid セクションを `Expand Grid` に更新し、`+4 Left` / `+4 Up` ボタンを追加した
+
+### Files Touched
+- `src/lib/mapModel.ts` — 四方向拡張と、上 / 左拡張時の座標シフト処理を追加
+- `src/store/appStore.ts` — 上 / 左拡張 action を追加
+- `src/App.tsx` — Grid 拡張 UI を 4 方向ボタンに更新
+
+### Behavioral Impact
+- 選択中フロアを上 / 左 / 右 / 下の 4 方向へ 4 マスずつ拡張できるようになった
+- 上 / 左拡張後もプレイヤー位置と配置済みアイコンが見た目の位置を維持したまま新座標系へ移る
+
+### Risk & Mitigation
+- Risk: 上 / 左拡張では既存座標がずれるため、関連オブジェクトのシフト漏れがあると保存データ不整合になりやすい
+- Mitigation: `expandFloorGrid` 内でプレイヤー、セルアイコン、エッジアイコンを一括で更新し、ID も同時に再生成した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 16:41 (Asia/Taipei) — Zoom 25% が実描画へ反映されない問題を修正**
 
 ### Summary

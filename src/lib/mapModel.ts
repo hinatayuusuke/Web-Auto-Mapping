@@ -67,37 +67,86 @@ export function createExploreSeedFloorState(
 export function expandFloorGrid(
   floor: FloorState,
   expansion: {
+    left?: number;
+    up?: number;
     right?: number;
     down?: number;
   },
 ): FloorState {
+  const left = Math.max(0, Math.floor(expansion.left ?? 0));
+  const up = Math.max(0, Math.floor(expansion.up ?? 0));
   const right = Math.max(0, Math.floor(expansion.right ?? 0));
   const down = Math.max(0, Math.floor(expansion.down ?? 0));
 
-  if (right === 0 && down === 0) {
+  if (left === 0 && up === 0 && right === 0 && down === 0) {
     return floor;
   }
 
-  const width = floor.width + right;
-  const height = floor.height + down;
+  const width = floor.width + left + right;
+  const height = floor.height + up + down;
 
   return {
     ...floor,
     width,
     height,
     cells: [
-      ...floor.cells.map((row) => [...row, ...createRow(right, UNKNOWN_CELL)]),
+      ...Array.from({ length: up }, () => createRow(width, UNKNOWN_CELL)),
+      ...floor.cells.map((row) => [
+        ...createRow(left, UNKNOWN_CELL),
+        ...row,
+        ...createRow(right, UNKNOWN_CELL),
+      ]),
       ...Array.from({ length: down }, () => createRow(width, UNKNOWN_CELL)),
     ],
-    // WHY: 右 / 下方向拡張では既存座標をずらさず、末尾だけ unknown を足して履歴や保存データの整合を保つ。
+    // WHY: 上 / 左方向拡張では既存セルが新しい座標系へ平行移動するため、境界線とアイコンも同量だけずらして整合を保つ。
     hEdges: [
-      ...floor.hEdges.map((row) => [...row, ...createRow(right, UNKNOWN_EDGE)]),
+      ...Array.from({ length: up }, () => createRow(width, UNKNOWN_EDGE)),
+      ...floor.hEdges.map((row) => [
+        ...createRow(left, UNKNOWN_EDGE),
+        ...row,
+        ...createRow(right, UNKNOWN_EDGE),
+      ]),
       ...Array.from({ length: down }, () => createRow(width, UNKNOWN_EDGE)),
     ],
     vEdges: [
-      ...floor.vEdges.map((row) => [...row, ...createRow(right, UNKNOWN_EDGE)]),
+      ...Array.from({ length: up }, () => createRow(width + 1, UNKNOWN_EDGE)),
+      ...floor.vEdges.map((row) => [
+        ...createRow(left, UNKNOWN_EDGE),
+        ...row,
+        ...createRow(right, UNKNOWN_EDGE),
+      ]),
       ...Array.from({ length: down }, () => createRow(width + 1, UNKNOWN_EDGE)),
     ],
+    player: {
+      ...floor.player,
+      x: floor.player.x + left,
+      y: floor.player.y + up,
+    },
+    cellIcons: floor.cellIcons.map((icon) => {
+      const position = {
+        x: icon.position.x + left,
+        y: icon.position.y + up,
+      };
+
+      return {
+        ...icon,
+        id: createCellIconId(icon.kind, position),
+        position,
+      };
+    }),
+    edgeIcons: floor.edgeIcons.map((icon) => {
+      const edge = {
+        ...icon.edge,
+        x: icon.edge.x + left,
+        y: icon.edge.y + up,
+      };
+
+      return {
+        ...icon,
+        id: createEdgeIconId(icon.kind, edge),
+        edge,
+      };
+    }),
   };
 }
 
@@ -309,7 +358,7 @@ export function placeCellIconAt(
     cellIcons: [
       ...nextFloor.cellIcons.filter((icon) => !isSameCell(icon.position, coordinate)),
       {
-        id: `cell-${kind}-${coordinate.x}-${coordinate.y}`,
+        id: createCellIconId(kind, coordinate),
         kind,
         position: coordinate,
       },
@@ -601,12 +650,20 @@ function upsertEdgeIconAt(
     edgeIcons: [
       ...floor.edgeIcons.filter((icon) => !isSameEdge(icon.edge, coordinate)),
       {
-        id: `edge-${kind}-${coordinate.axis}-${coordinate.x}-${coordinate.y}`,
+        id: createEdgeIconId(kind, coordinate),
         kind,
         edge: coordinate,
       },
     ],
   };
+}
+
+function createCellIconId(kind: CellIconKind, position: CellCoordinate): string {
+  return `cell-${kind}-${position.x}-${position.y}`;
+}
+
+function createEdgeIconId(kind: EdgeIconKind, edge: EdgeCoordinate): string {
+  return `edge-${kind}-${edge.axis}-${edge.x}-${edge.y}`;
 }
 
 function removeEdgeIconsAt(
