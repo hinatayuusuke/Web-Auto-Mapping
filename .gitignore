@@ -72,6 +72,8 @@ Reference/
 dist/
 coverage/
 node_modules/
+.npm-cache/
+*.tsbuildinfo
 
 # User-specific files
 *.rsuser
