@@ -1,5 +1,5 @@
-import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useSelectedFloor, useAppStore } from '../store/appStore';
+import { MouseEvent, WheelEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppStore, useSelectedFloor } from '../store/appStore';
 import {
   EdgeAxis,
   Facing,
@@ -9,14 +9,25 @@ import {
 } from '../types/map';
 
 const GRID_PADDING = 24;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
+
+type PanState = {
+  offsetX: number;
+  offsetY: number;
+  startX: number;
+  startY: number;
+};
 
 export function MapCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
+  const panStateRef = useRef<PanState | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const mode = useAppStore((state) => state.mode);
-  const selectedFloor = useSelectedFloor();
   const viewport = useAppStore((state) => state.viewport);
+  const setViewport = useAppStore((state) => state.setViewport);
+  const selectedFloor = useSelectedFloor();
   const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
   const applyCanvasSecondaryInteraction = useAppStore(
     (state) => state.applyCanvasSecondaryInteraction,
@@ -100,6 +111,17 @@ export function MapCanvas() {
       return;
     }
 
+    if (shouldStartPan(event)) {
+      event.preventDefault();
+      panStateRef.current = {
+        offsetX: viewport.offsetX,
+        offsetY: viewport.offsetY,
+        startX: event.clientX,
+        startY: event.clientY,
+      };
+      return;
+    }
+
     const target = getInteractionTarget(event, selectedFloor, layout);
 
     if (!target) {
@@ -117,6 +139,59 @@ export function MapCanvas() {
     }
   };
 
+  const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
+    const panState = panStateRef.current;
+
+    if (!panState) {
+      return;
+    }
+
+    event.preventDefault();
+    setViewport({
+      offsetX: panState.offsetX + (event.clientX - panState.startX),
+      offsetY: panState.offsetY + (event.clientY - panState.startY),
+    });
+  };
+
+  const handleMouseUp = () => {
+    panStateRef.current = null;
+  };
+
+  const handleWheel = (event: WheelEvent<HTMLCanvasElement>) => {
+    if (!selectedFloor || !layout) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextZoom = clampZoom(viewport.zoom + (event.deltaY < 0 ? 0.12 : -0.12));
+
+    if (nextZoom === viewport.zoom) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    const cellX = (pointerX - layout.originX) / layout.cellSize;
+    const cellY = (pointerY - layout.originY) / layout.cellSize;
+    const nextCellSize = calculateCellSize({
+      width: size.width,
+      height: size.height,
+      floorWidth: selectedFloor.width,
+      floorHeight: selectedFloor.height,
+      zoom: nextZoom,
+    });
+    const centeredOriginX = Math.floor((size.width - selectedFloor.width * nextCellSize) / 2);
+    const centeredOriginY = Math.floor((size.height - selectedFloor.height * nextCellSize) / 2);
+
+    setViewport({
+      zoom: nextZoom,
+      offsetX: Math.round(pointerX - centeredOriginX - cellX * nextCellSize),
+      offsetY: Math.round(pointerY - centeredOriginY - cellY * nextCellSize),
+    });
+  };
+
   return (
     <div
       ref={frameRef}
@@ -127,14 +202,25 @@ export function MapCanvas() {
         className="block h-full w-full"
         onContextMenu={(event) => event.preventDefault()}
         onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onWheel={handleWheel}
       />
 
       <div className="pointer-events-none absolute inset-x-4 bottom-4 rounded-2xl border border-[rgba(255,255,255,0.06)] bg-[rgba(9,15,24,0.78)] px-4 py-3 backdrop-blur">
-        <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">Canvas Status</p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+            Canvas Status
+          </p>
+          <p className="text-xs text-[var(--color-text-soft)]">
+            Zoom {Math.round(viewport.zoom * 100)}%
+          </p>
+        </div>
         <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
           {mode === 'map'
-            ? 'Map モードでは左クリックで配置、右クリックで削除します。セル中心はセル、境界近くはエッジとして解釈します。'
-            : 'Explore モードでは移動に応じて床と通路が更新されます。Canvas クリック編集は Map モードで有効です。'}
+            ? 'Map モードでは左クリックで配置、右クリックで削除します。ホイールでズーム、Alt+drag または middle drag でパンできます。'
+            : 'Explore モードでは移動で床と通路が更新されます。ホイールでズーム、Alt+drag または middle drag で表示位置を調整できます。'}
         </p>
       </div>
     </div>
@@ -171,6 +257,14 @@ type LayoutArgs = {
   viewport: ViewportState;
 };
 
+type CellSizeArgs = {
+  width: number;
+  height: number;
+  floorWidth: number;
+  floorHeight: number;
+  zoom: number;
+};
+
 type GridLayout = {
   cellSize: number;
   gridHeight: number;
@@ -186,13 +280,13 @@ function calculateLayout({
   floorHeight,
   viewport,
 }: LayoutArgs): GridLayout {
-  const drawableWidth = Math.max(width - GRID_PADDING * 2, 120);
-  const drawableHeight = Math.max(height - GRID_PADDING * 2, 120);
-  const baseCellSize = Math.max(
-    18,
-    Math.floor(Math.min(drawableWidth / floorWidth, drawableHeight / floorHeight)),
-  );
-  const cellSize = Math.max(14, Math.floor(baseCellSize * viewport.zoom));
+  const cellSize = calculateCellSize({
+    width,
+    height,
+    floorWidth,
+    floorHeight,
+    zoom: viewport.zoom,
+  });
   const gridWidth = floorWidth * cellSize;
   const gridHeight = floorHeight * cellSize;
   const originX = Math.floor((width - gridWidth) / 2 + viewport.offsetX);
@@ -205,6 +299,23 @@ function calculateLayout({
     originX,
     originY,
   };
+}
+
+function calculateCellSize({
+  width,
+  height,
+  floorWidth,
+  floorHeight,
+  zoom,
+}: CellSizeArgs) {
+  const drawableWidth = Math.max(width - GRID_PADDING * 2, 120);
+  const drawableHeight = Math.max(height - GRID_PADDING * 2, 120);
+  const baseCellSize = Math.max(
+    18,
+    Math.floor(Math.min(drawableWidth / floorWidth, drawableHeight / floorHeight)),
+  );
+
+  return Math.max(14, Math.floor(baseCellSize * zoom));
 }
 
 function drawGridBackground(
@@ -501,4 +612,12 @@ function getEdgeIconGlyph(kind: FloorState['edgeIcons'][number]['kind']) {
     case 'secret-door':
       return '?';
   }
+}
+
+function shouldStartPan(event: MouseEvent<HTMLCanvasElement>) {
+  return event.button === 1 || (event.button === 0 && event.altKey);
+}
+
+function clampZoom(value: number) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))));
 }

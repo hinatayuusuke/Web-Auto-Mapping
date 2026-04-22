@@ -64,6 +64,43 @@ export function createExploreSeedFloorState(
   return floor;
 }
 
+export function expandFloorGrid(
+  floor: FloorState,
+  expansion: {
+    right?: number;
+    down?: number;
+  },
+): FloorState {
+  const right = Math.max(0, Math.floor(expansion.right ?? 0));
+  const down = Math.max(0, Math.floor(expansion.down ?? 0));
+
+  if (right === 0 && down === 0) {
+    return floor;
+  }
+
+  const width = floor.width + right;
+  const height = floor.height + down;
+
+  return {
+    ...floor,
+    width,
+    height,
+    cells: [
+      ...floor.cells.map((row) => [...row, ...createRow(right, UNKNOWN_CELL)]),
+      ...Array.from({ length: down }, () => createRow(width, UNKNOWN_CELL)),
+    ],
+    // WHY: 右 / 下方向拡張では既存座標をずらさず、末尾だけ unknown を足して履歴や保存データの整合を保つ。
+    hEdges: [
+      ...floor.hEdges.map((row) => [...row, ...createRow(right, UNKNOWN_EDGE)]),
+      ...Array.from({ length: down }, () => createRow(width, UNKNOWN_EDGE)),
+    ],
+    vEdges: [
+      ...floor.vEdges.map((row) => [...row, ...createRow(right, UNKNOWN_EDGE)]),
+      ...Array.from({ length: down }, () => createRow(width + 1, UNKNOWN_EDGE)),
+    ],
+  };
+}
+
 export function updateFloorCellState(
   floor: FloorState,
   coordinate: CellCoordinate,
@@ -597,6 +634,10 @@ function getVectorForFacing(facing: Facing) {
 
 function createMatrix<T>(height: number, width: number, initialValue: T): T[][] {
   return Array.from({ length: height }, () => Array.from({ length: width }, () => initialValue));
+}
+
+function createRow<T>(width: number, initialValue: T): T[] {
+  return Array.from({ length: width }, () => initialValue);
 }
 
 function isCellInBounds(floor: FloorState, coordinate: CellCoordinate): boolean {

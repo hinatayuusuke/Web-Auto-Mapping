@@ -112,6 +112,46 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 15:34 (Asia/Taipei) — Phase 5 操作性強化実装**
+
+### Summary
+- Undo / Redo、ズーム / パン、右 / 下拡張、状態表示と通知 UI を追加した
+
+### Context / Goal
+- `Doc/Roadmap.md` の Phase 5 を実装し、長時間のマッピング作業で誤操作から復帰しやすくする必要があった
+- グリッド不足時の継続作業、viewport 調整、保存 / 読込まわりの状態把握を同時に改善する
+
+### Changes
+- 履歴スタックを store に追加し、移動、編集、階層操作、グリッド拡張に対する Undo / Redo を実装した
+- 履歴スナップショットは `structuredClone` で独立コピーし、巻き戻し時の参照共有による破損を防いだ
+- 選択中フロアの右 / 下方向拡張を `+4` 単位で行えるようにし、既存座標を維持したまま `unknown` を末尾へ追加する実装を入れた
+- Canvas にホイールズームと `Alt+drag` / middle drag によるパンを追加した
+- UI を Phase 5 向けに更新し、履歴ボタン、viewport 操作、選択中ツール / アイコン表示、空階層 / 保存成功 / 読込失敗の通知表示を追加した
+- キーボードショートカットへ `Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` を追加した
+
+### Files Touched
+- `src/store/appStore.ts` — 履歴管理、Undo / Redo、右 / 下拡張、viewport reset を追加
+- `src/lib/mapModel.ts` — 右 / 下方向のグリッド拡張ロジックを追加
+- `src/components/MapCanvas.tsx` — ホイールズーム、`Alt+drag` / middle drag パン、zoom 表示を追加
+- `src/App.tsx` — Phase 5 の UI、通知表示、履歴 / viewport 操作、拡張ボタン、redo 系ショートカットを追加
+
+### Behavioral Impact
+- 編集や移動、階層操作、グリッド拡張の誤操作を Undo / Redo で戻せるようになった
+- グリッド端で止まっても右 / 下へ拡張して作業を継続できるようになった
+- Canvas 表示をズーム / パンで調整でき、選択中ツールやアイコン、保存 / 読込結果を画面上で把握しやすくなった
+
+### Risk & Mitigation
+- Risk: 履歴スナップショットが状態参照を共有すると redo 復元が壊れる
+- Mitigation: 履歴投入時と復元時の両方で `structuredClone` を使い、スナップショットを独立させた
+- Risk: パン操作が左クリック編集と衝突すると編集誤爆が増える
+- Mitigation: パンは `Alt+drag` または middle drag に限定し、通常の左クリック編集導線を維持した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright CLI で `+4 Right` → `Undo` → `Redo` の順に操作し、`16 x 16` / `20 x 16` の切り替わりを確認
+- Playwright CLI で `Zoom +` とヘッダー / Canvas の zoom 表示反映を確認
+- Console の既知エラーが `favicon.ico` 404 のみであることを確認
 **2026-04-22 15:08 (Asia/Taipei) — Phase 4 階層管理と保存再開実装**
 
 ### Summary

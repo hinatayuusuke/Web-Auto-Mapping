@@ -18,28 +18,41 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'edge unknown', value: 'edge-unknown' },
   { label: 'cell icon', value: 'cell-icon' },
 ];
+const VIEWPORT_PAN_STEP = 64;
+
+type NoticeState = {
+  message: string;
+  tone: 'info' | 'success' | 'error';
+};
 
 function App() {
-  const [ioMessage, setIoMessage] = useState<string | null>(null);
+  const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autoMapping = useAppStore((state) => state.autoMapping);
+  const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
+  const canUndo = useAppStore((state) => state.history.undoStack.length > 0);
   const floors = useAppStore((state) => state.floors);
   const mapTitle = useAppStore((state) => state.mapTitle);
   const mode = useAppStore((state) => state.mode);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedFloor = useSelectedFloor();
-  const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
+  const viewport = useAppStore((state) => state.viewport);
   const addFloor = useAppStore((state) => state.addFloor);
+  const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
   const cycleSelectedCellIcon = useAppStore((state) => state.cycleSelectedCellIcon);
   const duplicateSelectedFloor = useAppStore((state) => state.duplicateSelectedFloor);
+  const expandSelectedFloorDown = useAppStore((state) => state.expandSelectedFloorDown);
+  const expandSelectedFloorRight = useAppStore((state) => state.expandSelectedFloorRight);
   const loadPersistedDocument = useAppStore((state) => state.loadPersistedDocument);
   const moveInDirection = useAppStore((state) => state.moveInDirection);
   const placeSelectedIconAtCurrentCell = useAppStore((state) => state.placeSelectedIconAtCurrentCell);
   const placeSelectedIconAtForwardCell = useAppStore((state) => state.placeSelectedIconAtForwardCell);
+  const redo = useAppStore((state) => state.redo);
   const removeCurrentCellIcon = useAppStore((state) => state.removeCurrentCellIcon);
   const removeFloor = useAppStore((state) => state.removeFloor);
   const renameFloor = useAppStore((state) => state.renameFloor);
+  const resetViewport = useAppStore((state) => state.resetViewport);
   const setAutoMapping = useAppStore((state) => state.setAutoMapping);
   const setMapTitle = useAppStore((state) => state.setMapTitle);
   const setMode = useAppStore((state) => state.setMode);
@@ -47,12 +60,31 @@ function App() {
   const setSelectedCellIconKind = useAppStore((state) => state.setSelectedCellIconKind);
   const setSelectedFloor = useAppStore((state) => state.setSelectedFloor);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
+  const setViewport = useAppStore((state) => state.setViewport);
   const toggleMode = useAppStore((state) => state.toggleMode);
+  const undo = useAppStore((state) => state.undo);
 
   const selectedFloorStats = useMemo(
     () => (selectedFloor ? getFloorStats(selectedFloor) : null),
     [selectedFloor],
   );
+  const mapStateNotice = useMemo<NoticeState | null>(() => {
+    if (!selectedFloor) {
+      return {
+        tone: 'error',
+        message: '選択中の階層が見つかりません。保存データを読み直してください。',
+      };
+    }
+
+    if ((selectedFloorStats?.knownCells ?? 0) === 0) {
+      return {
+        tone: 'info',
+        message: '空の階層です。Explore で移動するか、Map モードで floor を配置して開始してください。',
+      };
+    }
+
+    return null;
+  }, [selectedFloor, selectedFloorStats]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -65,6 +97,23 @@ function App() {
           target.tagName === 'TEXTAREA' ||
           target.tagName === 'SELECT')
       ) {
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        redo();
         return;
       }
 
@@ -143,8 +192,10 @@ function App() {
     moveInDirection,
     placeSelectedIconAtCurrentCell,
     placeSelectedIconAtForwardCell,
+    redo,
     removeCurrentCellIcon,
     toggleMode,
+    undo,
   ]);
 
   const handleExport = () => {
@@ -159,7 +210,10 @@ function App() {
     anchor.download = `${slugify(documentState.title)}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-    setIoMessage('JSON を書き出しました。');
+    setIoNotice({
+      tone: 'success',
+      message: 'JSON を書き出しました。',
+    });
   };
 
   const handleImportClick = () => {
@@ -180,14 +234,23 @@ function App() {
       const parsed = parsePersistedDocument(JSON.parse(text));
 
       if (!parsed) {
-        setIoMessage('JSON の形式が不正です。');
+        setIoNotice({
+          tone: 'error',
+          message: 'JSON の形式が不正です。',
+        });
         return;
       }
 
       const loaded = loadPersistedDocument(parsed);
-      setIoMessage(loaded ? 'JSON を読み込みました。' : 'JSON の読込に失敗しました。');
+      setIoNotice({
+        tone: loaded ? 'success' : 'error',
+        message: loaded ? 'JSON を読み込みました。' : 'JSON の読込に失敗しました。',
+      });
     } catch {
-      setIoMessage('JSON の読込に失敗しました。');
+      setIoNotice({
+        tone: 'error',
+        message: 'JSON の読込に失敗しました。',
+      });
     }
   };
 
@@ -206,24 +269,25 @@ function App() {
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-[0.32em] text-[var(--color-muted)]">
-                Phase 4 Floors Persistence Resume
+                Phase 5 Workflow Resilience
               </p>
               <div>
                 <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
                   Web Auto Mapping
                 </h1>
                 <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--color-text-soft)]">
-                  階層の追加 / 複製 / 削除、JSON 保存 / 読込、localStorage への自動保存と再開を追加しました。
+                  Undo / Redo、ズーム / パン、右 / 下拡張、状態表示を追加し、長時間のマッピング作業を続けやすくしました。
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-5">
+            <div className="grid gap-2 sm:grid-cols-6">
               <StatusChip label="Mode" value={mode} />
               <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
               <StatusChip label="Auto Map" value={autoMapping} />
               <StatusChip label="Tool" value={selectedTool} />
-              <StatusChip label="Known Cells" value={`${selectedFloorStats?.knownCells ?? 0}`} />
+              <StatusChip label="Icon" value={selectedCellIconKind} />
+              <StatusChip label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
             </div>
           </div>
         </header>
@@ -231,7 +295,7 @@ function App() {
         <main className="grid flex-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_320px]">
           <ShellPanel
             title="Navigator"
-            description="探索操作と階層一覧をまとめた左ペイン。"
+            description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
           >
             <section className="space-y-3">
               <PanelHeading
@@ -253,7 +317,7 @@ function App() {
               <PanelHeading
                 eyebrow="Floors"
                 title="Floor List"
-                body="各階層は独立した `cells / edges / icons` を持ちます。"
+                body="各階層は独立した `cells / edges / icons` を持ちます。削除後も Undo で戻せます。"
               />
               <div className="grid gap-2">
                 {floors.map((floor) => (
@@ -284,6 +348,7 @@ function App() {
                 <ShortcutButton
                   label="Delete"
                   onClick={() => selectedFloor && removeFloor(selectedFloor.id)}
+                  disabled={!selectedFloor}
                 />
               </div>
               {selectedFloor ? (
@@ -296,6 +361,18 @@ function App() {
                   />
                 </label>
               ) : null}
+            </section>
+
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="Grid"
+                title="Expand Right / Down"
+                body="端まで到達したら右または下へ 4 マスずつ拡張します。既存座標はずれません。"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <ShortcutButton label="+4 Right" onClick={() => expandSelectedFloorRight()} />
+                <ShortcutButton label="+4 Down" onClick={() => expandSelectedFloorDown()} />
+              </div>
             </section>
 
             <section className="space-y-3">
@@ -329,7 +406,7 @@ function App() {
           </ShellPanel>
 
           <section className="flex min-h-[420px] flex-col rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] px-3 py-3">
+            <div className="flex flex-col gap-3 border-b border-[var(--color-border)] px-3 py-3 xl:flex-row xl:items-center xl:justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
                   Map Canvas
@@ -338,8 +415,22 @@ function App() {
                   Floor Workspace
                 </h2>
               </div>
-              <div className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-3 py-1 text-xs text-[var(--color-text-soft)]">
-                {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0} grid
+
+              <div className="grid gap-2 sm:grid-cols-6">
+                <ShortcutButton label="Undo" onClick={undo} disabled={!canUndo} />
+                <ShortcutButton label="Redo" onClick={redo} disabled={!canRedo} />
+                <ShortcutButton
+                  label="Zoom -"
+                  onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
+                />
+                <ShortcutButton
+                  label="Zoom +"
+                  onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
+                />
+                <ShortcutButton label="Reset View" onClick={resetViewport} />
+                <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-strong)] px-3 py-3 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
+                  {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
+                </div>
               </div>
             </div>
 
@@ -350,8 +441,25 @@ function App() {
 
           <ShellPanel
             title="Workspace"
-            description="保存 / 読込と編集設定をまとめた右ペイン。"
+            description="保存 / 読込、履歴、viewport、編集設定をまとめた右ペイン。"
           >
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="State"
+                title="Current Status"
+                body="選択中のツール、アイコン、階層状態をここで見失わないようにします。"
+              />
+              <div className="grid gap-2">
+                <KeyValueRow label="Selected Tool" value={selectedTool} />
+                <KeyValueRow label="Selected Icon" value={selectedCellIconKind} />
+                <KeyValueRow label="Current Floor" value={selectedFloor?.name ?? 'N/A'} />
+                <KeyValueRow label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
+              </div>
+              {mapStateNotice ? (
+                <NoticeCard message={mapStateNotice.message} tone={mapStateNotice.tone} />
+              ) : null}
+            </section>
+
             <section className="space-y-3">
               <PanelHeading
                 eyebrow="Persistence"
@@ -364,7 +472,36 @@ function App() {
               </div>
               <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
                 <p>Auto save key: `{STORAGE_KEY}`</p>
-                <p>{ioMessage ?? 'Auto save は状態更新ごとに localStorage へ書き込みます。'}</p>
+                <p>Auto save は状態更新ごとに localStorage へ書き込みます。</p>
+              </div>
+              {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
+            </section>
+
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="History"
+                title="Undo / Redo"
+                body="`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` に対応します。編集、移動、階層操作、グリッド拡張を巻き戻せます。"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <ActionButton active={canUndo} label="Undo" onClick={undo} disabled={!canUndo} />
+                <ActionButton active={canRedo} label="Redo" onClick={redo} disabled={!canRedo} />
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <PanelHeading
+                eyebrow="Viewport"
+                title="Zoom / Pan"
+                body="ホイールでズーム、Canvas 上では Alt+drag または middle drag でパンできます。ボタンからも調整できます。"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <ActionButton active={false} label="Left" onClick={() => setViewport({ offsetX: viewport.offsetX - VIEWPORT_PAN_STEP })} />
+                <ActionButton active={false} label="Center" onClick={resetViewport} />
+                <ActionButton active={false} label="Right" onClick={() => setViewport({ offsetX: viewport.offsetX + VIEWPORT_PAN_STEP })} />
+                <ActionButton active={false} label="Up" onClick={() => setViewport({ offsetY: viewport.offsetY - VIEWPORT_PAN_STEP })} />
+                <ActionButton active={false} label="Zoom -" onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })} />
+                <ActionButton active={false} label="Down" onClick={() => setViewport({ offsetY: viewport.offsetY + VIEWPORT_PAN_STEP })} />
               </div>
             </section>
 
@@ -406,7 +543,7 @@ function App() {
               <PanelHeading
                 eyebrow="Mouse"
                 title="Edit Tool"
-                body="左クリックで配置、右クリックで削除です。セル中心を押すとセル、境界近くを押すとエッジを編集します。"
+                body="左クリックで配置、右クリックで削除です。セル中心はセル、境界近くはエッジとして解釈します。"
               />
               <div className="grid gap-2">
                 {EDIT_TOOL_OPTIONS.map((tool) => (
@@ -526,21 +663,42 @@ function KeyValueRow({ label, value }: KeyValueRowProps) {
   );
 }
 
+type NoticeCardProps = NoticeState;
+
+function NoticeCard({ message, tone }: NoticeCardProps) {
+  const toneClass =
+    tone === 'success'
+      ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
+      : tone === 'error'
+        ? 'border-rose-400/30 bg-rose-500/10 text-rose-100'
+        : 'border-sky-400/30 bg-sky-500/10 text-sky-100';
+
+  return (
+    <div className={`rounded-2xl border px-4 py-3 text-sm leading-6 ${toneClass}`}>
+      {message}
+    </div>
+  );
+}
+
 type ActionButtonProps = {
   active: boolean;
+  disabled?: boolean;
   label: string;
   onClick: () => void;
 };
 
-function ActionButton({ active, label, onClick }: ActionButtonProps) {
+function ActionButton({ active, disabled = false, label, onClick }: ActionButtonProps) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       className={`rounded-2xl border px-4 py-3 text-sm font-medium capitalize transition ${
-        active
-          ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)]'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
+        disabled
+          ? 'cursor-not-allowed border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-muted)]'
+          : active
+            ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)]'
+            : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
       }`}
     >
       {label}
@@ -549,16 +707,22 @@ function ActionButton({ active, label, onClick }: ActionButtonProps) {
 }
 
 type ShortcutButtonProps = {
+  disabled?: boolean;
   label: string;
   onClick: () => void;
 };
 
-function ShortcutButton({ label, onClick }: ShortcutButtonProps) {
+function ShortcutButton({ disabled = false, label, onClick }: ShortcutButtonProps) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
-      className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm font-medium text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]"
+      className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+        disabled
+          ? 'cursor-not-allowed border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-muted)]'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
+      }`}
     >
       {label}
     </button>
