@@ -112,6 +112,34 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 17:03 (Asia/Taipei) — ドア表示を赤い切れ壁線へ変更**
+
+### Summary
+- ドアの境界表示を、中央に開口を持つ赤い壁線へ変更した
+
+### Context / Goal
+- 既存のドアはエッジ上の丸アイコン表示で、壁や通路との差分が一瞬で読み取りにくかった
+- ドアを「境界そのものの状態」として見せ、壁線ベースで認識しやすくしたかった
+
+### Changes
+- ドアを持つエッジだけ専用描画へ切り替え、中央を抜いた赤い線分 2 本で描くようにした
+- ドア付きエッジでは通常の `open` 線を描かず、青線との重なりを避けるようにした
+- 既存の丸アイコン + グリフによる `door` 描画をスキップし、`secret-door` と `one-way` は従来表示のまま残した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — ドア付きエッジの専用描画を追加し、`door` の丸アイコン表示を停止
+
+### Behavioral Impact
+- ドアは「中央に穴の空いた赤い壁線」として表示されるようになった
+- 通常壁、通路、ドアの境界差分が形と色の両方で判別しやすくなった
+
+### Risk & Mitigation
+- Risk: 小さいズーム時は開口が狭く見えにくくなる可能性がある
+- Mitigation: 開口サイズに最小値を設け、低ズームでも切れ目が残るようにした
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 16:46 (Asia/Taipei) — 上 / 左グリッド拡張を追加**
 
 ### Summary

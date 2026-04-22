@@ -393,12 +393,23 @@ function drawEdges(
   axis: EdgeAxis,
 ) {
   const rows = axis === 'horizontal' ? floor.hEdges : floor.vEdges;
+  const doorEdges = new Set(
+    floor.edgeIcons
+      .filter((icon) => icon.kind === 'door' && icon.edge.axis === axis)
+      .map((icon) => getEdgeKey(icon.edge.x, icon.edge.y, icon.edge.axis)),
+  );
 
   for (let y = 0; y < rows.length; y += 1) {
     for (let x = 0; x < rows[y].length; x += 1) {
       const edgeState = rows[y][x];
+      const hasDoor = doorEdges.has(getEdgeKey(x, y, axis));
 
       if (edgeState === 'unknown') {
+        continue;
+      }
+
+      if (hasDoor) {
+        drawDoorEdge(context, layout, axis, x, y);
         continue;
       }
 
@@ -429,6 +440,37 @@ function drawEdges(
   }
 }
 
+function drawDoorEdge(
+  context: CanvasRenderingContext2D,
+  layout: GridLayout,
+  axis: EdgeAxis,
+  x: number,
+  y: number,
+) {
+  const startX = layout.originX + x * layout.cellSize;
+  const startY = layout.originY + y * layout.cellSize;
+  const gapSize = Math.max(layout.cellSize * 0.28, 8);
+  const gapOffset = (layout.cellSize - gapSize) / 2;
+
+  context.strokeStyle = '#d35b68';
+  context.lineWidth = Math.max(2, layout.cellSize * 0.12);
+  context.beginPath();
+
+  if (axis === 'horizontal') {
+    context.moveTo(startX, startY);
+    context.lineTo(startX + gapOffset, startY);
+    context.moveTo(startX + gapOffset + gapSize, startY);
+    context.lineTo(startX + layout.cellSize, startY);
+  } else {
+    context.moveTo(startX, startY);
+    context.lineTo(startX, startY + gapOffset);
+    context.moveTo(startX, startY + gapOffset + gapSize);
+    context.lineTo(startX, startY + layout.cellSize);
+  }
+
+  context.stroke();
+}
+
 function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
   context.textAlign = 'center';
   context.textBaseline = 'middle';
@@ -448,6 +490,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   }
 
   for (const icon of floor.edgeIcons) {
+    if (icon.kind === 'door') {
+      // WHY: 通常ドアは境界線そのものとして描いた方が、通路や壁との差分を一目で判別しやすい。
+      continue;
+    }
+
     const { x, y, axis } = icon.edge;
     const centerX =
       axis === 'horizontal'
@@ -592,6 +639,10 @@ function getFacingVector(facing: Facing) {
     case 'west':
       return { x: -1, y: 0 };
   }
+}
+
+function getEdgeKey(x: number, y: number, axis: EdgeAxis) {
+  return `${axis}:${x}:${y}`;
 }
 
 function getCellIconGlyph(kind: FloorState['cellIcons'][number]['kind']) {
