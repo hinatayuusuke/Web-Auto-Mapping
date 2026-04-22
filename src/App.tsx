@@ -29,6 +29,7 @@ type RelativeControlAction = 'forward' | 'turn-left' | 'turn-right' | 'turn-back
 
 function App() {
   const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
+  const [isTallViewport, setIsTallViewport] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autoMapping = useAppStore((state) => state.autoMapping);
   const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
@@ -68,6 +69,26 @@ function App() {
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
+
+  useEffect(() => {
+    const updateViewportMode = () => {
+      // WHY: 高さが幅を上回るウインドウでは 1 ページ固定より全体スクロールの方が破綻しにくい。
+      setIsTallViewport(window.innerHeight > window.innerWidth);
+    };
+
+    updateViewportMode();
+    window.addEventListener('resize', updateViewportMode);
+
+    return () => window.removeEventListener('resize', updateViewportMode);
+  }, []);
+
+  useEffect(() => {
+    document.body.dataset.layoutMode = isTallViewport ? 'tall' : 'wide';
+
+    return () => {
+      delete document.body.dataset.layoutMode;
+    };
+  }, [isTallViewport]);
 
   const selectedFloorStats = useMemo(
     () => (selectedFloor ? getFloorStats(selectedFloor) : null),
@@ -272,7 +293,11 @@ function App() {
   };
 
   return (
-    <div className="h-[100dvh] overflow-hidden bg-[var(--color-app)] text-[var(--color-text)]">
+    <div
+      className={`bg-[var(--color-app)] text-[var(--color-text)] ${
+        isTallViewport ? 'min-h-[100dvh]' : 'h-[100dvh] overflow-hidden'
+      }`}
+    >
       <input
         ref={fileInputRef}
         className="hidden"
@@ -281,7 +306,11 @@ function App() {
         onChange={handleImportFile}
       />
 
-      <div className="mx-auto flex h-full w-full max-w-[1680px] flex-col px-3 py-3 sm:px-4 lg:px-5">
+      <div
+        className={`mx-auto flex w-full max-w-[1680px] flex-col px-3 py-3 sm:px-4 lg:px-5 ${
+          isTallViewport ? 'min-h-[100dvh]' : 'h-full'
+        }`}
+      >
         <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-2">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
@@ -309,7 +338,11 @@ function App() {
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:grid lg:grid-cols-[264px_minmax(0,1fr)_264px] lg:overflow-hidden xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+        <main
+          className={`flex flex-1 flex-col gap-2 lg:grid lg:grid-cols-[264px_minmax(0,1fr)_264px] xl:grid-cols-[280px_minmax(0,1fr)_280px] ${
+            isTallViewport ? '' : 'min-h-0 overflow-y-auto lg:overflow-hidden'
+          }`}
+        >
           <ShellPanel
             title="Navigator"
             description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"

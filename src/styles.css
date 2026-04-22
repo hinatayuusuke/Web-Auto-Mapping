@@ -36,6 +36,10 @@ body {
     linear-gradient(180deg, #09101a 0%, #070d16 100%);
 }
 
+body[data-layout-mode='tall'] {
+  overflow-y: auto;
+}
+
 * {
   box-sizing: border-box;
 }

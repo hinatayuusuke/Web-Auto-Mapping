@@ -112,6 +112,36 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 17:53 (Asia/Taipei) — 縦長時のページ全体スクロールを有効化**
+
+### Summary
+- ブラウザが縦長と判定された時点で、ページ全体スクロールを有効にした
+
+### Context / Goal
+- 縦長時のレイアウト再整理に向けて、まずは 1 ページ固定を解除し、ページ全体が自然に伸びる土台が必要だった
+- レイアウト並び替え前でも、縦長時点で `body` と最上位コンテナがスクロールを受けられるようにしたかった
+
+### Changes
+- `App.tsx` に縦長ビューポート判定を追加した
+- 縦長時だけ `body[data-layout-mode='tall']` を付け、`styles.css` で `overflow-y: auto` を有効化した
+- 縦長時は最上位ラッパーの `h-[100dvh] overflow-hidden` を外し、`min-h-[100dvh]` ベースに切り替えた
+- `main` の `overflow-y-auto` / `lg:overflow-hidden` も縦長時には外し、ページ高さへコンテンツが積み上がるようにした
+
+### Files Touched
+- `src/App.tsx` — 縦長判定と、縦長時の高さ / overflow クラス切替を追加
+- `src/styles.css` — 縦長モード時の `body` 縦スクロールを許可
+
+### Behavioral Impact
+- 横長時は従来どおり 1 ページ固定レイアウトのまま動作する
+- 縦長時はページ全体スクロールが有効になり、以後のレイアウト再整理を載せやすい状態になった
+
+### Risk & Mitigation
+- Risk: レイアウト自体はまだ横長前提のままなので、縦長時の並びは次段階での調整が必要
+- Mitigation: 今回はスクロール条件だけに絞り、既存レイアウトへの影響を最小にした
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 17:33 (Asia/Taipei) — セルアイコン背景の丸を拡大**
 
 ### Summary
