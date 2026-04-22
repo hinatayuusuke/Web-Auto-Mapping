@@ -10,17 +10,18 @@ export type EdgeState = 'unknown' | 'open' | 'wall';
 
 export type CellIconKind = 'stairs' | 'pit' | 'chest' | 'marker';
 
-export type EdgeIconKind = 'door' | 'secret-door' | 'one-way';
+export type EdgeIconKind = 'door' | 'closed-door' | 'secret-door' | 'one-way';
 
 export type EdgeAxis = 'horizontal' | 'vertical';
 
-export type EdgeEditIntent = 'wall' | 'door' | 'open' | 'unknown';
+export type EdgeEditIntent = 'wall' | 'door' | 'closed-door' | 'open' | 'unknown';
 
 export type EditTool =
   | 'cell-floor'
   | 'cell-unknown'
   | 'edge-wall'
   | 'edge-door'
+  | 'edge-closed-door'
   | 'edge-open'
   | 'edge-unknown'
   | 'cell-icon';

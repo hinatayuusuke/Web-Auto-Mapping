@@ -339,6 +339,12 @@ export function applyEdgeEditIntent(
       return removeEdgeIconsAt(updateFloorEdgeState(floor, coordinate, 'unknown'), coordinate);
     case 'door':
       return upsertEdgeIconAt(updateFloorEdgeState(floor, coordinate, 'open'), coordinate, 'door');
+    case 'closed-door':
+      return upsertEdgeIconAt(
+        updateFloorEdgeState(floor, coordinate, 'wall'),
+        coordinate,
+        'closed-door',
+      );
   }
 }
 
@@ -435,6 +441,8 @@ export function applyCanvasPrimaryEdit(
       return applyEdgeEditIntent(floor, target.coordinate, 'wall');
     case 'edge-door':
       return applyEdgeEditIntent(floor, target.coordinate, 'door');
+    case 'edge-closed-door':
+      return applyEdgeEditIntent(floor, target.coordinate, 'closed-door');
     case 'edge-open':
       return applyEdgeEditIntent(floor, target.coordinate, 'open');
     case 'edge-unknown':

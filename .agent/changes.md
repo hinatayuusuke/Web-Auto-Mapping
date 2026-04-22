@@ -112,6 +112,40 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 17:12 (Asia/Taipei) — 開いたドア / 閉じたドアを分離**
+
+### Summary
+- 通常ドアを緑の開口線、閉じたドアを赤の連続線として分離し、Shortcut と編集ツールへ追加した
+
+### Context / Goal
+- 既存のドア表示だけでは「開いている通行可能なドア」と「閉じたドア」を区別できなかった
+- Edge 編集と前方 Shortcut の両方から閉じたドアを扱えるようにする必要があった
+
+### Changes
+- `EdgeIconKind` と `EdgeEditIntent` に `closed-door` を追加した
+- 閉じたドアは `wall + closed-door icon`、通常ドアは `open + door icon` として編集ロジックを分離した
+- Canvas 描画を更新し、通常ドアを緑の開口線、閉じたドアを赤の連続線として描くようにした
+- Edit Tool に `edge closed door`、Forward Edge Shortcut に `4 closed door` を追加した
+
+### Files Touched
+- `src/types/map.ts` — 閉じたドア用の型を追加
+- `src/lib/persistence.ts` — 新しい編集ツール値を許可
+- `src/lib/mapModel.ts` — 閉じたドアのエッジ編集ロジックを追加
+- `src/components/MapCanvas.tsx` — 開いたドア / 閉じたドアの専用描画へ更新
+- `src/App.tsx` — Edit Tool と前方 Shortcut UI / キーボード割当を更新
+
+### Behavioral Impact
+- 通行可能な通常ドアは緑の開口線、通行不可の閉じたドアは赤線として見分けられるようになった
+- `4` キーまたは `4 closed door` ボタンから前方境界へ閉じたドアを即時配置できるようになった
+- Map モードのマウス編集でも `edge closed door` を直接配置できるようになった
+
+### Risk & Mitigation
+- Risk: 既存の `door` と新規 `closed-door` の意味差が UI 上で伝わりにくい可能性がある
+- Mitigation: 編集ツール名と Shortcut 文言を `open door` / `closed door` へ分け、描画色も緑 / 赤に分離した
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 17:03 (Asia/Taipei) — ドア表示を赤い切れ壁線へ変更**
 
 ### Summary

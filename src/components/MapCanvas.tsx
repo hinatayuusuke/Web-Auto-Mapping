@@ -393,23 +393,33 @@ function drawEdges(
   axis: EdgeAxis,
 ) {
   const rows = axis === 'horizontal' ? floor.hEdges : floor.vEdges;
-  const doorEdges = new Set(
+  const openDoorEdges = new Set(
     floor.edgeIcons
       .filter((icon) => icon.kind === 'door' && icon.edge.axis === axis)
+      .map((icon) => getEdgeKey(icon.edge.x, icon.edge.y, icon.edge.axis)),
+  );
+  const closedDoorEdges = new Set(
+    floor.edgeIcons
+      .filter((icon) => icon.kind === 'closed-door' && icon.edge.axis === axis)
       .map((icon) => getEdgeKey(icon.edge.x, icon.edge.y, icon.edge.axis)),
   );
 
   for (let y = 0; y < rows.length; y += 1) {
     for (let x = 0; x < rows[y].length; x += 1) {
       const edgeState = rows[y][x];
-      const hasDoor = doorEdges.has(getEdgeKey(x, y, axis));
+      const edgeKey = getEdgeKey(x, y, axis);
 
       if (edgeState === 'unknown') {
         continue;
       }
 
-      if (hasDoor) {
-        drawDoorEdge(context, layout, axis, x, y);
+      if (openDoorEdges.has(edgeKey)) {
+        drawOpenDoorEdge(context, layout, axis, x, y);
+        continue;
+      }
+
+      if (closedDoorEdges.has(edgeKey)) {
+        drawClosedDoorEdge(context, layout, axis, x, y);
         continue;
       }
 
@@ -440,7 +450,7 @@ function drawEdges(
   }
 }
 
-function drawDoorEdge(
+function drawOpenDoorEdge(
   context: CanvasRenderingContext2D,
   layout: GridLayout,
   axis: EdgeAxis,
@@ -449,10 +459,10 @@ function drawDoorEdge(
 ) {
   const startX = layout.originX + x * layout.cellSize;
   const startY = layout.originY + y * layout.cellSize;
-  const gapSize = Math.max(layout.cellSize * 0.28, 8);
+  const gapSize = Math.max(layout.cellSize * 0.28, 2);
   const gapOffset = (layout.cellSize - gapSize) / 2;
 
-  context.strokeStyle = '#d35b68';
+  context.strokeStyle = '#4fd08b';
   context.lineWidth = Math.max(2, layout.cellSize * 0.12);
   context.beginPath();
 
@@ -465,6 +475,31 @@ function drawDoorEdge(
     context.moveTo(startX, startY);
     context.lineTo(startX, startY + gapOffset);
     context.moveTo(startX, startY + gapOffset + gapSize);
+    context.lineTo(startX, startY + layout.cellSize);
+  }
+
+  context.stroke();
+}
+
+function drawClosedDoorEdge(
+  context: CanvasRenderingContext2D,
+  layout: GridLayout,
+  axis: EdgeAxis,
+  x: number,
+  y: number,
+) {
+  const startX = layout.originX + x * layout.cellSize;
+  const startY = layout.originY + y * layout.cellSize;
+
+  context.strokeStyle = '#d35b68';
+  context.lineWidth = Math.max(2, layout.cellSize * 0.12);
+  context.beginPath();
+
+  if (axis === 'horizontal') {
+    context.moveTo(startX, startY);
+    context.lineTo(startX + layout.cellSize, startY);
+  } else {
+    context.moveTo(startX, startY);
     context.lineTo(startX, startY + layout.cellSize);
   }
 
@@ -490,8 +525,8 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   }
 
   for (const icon of floor.edgeIcons) {
-    if (icon.kind === 'door') {
-      // WHY: 通常ドアは境界線そのものとして描いた方が、通路や壁との差分を一目で判別しやすい。
+    if (icon.kind === 'door' || icon.kind === 'closed-door') {
+      // WHY: ドア系は境界線そのものとして描いた方が、通路や壁との差分を一目で判別しやすい。
       continue;
     }
 
@@ -660,6 +695,8 @@ function getCellIconGlyph(kind: FloorState['cellIcons'][number]['kind']) {
 
 function getEdgeIconGlyph(kind: FloorState['edgeIcons'][number]['kind']) {
   switch (kind) {
+    case 'closed-door':
+      return 'C';
     case 'door':
       return 'D';
     case 'one-way':

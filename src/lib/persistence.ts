@@ -166,6 +166,7 @@ function isEditTool(value: unknown): value is EditTool {
     value === 'cell-unknown' ||
     value === 'edge-wall' ||
     value === 'edge-door' ||
+    value === 'edge-closed-door' ||
     value === 'edge-open' ||
     value === 'edge-unknown' ||
     value === 'cell-icon'

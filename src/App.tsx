@@ -12,7 +12,8 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'cell floor', value: 'cell-floor' },
   { label: 'cell unknown', value: 'cell-unknown' },
   { label: 'edge wall', value: 'edge-wall' },
-  { label: 'edge door', value: 'edge-door' },
+  { label: 'edge open door', value: 'edge-door' },
+  { label: 'edge closed door', value: 'edge-closed-door' },
   { label: 'edge open', value: 'edge-open' },
   { label: 'edge unknown', value: 'edge-unknown' },
   { label: 'cell icon', value: 'cell-icon' },
@@ -146,6 +147,10 @@ function App() {
           case '3':
             event.preventDefault();
             applyForwardEdgeShortcut('open');
+            return;
+          case '4':
+            event.preventDefault();
+            applyForwardEdgeShortcut('closed-door');
             return;
           case '0':
             event.preventDefault();
@@ -406,12 +411,16 @@ function App() {
               <PanelHeading
                 eyebrow="Shortcuts"
                 title="Forward Edge"
-                body="前方境界を `1:wall`, `2:door`, `3:open`, `0:unknown` で即時編集できます。"
+                body="前方境界を `1:wall`, `2:open door`, `3:open`, `4:closed door`, `0:unknown` で即時編集できます。"
               />
               <div className="grid grid-cols-2 gap-2">
                 <ShortcutButton label="1 wall" onClick={() => applyForwardEdgeShortcut('wall')} />
-                <ShortcutButton label="2 door" onClick={() => applyForwardEdgeShortcut('door')} />
+                <ShortcutButton label="2 open door" onClick={() => applyForwardEdgeShortcut('door')} />
                 <ShortcutButton label="3 open" onClick={() => applyForwardEdgeShortcut('open')} />
+                <ShortcutButton
+                  label="4 closed door"
+                  onClick={() => applyForwardEdgeShortcut('closed-door')}
+                />
                 <ShortcutButton
                   label="0 unknown"
                   onClick={() => applyForwardEdgeShortcut('unknown')}
