@@ -152,6 +152,33 @@
 - Playwright CLI で `+4 Right` → `Undo` → `Redo` の順に操作し、`16 x 16` / `20 x 16` の切り替わりを確認
 - Playwright CLI で `Zoom +` とヘッダー / Canvas の zoom 表示反映を確認
 - Console の既知エラーが `favicon.ico` 404 のみであることを確認
+**2026-04-22 15:41 (Asia/Taipei) — Canvas 初期表示を上寄せに調整**
+
+### Summary
+- Canvas 内のマップ原点を縦中央から上寄せへ変更した
+
+### Context / Goal
+- 現在のページは縦長で、マップ本体が Canvas 内で中央配置されるため初見時に fold の下へ落ちやすかった
+- 最初の表示と `Reset View` 後の表示で、マップ本体が上側から見える状態に揃える必要があった
+
+### Changes
+- `MapCanvas` のレイアウト計算で `originY` を縦中央基準から固定上余白基準へ変更した
+- ホイールズーム時の基準原点も同じ上余白へ合わせ、初期表示とズーム後の見え方がずれないようにした
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — 縦方向の原点計算を上寄せへ変更し、ズーム時の Y 基準も同じ余白へ揃えた
+
+### Behavioral Impact
+- 初期表示でマップ本体が Canvas 上部から見えるようになった
+- `Reset View` やズーム後も、縦方向の基準は上寄せのまま維持される
+
+### Risk & Mitigation
+- Risk: 縦方向を固定上寄せにすると、背の低い Canvas では下側が見切れやすくなる
+- Mitigation: パン操作は維持しており、必要に応じて下方向へ移動して確認できる
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
 **2026-04-22 15:08 (Asia/Taipei) — Phase 4 階層管理と保存再開実装**
 
 ### Summary

@@ -9,6 +9,7 @@ import {
 } from '../types/map';
 
 const GRID_PADDING = 24;
+const GRID_TOP_PADDING = 24;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
 
@@ -183,7 +184,7 @@ export function MapCanvas() {
       zoom: nextZoom,
     });
     const centeredOriginX = Math.floor((size.width - selectedFloor.width * nextCellSize) / 2);
-    const centeredOriginY = Math.floor((size.height - selectedFloor.height * nextCellSize) / 2);
+    const centeredOriginY = GRID_TOP_PADDING;
 
     setViewport({
       zoom: nextZoom,
@@ -290,7 +291,8 @@ function calculateLayout({
   const gridWidth = floorWidth * cellSize;
   const gridHeight = floorHeight * cellSize;
   const originX = Math.floor((width - gridWidth) / 2 + viewport.offsetX);
-  const originY = Math.floor((height - gridHeight) / 2 + viewport.offsetY);
+  // WHY: 初期表示でマップ本体が fold の下に落ちないよう、縦方向は中央寄せではなく上余白基準にする。
+  const originY = GRID_TOP_PADDING + viewport.offsetY;
 
   return {
     cellSize,
