@@ -40,6 +40,9 @@ install_manifest.txt
 .DS_Store
 Thumbs.db
 .cache/
+.playwright-cli/
+.npm-cache-playwright/
+.npm-cache/
 
 
 

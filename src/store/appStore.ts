@@ -4,7 +4,6 @@ import {
   applyCanvasSecondaryEdit,
   applyForwardEdgeEdit,
   createExploreSeedFloorState,
-  getFloorStats,
   movePlayerInExploreMode,
   movePlayerInMapMode,
   placeSelectedCellIconAtPlayer,
@@ -184,14 +183,6 @@ export const useAppStore = create<AppStore>((set) => ({
 
 export function useSelectedFloor() {
   return useAppStore((state) => state.floors.find((floor) => floor.id === state.selectedFloorId));
-}
-
-export function useSelectedFloorStats() {
-  return useAppStore((state) => {
-    const selectedFloor = state.floors.find((floor) => floor.id === state.selectedFloorId);
-
-    return selectedFloor ? getFloorStats(selectedFloor) : null;
-  });
 }
 
 function updateSelectedFloor(

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
-import { useAppStore, useSelectedFloor, useSelectedFloorStats } from './store/appStore';
+import { getFloorStats } from './lib/mapModel';
+import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
 
 const FACINGS: Facing[] = ['north', 'east', 'south', 'west'];
@@ -15,7 +16,6 @@ function App() {
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedFloor = useSelectedFloor();
-  const selectedFloorStats = useSelectedFloorStats();
   const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
   const cycleSelectedCellIcon = useAppStore((state) => state.cycleSelectedCellIcon);
   const moveInDirection = useAppStore((state) => state.moveInDirection);
@@ -28,6 +28,10 @@ function App() {
   const setSelectedCellIconKind = useAppStore((state) => state.setSelectedCellIconKind);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
   const toggleMode = useAppStore((state) => state.toggleMode);
+  const selectedFloorStats = useMemo(
+    () => (selectedFloor ? getFloorStats(selectedFloor) : null),
+    [selectedFloor],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

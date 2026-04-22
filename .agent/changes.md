@@ -112,6 +112,38 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 14:53 (Asia/Taipei) — 黒画面の無限再レンダー修正**
+
+### Summary
+- Zustand selector の不安定な返り値が原因の無限再レンダーを修正した
+
+### Context / Goal
+- `npm run dev` で画面が黒くなり、React が描画前に落ちる問題が発生していた
+- 画面表示を復旧しつつ、同種の selector 起因ループを避ける構成へ直す必要があった
+
+### Changes
+- `useSelectedFloorStats()` を削除し、store selector が毎回新しい object を返さないようにした
+- `App` 側で `selectedFloor` をもとに `useMemo` で統計を計算する形へ変更した
+- dev サーバー起動と実ブラウザ確認をやり直し、無限再レンダーが解消したことを確認した
+
+### Files Touched
+- `src/store/appStore.ts` — 不安定な stats selector を削除
+- `src/App.tsx` — `getFloorStats` を `useMemo` で計算する形へ変更
+- `.agent/changes.md` — 今回の不具合修正内容を記録
+
+### Behavioral Impact
+- 画面が正常に描画され、黒画面で止まらなくなった
+- Explore / Map UI と Canvas が通常どおり表示されるようになった
+- Console エラーは `favicon.ico` の 404 のみになった
+
+### Risk & Mitigation
+- Risk: 今後も store selector 内で毎回新しい object / array を返すと同様の問題が再発する
+- Mitigation: 集計系は selector ではなく、コンポーネント側で `useMemo` または安定 selector に寄せる運用にする
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- `C:\3rd\nodejs\npm.cmd run dev -- --host 127.0.0.1 --port 4173`
+- Playwright で `http://127.0.0.1:4173/` を開き、画面描画と Console エラー解消を確認
 **2026-04-22 14:21 (Asia/Taipei) — Phase 3 Map モードと編集導線実装**
 
 ### Summary
