@@ -112,6 +112,49 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-23 11:51 (Asia/Taipei) — Tauri 移植 Phase A 実装**
+
+### Summary
+- Tauri の最小構成を追加し、既存 React アプリをデスクトップ向けにビルドできる状態へ接続した
+
+### Context / Goal
+- `Doc/TauriMigrationProposal.md` の Phase A として、現行 UI と状態管理を大きく崩さず Tauri ウインドウへ載せる必要があった
+- Web 版の `npm run dev` / `npm run build` を維持しつつ、Tauri 用の開発 / ビルド導線を追加したかった
+
+### Changes
+- `src-tauri/` を追加し、Tauri v2 の最小 Rust ホスト、設定、権限定義、アイコン雛形を導入した
+- `package.json` に `tauri` / `tauri:dev` / `tauri:build` スクリプトを追加し、`@tauri-apps/cli` を開発依存関係へ追加した
+- Tauri 側の package 名、lib 名、window identifier をアプリ向けに更新し、初期ウインドウサイズと最小サイズを調整した
+- `npm install` により `package-lock.json` を更新し、Rust 側は `Cargo.lock` を生成した
+
+### Files Touched
+- `package.json` — Tauri CLI 依存関係と起動 / ビルド用スクリプトを追加
+- `package-lock.json` — npm 依存関係更新を反映
+- `src-tauri/Cargo.toml` — Rust package / lib 名と説明メタデータをアプリ向けに更新
+- `src-tauri/Cargo.lock` — Rust 依存関係ロックファイルを生成
+- `src-tauri/tauri.conf.json` — identifier、window label、初期サイズ、最小サイズを設定
+- `src-tauri/src/main.rs` — 更新した lib 名を参照するように修正
+- `src-tauri/src/lib.rs` — Tauri アプリ起動エントリを追加
+- `src-tauri/build.rs` — Tauri ビルドスクリプトを追加
+- `src-tauri/capabilities/default.json` — 最小権限定義を追加
+- `src-tauri/icons/*` — Tauri バンドル用の標準アイコン群を追加
+
+### Behavioral Impact
+- `npm run tauri:dev` と `npm run tauri:build` で既存フロントエンドを Tauri ウインドウアプリとして扱えるようになった
+- 現時点の保存 / 読込は従来どおり Web 側実装のままで、Tauri 固有の I/O にはまだ切り替えていない
+
+### Risk & Mitigation
+- Risk: Tauri bundle は既定設定のままだと配布対象が広く、初回ビルド時間と成果物サイズが大きくなりやすい
+- Mitigation: Phase A では最小導入を優先し、保存 I/O や配布最適化は後続フェーズへ分離した
+- Risk: `identifier` やウインドウサイズは暫定値のため、配布要件や OS ごとの振る舞いに合わせて再調整が必要になる
+- Mitigation: 設定は `src-tauri/tauri.conf.json` に集約し、次フェーズで局所的に調整できる形にした
+
+### Tests / Verification
+- `npm install`
+- `npm run build`
+- `cargo build --manifest-path .\src-tauri\Cargo.toml`
+- `npm run tauri build`
 **2026-04-23 09:50 (Asia/Taipei) — Marker メッセージ機能を実装**
 
 ### Summary
@@ -172,6 +215,32 @@
 ### Risk & Mitigation
 - Risk: ダブルクリック編集と既存クリック編集の競合が後で曖昧になる可能性がある
 - Mitigation: 提案書で `marker` 限定、Map モード限定、hover 表示位置、保存構造まで先に固定した
+
+### Tests / Verification
+- 未実施（ドキュメント追加のみ）
+**2026-04-23 11:20 (Asia/Taipei) — Tauri 移植実装案を追加**
+
+### Summary
+- Tauri への段階移植案を `Doc/TauriMigrationProposal.md` に追加した
+
+### Context / Goal
+- 現行の React + Vite + Canvas アプリを Window アプリ化するにあたり、最小 Tauri 化から保存 I/O のネイティブ化まで段階整理が必要だった
+- Web 版を維持しつつ Tauri 版を追加するため、adapter 分離前提の実装方針を明文化したかった
+
+### Changes
+- Tauri 導入のゴール / 非ゴール、段階移行、adapter 方針、影響範囲を提案書へ整理した
+- 初回は UI をそのまま載せ、次段階で保存 / 読込だけを Tauri API へ寄せる方針を明記した
+
+### Files Touched
+- `Doc/TauriMigrationProposal.md` — Tauri 移植の実装案を新規追加
+
+### Behavioral Impact
+- 実装はまだ変えていない
+- Tauri 移植を進めるための基準文書が追加された
+
+### Risk & Mitigation
+- Risk: Tauri 化と保存方式刷新を同時に進めると影響範囲が広がりやすい
+- Mitigation: 提案書では「最小 Tauri 化」→「I/O adapter 化」→「デスクトップ仕上げ」の段階導入に分けた
 
 ### Tests / Verification
 - 未実施（ドキュメント追加のみ）
