@@ -1605,3 +1605,58 @@
 ### Tests / Verification
 - 未実施
 - 文書追加のみのため、コードビルドや GitHub Actions 実行は行っていない
+**2026-04-23 17:24 (Asia/Taipei) — Expand Gridボタン表示統一**
+
+### Summary
+- `Expand Grid` の矢印と数字を専用ボタン内の grid レイアウトで揃えた
+
+### Context / Goal
+- 既存の `IconButton` badge 表示では、矢印と数字の位置関係が分離して見え、4方向で統一感が弱かった
+- `+4 direction` は1つの操作意味なので、数字を badge ではなくボタン内容として扱いたかった
+
+### Changes
+- `ExpandGridButton` を追加した
+- `Expand Grid` の4方向ボタンを `IconButton` から `ExpandGridButton` へ変更した
+- ボタン内部を `grid-cols-[1fr_1.75rem]` にして、矢印領域と数値領域を固定配置にした
+
+### Files Touched
+- `src/App.tsx` — `ExpandGridButton` を追加し、`Expand Grid` の4ボタンを専用レイアウトへ差し替えた
+
+### Behavioral Impact
+- `Expand Grid` の矢印と `4` の表示位置が揃い、4方向の見た目が統一された
+- グリッド拡張の動作自体は変わっていない
+
+### Risk & Mitigation
+- Risk: 専用ボタンが増えて汎用 `IconButton` との見た目差が出る可能性がある
+- Mitigation: 色、border、hover の基本クラスは既存ボタンに合わせ、内部レイアウトだけ専用化した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:25 (Asia/Taipei) — Expand Grid数値表示の簡素化**
+
+### Summary
+- `Expand Grid` の `4` を丸 badge 表示から `+4` のインライン表示へ変更した
+
+### Context / Goal
+- 数字が丸ボタン風に見えて、矢印アイコンと別要素のように分離していた
+- 拡張方向と拡張量を同じ操作内容として、より統一感のある表示にしたかった
+
+### Changes
+- `ExpandGridButton` の数値表示から丸 border と背景を削除した
+- 数値を `+4` として、矢印と同じ current color のテキスト表示へ変更した
+
+### Files Touched
+- `src/App.tsx` — `ExpandGridButton` の数値表示スタイルを簡素化した
+
+### Behavioral Impact
+- `Expand Grid` の数字が独立した丸ボタンに見えなくなり、矢印と一体のラベルとして見えるようになった
+- グリッド拡張の動作自体は変わっていない
+
+### Risk & Mitigation
+- Risk: `+4` の視認性が丸 badge より弱くなる可能性がある
+- Mitigation: 太字と tracking を残し、ボタン内右側の固定位置は維持した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

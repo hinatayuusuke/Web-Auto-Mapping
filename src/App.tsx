@@ -427,28 +427,24 @@ function App() {
       <section className="space-y-3">
         <PanelHeading eyebrow="Grid" title="Expand Grid" />
         <div className="grid grid-cols-2 gap-2">
-          <IconButton
+          <ExpandGridButton
             label="Expand left by 4"
-            icon={<ArrowIcon direction="left" />}
-            badge="4"
+            direction="left"
             onClick={() => expandSelectedFloorLeft()}
           />
-          <IconButton
+          <ExpandGridButton
             label="Expand up by 4"
-            icon={<ArrowIcon direction="up" />}
-            badge="4"
+            direction="up"
             onClick={() => expandSelectedFloorUp()}
           />
-          <IconButton
+          <ExpandGridButton
             label="Expand right by 4"
-            icon={<ArrowIcon direction="right" />}
-            badge="4"
+            direction="right"
             onClick={() => expandSelectedFloorRight()}
           />
-          <IconButton
+          <ExpandGridButton
             label="Expand down by 4"
-            icon={<ArrowIcon direction="down" />}
-            badge="4"
+            direction="down"
             onClick={() => expandSelectedFloorDown()}
           />
         </div>
@@ -990,6 +986,33 @@ function IconButton({
           {badge}
         </span>
       ) : null}
+    </button>
+  );
+}
+
+type ExpandGridButtonProps = {
+  direction: ArrowIconProps['direction'];
+  label: string;
+  onClick: () => void;
+};
+
+function ExpandGridButton({ direction, label, onClick }: ExpandGridButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="grid min-h-11 grid-cols-[1fr_1.75rem] items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]"
+    >
+      <span className="flex justify-center">
+        <span className="size-4.5">
+          <ArrowIcon direction={direction} />
+        </span>
+      </span>
+      <span className="justify-self-end text-[12px] font-semibold leading-none tracking-[0.08em] text-current">
+        +4
+      </span>
     </button>
   );
 }
