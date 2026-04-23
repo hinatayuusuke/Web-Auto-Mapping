@@ -1425,3 +1425,32 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 16:02 (Asia/Taipei) — Floor操作のSVGアイコン化**
+
+### Summary
+- `Doc/svg-icon.md` を参照し、`Add / Duplicate / Delete` を SVG アイコンボタンへ変更した
+
+### Context / Goal
+- Floor 操作の 3 ボタンをテキストよりも省スペースな表現へ寄せたかった
+- 既存のアイコン化方針に合わせつつ、削除だけは危険色を維持したかった
+
+### Changes
+- `Add` を新規追加用のファイル + アイコンへ変更した
+- `Duplicate` を複製アイコンへ変更した
+- `Delete` をゴミ箱アイコンへ変更し、危険操作の赤系トーンを維持した
+- `Doc/svg-icon.md` の線構成をアプリ内 SVG コンポーネントとして追加した
+
+### Files Touched
+- `src/App.tsx` — Floor 操作ボタンを `IconButton` へ置き換え、追加・複製・削除の SVG アイコンを追加した
+
+### Behavioral Impact
+- `Add / Duplicate / Delete` は操作内容を変えず、表示だけが SVG アイコン主体になった
+- 削除ボタンは従来どおり危険色で見分けられる
+
+### Risk & Mitigation
+- Risk: アイコンだけだと初見で意味が伝わりにくい
+- Mitigation: `IconButton` の `title` と `aria-label` により、hover と支援技術で操作名を露出する
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
