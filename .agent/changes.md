@@ -113,6 +113,64 @@
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-23 15:10 (Asia/Taipei) — MapCanvas ツールバー圧縮**
+
+### Summary
+- `MapCanvas` ヘッダーのボタンを専用の小型ツールバーへ変更し、中央上部の占有を縮小した
+
+### Context / Goal
+- `Undo / Redo / Zoom / Reset View` が左右ペイン用と同じボタン寸法で、中央カラム上部を圧迫していた
+- `MapCanvas` 操作用ボタンだけを軽いツールバーとして扱い、できるだけ詰めたかった
+
+### Changes
+- `MapCanvas` ヘッダーの padding と gap を縮小した
+- 操作用ボタンを `ShortcutButton` から専用の `ToolbarButton` へ差し替えた
+- `ToolbarButton` は `rounded-xl`、小さめの padding、`13px` テキストで compact にした
+- 寸法表示の行高と上下余白もあわせて縮小した
+
+### Files Touched
+- `src/App.tsx` — `MapCanvas` ヘッダーと `ToolbarButton` を追加し、中央ツールバーを compact 化
+
+### Behavioral Impact
+- `MapCanvas` 上部ツールバーの高さが下がり、キャンバス表示面積が増えた
+- 左右ペインの既存ボタンサイズは維持され、中央だけ軽量化された
+
+### Risk & Mitigation
+- Risk: ボタンを詰めすぎるとクリックしづらくなる
+- Mitigation: 中央専用にだけ適用し、ラベル可読性と hover 状態は維持した
+
+### Tests / Verification
+- `npm run build`
+
+**2026-04-23 14:09 (Asia/Taipei) — ヘッダーステータス圧縮**
+
+### Summary
+- ヘッダーのステータス欄を 2 行カード風から 1 行の圧縮表示へ変更し、縦方向の占有を削減した
+
+### Context / Goal
+- ヘッダーの `Mode / Floor / Auto Map / Tool / Icon / Zoom` が縦方向に大きく、中央の作業領域を圧迫していた
+- 同じ情報量を保ちながら、できるだけ高さを詰めたかった
+
+### Changes
+- ヘッダー全体の下余白と内部 gap を縮小した
+- タイトル行の line-height と説明文サイズを詰めた
+- `StatusChip` を縦積みから横並びへ変更し、ラベルと値の間隔・行高を縮小した
+- `xl` 幅ではステータス下線も減らし、情報列として軽く見えるようにした
+
+### Files Touched
+- `src/App.tsx` — ヘッダーと `StatusChip` のレイアウトを圧縮表示へ調整
+
+### Behavioral Impact
+- ヘッダーが低くなり、初期表示で中央の `MapCanvas` が見える面積が増えた
+- 表示内容自体は変わらず、情報密度だけ上がった
+
+### Risk & Mitigation
+- Risk: ステータスを詰めすぎると値が読みにくくなる
+- Mitigation: ラベルは uppercase のまま残し、値は `truncate` と最小フォントサイズで可読性を維持した
+
+### Tests / Verification
+- `npm run build`
+
 **2026-04-23 13:19 (Asia/Taipei) — Tauri 移植 Phase B 実装**
 
 ### Summary

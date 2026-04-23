@@ -391,29 +391,29 @@ function App() {
         isTallViewport ? 'h-[clamp(420px,56dvh,720px)]' : 'h-full min-h-0'
       }`}
     >
-      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--color-border)] px-4 py-2 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--color-border)] px-3 py-1.5 xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
             Map Canvas
           </p>
-          <h2 className="mt-0.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+          <h2 className="mt-0.5 text-[13px] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
             Floor Workspace
           </h2>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
-          <ShortcutButton label="Undo" onClick={undo} disabled={!canUndo} />
-          <ShortcutButton label="Redo" onClick={redo} disabled={!canRedo} />
-          <ShortcutButton
+        <div className="grid gap-1.5 sm:grid-cols-3 xl:grid-cols-6">
+          <ToolbarButton label="Undo" onClick={undo} disabled={!canUndo} />
+          <ToolbarButton label="Redo" onClick={redo} disabled={!canRedo} />
+          <ToolbarButton
             label="Zoom -"
             onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
           />
-          <ShortcutButton
+          <ToolbarButton
             label="Zoom +"
             onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
           />
-          <ShortcutButton label="Reset View" onClick={resetViewport} />
-          <div className="px-1 py-2 text-center text-xs uppercase tracking-[0.18em] text-[var(--color-muted)]">
+          <ToolbarButton label="Reset View" onClick={resetViewport} />
+          <div className="px-1 py-1.5 text-center text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
             {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
           </div>
         </div>
@@ -615,23 +615,23 @@ function App() {
         }`}
       >
         {!isTallViewport ? (
-          <header className="mb-3 shrink-0 border-b border-[var(--color-border)] pb-2">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <header className="mb-2 shrink-0 border-b border-[var(--color-border)] pb-1.5">
+            <div className="flex flex-col gap-2 xl:flex-row xl:items-end xl:justify-between">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--color-text-strong)]">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                  <h1 className="text-[2rem] font-semibold leading-none tracking-[-0.04em] text-[var(--color-text-strong)]">
                     Web Auto Mapping
                   </h1>
                   <span className="text-[10px] uppercase tracking-[0.24em] text-[var(--color-muted)]">
                     One Page Layout
                   </span>
                 </div>
-                <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
+                <p className="mt-1 text-xs leading-5 text-[var(--color-text-soft)]">
                   左右は独立スクロール、中央は常時表示のままホイールでズームします。
                 </p>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              <div className="grid gap-x-3 gap-y-1 sm:grid-cols-3 xl:grid-cols-6 xl:items-end">
                 <StatusChip label="Mode" value={mode} />
                 <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
                 <StatusChip label="Auto Map" value={autoMapping} />
@@ -670,9 +670,11 @@ type StatusChipProps = {
 
 function StatusChip({ label, value }: StatusChipProps) {
   return (
-    <div className="border-b border-[var(--color-border)] px-1 py-2 last:border-b-0">
-      <p className="text-[11px] uppercase tracking-[0.24em] text-[var(--color-muted)]">{label}</p>
-      <p className="mt-1 text-xs font-medium capitalize text-[var(--color-text-strong)] sm:text-sm">{value}</p>
+    <div className="flex items-baseline gap-2 border-b border-[var(--color-border)] py-1 last:border-b-0 xl:border-b-0">
+      <p className="shrink-0 text-[10px] uppercase tracking-[0.2em] text-[var(--color-muted)]">{label}</p>
+      <p className="min-w-0 truncate text-[13px] font-medium capitalize leading-none text-[var(--color-text-strong)] sm:text-sm">
+        {value}
+      </p>
     </div>
   );
 }
@@ -765,6 +767,23 @@ function ShortcutButton({ disabled = false, label, onClick }: ShortcutButtonProp
       disabled={disabled}
       onClick={onClick}
       className={`rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+        disabled
+          ? 'cursor-not-allowed border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-muted)]'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ToolbarButton({ disabled = false, label, onClick }: ShortcutButtonProps) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`rounded-xl border px-2.5 py-1.5 text-[13px] font-medium leading-5 transition ${
         disabled
           ? 'cursor-not-allowed border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-muted)]'
           : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
