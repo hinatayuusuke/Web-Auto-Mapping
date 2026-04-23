@@ -1454,3 +1454,65 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 16:06 (Asia/Taipei) — UI説明文整理案の追加**
+
+### Summary
+- 常時表示の説明文を削減するための整理案を `Doc/UiDescriptionTrimProposal.md` に追加した
+
+### Context / Goal
+- 現在の UI はセクション本文が多く、縦方向の占有を圧迫している
+- どの説明を削除、短文化、別ヘルプへ移すべきかを先に整理したかった
+
+### Changes
+- 説明文を `削除してよい / 短文化すべき / 別導線へ移すべき` の3分類で整理した
+- `PanelHeading.body` を optional にする前提で、実装ステップを段階化した
+- ショートカット説明を `Shortcuts / Help` へ集約する方針を明記した
+
+### Files Touched
+- `Doc/UiDescriptionTrimProposal.md` — UI 説明文の整理方針、分類、実装手順、リスクをまとめた
+
+### Behavioral Impact
+- ドキュメント追加のみで、現行アプリの挙動変更はない
+
+### Risk & Mitigation
+- Risk: 実装時に説明を削りすぎると初見導線が弱くなる
+- Mitigation: 本提案ではショートカット系を別ヘルプへ残す前提で分類した
+
+### Tests / Verification
+- 未実施
+- 文書追加のみのため、現時点ではコードビルドや実機確認は行っていない
+**2026-04-23 16:09 (Asia/Taipei) — UI説明文の削減実装**
+
+### Summary
+- `Doc/UiDescriptionTrimProposal.md` に沿って、常時表示の説明文を削減し必要なヒントだけ短文化した
+
+### Context / Goal
+- パネル内の説明文が縦方向のスペースを圧迫していた
+- 日常操作で不要な本文を削除し、ショートカットや特殊条件だけを短い表記で残したかった
+
+### Changes
+- `PanelHeading.body` と `ShellPanel.description` を optional にして、説明なしの見出しを許容した
+- `Navigator` と `Workspace` の多くのセクション本文を削除した
+- `Movement`、`Forward Edge`、`Global Arrow Test`、`Save / Load`、`Zoom / Pan`、`Cell Icons` は短いヒントだけ残した
+- `Save / Load` の autosave 詳細行を削除し、保存先ラベルだけを残した
+- `MapCanvas` 下部の長文 `Canvas Status` を削除し、モードとズーム率だけのコンパクト表示にした
+
+### Files Touched
+- `src/App.tsx` — 各 `PanelHeading` の説明文を削除または短文化し、autosave 詳細行を削除した
+- `src/components/ShellPanel.tsx` — パネル説明文を optional にして、未指定時は非表示にした
+- `src/components/MapCanvas.tsx` — 下部ステータスの長文説明を削除し、モードとズーム率だけ表示するようにした
+
+### Behavioral Impact
+- UI の情報量が減り、各パネルの縦方向の占有が小さくなった
+- 機能、キーバインド、保存形式、操作挙動は変わっていない
+- ショートカット系の最低限の再確認情報は短文として残している
+
+### Risk & Mitigation
+- Risk: 初見ユーザーには説明不足に見える可能性がある
+- Mitigation: 完全削除せず、特殊操作やショートカットは短いヒントとして残した
+- Risk: `ShellPanel.description` optional 化で説明を渡し忘れても気づきにくくなる
+- Mitigation: 今回は意図的に省略する用途として導入し、タイトルとセクション構造は維持した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

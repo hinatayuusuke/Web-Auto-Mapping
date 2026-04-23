@@ -3,7 +3,7 @@ import { PropsWithChildren } from 'react';
 type ShellPanelProps = PropsWithChildren<{
   className?: string;
   title: string;
-  description: string;
+  description?: string;
 }>;
 
 export function ShellPanel({
@@ -21,7 +21,9 @@ export function ShellPanel({
         <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
           {title}
         </h2>
-        <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">{description}</p>
+        {description ? (
+          <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">{description}</p>
+        ) : null}
       </header>
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
         <div className="grid gap-6">{children}</div>

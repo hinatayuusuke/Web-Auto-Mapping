@@ -366,14 +366,9 @@ function App() {
     <ShellPanel
       className={isTallViewport ? 'h-[clamp(320px,34dvh,420px)]' : ''}
       title="Navigator"
-      description="探索操作、階層管理、グリッド拡張をまとめた左ペイン。"
     >
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Document"
-          title="Map Title"
-          body="保存 JSON と localStorage に入るタイトルです。空欄にはできません。"
-        />
+        <PanelHeading eyebrow="Document" title="Map Title" />
         <label className="grid gap-2">
           <span className="text-sm text-[var(--color-text-soft)]">Title</span>
           <input
@@ -385,11 +380,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Floors"
-          title="Floor Selector"
-          body="各階層は独立した `cells / edges / icons` を持ちます。選択はコンボボックス、名前変更は下の入力欄で行います。"
-        />
+        <PanelHeading eyebrow="Floors" title="Floor Selector" />
         <label className="grid gap-2">
           <span className="text-sm text-[var(--color-text-soft)]">Selected Floor</span>
           <select
@@ -432,11 +423,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Grid"
-          title="Expand Grid"
-          body="右 / 下は末尾へ、上 / 左は既存要素を平行移動して 4 マスずつ拡張します。"
-        />
+        <PanelHeading eyebrow="Grid" title="Expand Grid" />
         <div className="grid grid-cols-2 gap-2">
           <IconButton
             label="Expand left by 4"
@@ -469,7 +456,7 @@ function App() {
         <PanelHeading
           eyebrow="Keyboard"
           title="Movement"
-          body="`W / ↑` で前進、`A / ←` と `D / →` で方向変更、`S / ↓` で後ろを向きます。"
+          body="W/↑ forward, A/← D/→ turn, S/↓ back"
         />
         <MovementPad
           currentFacing={currentFacing}
@@ -482,7 +469,7 @@ function App() {
         <PanelHeading
           eyebrow="Tauri"
           title="Global Arrow Test"
-          body="Tauri 実行時のみ Arrow の global shortcut を登録します。ゲーム側フォーカス中でも反応するかの確認用です。"
+          body="Tauri only"
         />
         <ActionButton
           active={globalArrowCaptureEnabled}
@@ -500,7 +487,7 @@ function App() {
         <PanelHeading
           eyebrow="Shortcuts"
           title="Forward Edge"
-          body="前方境界を `1:wall`, `2:open door`, `3:open`, `4:closed door`, `0:unknown` で即時編集できます。"
+          body="1 wall / 2 door / 3 open / 4 closed / 0 unknown"
         />
         <div className="grid grid-cols-2 gap-2">
           <ShortcutButton label="1 wall" onClick={() => applyForwardEdgeShortcut('wall')} />
@@ -584,14 +571,9 @@ function App() {
     <ShellPanel
       className={isTallViewport ? 'h-[clamp(320px,34dvh,420px)]' : ''}
       title="Workspace"
-      description="保存 / 読込、履歴、viewport、編集設定をまとめた右ペイン。"
     >
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="State"
-          title="Current Status"
-          body="選択中のツール、アイコン、階層状態をここで見失わないようにします。"
-        />
+        <PanelHeading eyebrow="State" title="Current Status" />
         <div className="grid gap-2">
           <KeyValueRow label="Selected Tool" value={selectedTool} />
           <KeyValueRow label="Selected Icon" value={selectedCellIconKind} />
@@ -607,7 +589,7 @@ function App() {
         <PanelHeading
           eyebrow="Persistence"
           title="Save / Load"
-          body="変更は現在の実行環境に応じた autosave 先へ保存され、JSON でも入出力できます。"
+          body="Autosave + JSON import/export"
         />
         <div className="grid gap-2">
           <ShortcutButton label="Save JSON" onClick={handleExport} />
@@ -615,17 +597,12 @@ function App() {
         </div>
         <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
           <p>Auto save target: `{storageDescriptor.label}`</p>
-          <p>Detail: `{storageDescriptor.detail}`</p>
         </div>
         {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="History"
-          title="Undo / Redo"
-          body="`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` に対応します。編集、移動、階層操作、グリッド拡張を巻き戻せます。"
-        />
+        <PanelHeading eyebrow="History" title="Undo / Redo" body="Ctrl+Z / Ctrl+Y" />
         <div className="grid grid-cols-2 gap-2">
           <IconButton
             active={canUndo}
@@ -648,7 +625,7 @@ function App() {
         <PanelHeading
           eyebrow="Viewport"
           title="Zoom / Pan"
-          body="ホイールでズーム、Canvas 上では Alt+drag または middle drag でパンできます。ボタンからも調整できます。"
+          body="Wheel zoom, Alt/middle drag pan"
         />
         <div className="grid grid-cols-3 gap-2">
           <IconButton
@@ -681,11 +658,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Map Stats"
-          title="Selected Floor"
-          body="編集で変わるセル、通路、壁、アイコン数をここで確認できます。"
-        />
+        <PanelHeading eyebrow="Map Stats" title="Selected Floor" />
         <dl className="grid gap-3">
           <KeyValueRow label="Floors" value={`${floors.length}`} />
           <KeyValueRow label="Known Cells" value={`${selectedFloorStats?.knownCells ?? 0}`} />
@@ -699,11 +672,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Mode"
-          title="Explore / Map"
-          body="Map モード時のみ Canvas クリック編集を受け付けます。Explore は踏査入力を優先します。"
-        />
+        <PanelHeading eyebrow="Mode" title="Explore / Map" />
         <div className="grid grid-cols-2 gap-2">
           <ActionButton
             active={mode === 'explore'}
@@ -715,11 +684,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Mouse"
-          title="Edit Tool"
-          body="左クリックで配置、右クリックで削除です。セル中心はセル、境界近くはエッジとして解釈します。"
-        />
+        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Map mode only" />
         <div className="grid gap-2">
           {EDIT_TOOL_OPTIONS.map((tool) => (
             <ActionButton
@@ -736,7 +701,7 @@ function App() {
         <PanelHeading
           eyebrow="Palette"
           title="Cell Icons"
-          body="`[` `]` で巡回、`I` で足元、`Alt+I` で前方セルへ配置、`Backspace` で足元アイコン削除です。"
+          body="[ ] cycle, I place, Alt+I forward, Backspace remove"
         />
         <div className="grid grid-cols-2 gap-2">
           {CELL_ICON_KINDS.map((kind) => (
@@ -751,11 +716,7 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Auto Mapping"
-          title="Completion Level"
-          body="Explore モードの移動時のみ効く設定です。Map 編集では自動変更しません。"
-        />
+        <PanelHeading eyebrow="Auto Mapping" title="Completion Level" />
         <div className="grid gap-2">
           {AUTO_MAPPING_LEVELS.map((level) => (
             <ActionButton
@@ -849,7 +810,7 @@ function StatusChip({ label, value }: StatusChipProps) {
 type PanelHeadingProps = {
   eyebrow: string;
   title: string;
-  body: string;
+  body?: string;
 };
 
 function PanelHeading({ eyebrow, title, body }: PanelHeadingProps) {
@@ -859,7 +820,7 @@ function PanelHeading({ eyebrow, title, body }: PanelHeadingProps) {
       <h3 className="mt-1 text-base font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
         {title}
       </h3>
-      <p className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">{body}</p>
+      {body ? <p className="mt-1 text-sm leading-5 text-[var(--color-text-soft)]">{body}</p> : null}
     </div>
   );
 }
