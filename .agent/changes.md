@@ -1215,3 +1215,43 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 15:28 (Asia/Taipei) — Tauri global Arrow shortcut 検証実装**
+
+### Summary
+- Tauri 実行時だけ Arrow の global shortcut を ON/OFF できる検証機能を追加した
+
+### Context / Goal
+- 非フォーカス時でもゲーム操作に合わせて自動マッピングを進められるかを、まずは安全な Arrow 限定で検証したかった
+- 常時監視ではなく、Tauri 実行時のみ明示トグルで有効化できる最小構成に留めた
+
+### Changes
+- Tauri に global shortcut plugin を追加し、ArrowUp / ArrowDown / ArrowLeft / ArrowRight を登録できるようにした
+- Navigator に `Global Arrow Test` セクションを追加し、Tauri 実行時だけ capture の ON/OFF と状態確認ができるようにした
+- global shortcut 発火時は現在の向きを基準に前進 / 左旋回 / 右旋回 / 後方転回へ変換する処理を追加した
+- ローカルフォーカス時の Arrow キー入力と二重反応しないよう、global capture 有効中は既存の Arrow キー処理を抑制した
+
+### Files Touched
+- `package.json` — `@tauri-apps/plugin-global-shortcut` を追加し、依存関係を更新した
+- `package-lock.json` — 新しい npm 依存のロック情報を反映した
+- `src/App.tsx` — Tauri 判定、global shortcut トグル、状態表示、Arrow 入力の二重反応抑止を追加した
+- `src-tauri/Cargo.toml` — Rust 側に `tauri-plugin-global-shortcut` を追加した
+- `src-tauri/Cargo.lock` — Cargo 依存のロック情報を更新した
+- `src-tauri/src/lib.rs` — Tauri Builder に global shortcut plugin を登録した
+- `src-tauri/capabilities/default.json` — global shortcut の register / unregister / isRegistered 権限を追加した
+
+### Behavioral Impact
+- Tauri アプリ実行中は、`Global Arrow Test` のトグルを ON にすると非フォーカス時の Arrow 入力で移動 / 向き変更を試せるようになった
+- Web 実行時はこの機能は無効で、従来どおりフォーカス中のローカルキーボード入力だけが動作する
+- Arrow キーが他アプリや OS に確保されている環境では登録失敗となり、状態表示が `register failed` になる
+
+### Risk & Mitigation
+- Risk: Arrow 単体の global shortcut は他アプリ操作と衝突しやすく、環境によっては登録できない
+- Mitigation: 明示トグル式にし、常時有効化せず状態表示で失敗を見える化した
+- Risk: global shortcut 有効中にローカル Arrow 入力も通すと二重動作になる
+- Mitigation: Tauri capture 有効時は既存の `window` キーハンドラで Arrow キーを早期 return するようにした
+
+### Tests / Verification
+- `npm run build`
+- `cargo build --manifest-path .\src-tauri\Cargo.toml`
+- `npm run tauri build`
+- Web と Tauri のビルド成功を確認。非フォーカス時の Arrow 実機入力確認は未実施

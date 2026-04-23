@@ -3,6 +3,7 @@ import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
 import { getFloorStats } from './lib/mapModel';
 import { createPersistedDocument } from './lib/persistence';
+import { isTauriRuntime } from './lib/runtime';
 import { exportDocument, getStorageDescriptor, importDocument } from './lib/storageAdapter';
 import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
@@ -20,6 +21,7 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'cell icon', value: 'cell-icon' },
 ];
 const VIEWPORT_PAN_STEP = 64;
+const GLOBAL_ARROW_SHORTCUTS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
 
 type NoticeState = {
   message: string;
@@ -29,8 +31,11 @@ type NoticeState = {
 type RelativeControlAction = 'forward' | 'turn-left' | 'turn-right' | 'turn-back';
 
 function App() {
+  const supportsGlobalArrowCapture = useMemo(() => isTauriRuntime(), []);
   const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
   const [isTallViewport, setIsTallViewport] = useState(false);
+  const [globalArrowCaptureEnabled, setGlobalArrowCaptureEnabled] = useState(false);
+  const [globalArrowCaptureStatus, setGlobalArrowCaptureStatus] = useState('off');
   const autoMapping = useAppStore((state) => state.autoMapping);
   const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
   const canUndo = useAppStore((state) => state.history.undoStack.length > 0);
@@ -75,6 +80,87 @@ function App() {
   useEffect(() => {
     void hydratePersistedState();
   }, [hydratePersistedState]);
+
+  useEffect(() => {
+    if (!supportsGlobalArrowCapture) {
+      return;
+    }
+
+    if (!globalArrowCaptureEnabled) {
+      setGlobalArrowCaptureStatus('off');
+      return;
+    }
+
+    let disposed = false;
+    let registered = false;
+
+    const registerShortcuts = async () => {
+      try {
+        const { isRegistered, register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
+
+        for (const shortcut of GLOBAL_ARROW_SHORTCUTS) {
+          if (await isRegistered(shortcut)) {
+            throw new Error(`Shortcut already registered: ${shortcut}`);
+          }
+        }
+
+        await register([...GLOBAL_ARROW_SHORTCUTS], (event) => {
+          if (disposed || event.state !== 'Pressed') {
+            return;
+          }
+
+          const state = useAppStore.getState();
+          const facing =
+            state.floors.find((floor) => floor.id === state.selectedFloorId)?.player.facing ?? 'north';
+
+          setGlobalArrowCaptureStatus(`captured ${event.shortcut}`);
+
+          switch (event.shortcut) {
+            case 'ArrowUp':
+              state.moveInDirection(facing);
+              return;
+            case 'ArrowLeft':
+              state.setPlayerFacing(getFacingAfterTurn(facing, 'turn-left'));
+              return;
+            case 'ArrowRight':
+              state.setPlayerFacing(getFacingAfterTurn(facing, 'turn-right'));
+              return;
+            case 'ArrowDown':
+              state.setPlayerFacing(getFacingAfterTurn(facing, 'turn-back'));
+              return;
+            default:
+              return;
+          }
+        });
+
+        registered = true;
+        setGlobalArrowCaptureStatus('listening');
+
+        if (disposed) {
+          await unregister([...GLOBAL_ARROW_SHORTCUTS]);
+        }
+      } catch {
+        if (!disposed) {
+          setGlobalArrowCaptureEnabled(false);
+          setGlobalArrowCaptureStatus('register failed');
+        }
+      }
+    };
+
+    void registerShortcuts();
+
+    return () => {
+      disposed = true;
+
+      if (!registered) {
+        return;
+      }
+
+      void import('@tauri-apps/plugin-global-shortcut').then(({ unregister }) =>
+        unregister([...GLOBAL_ARROW_SHORTCUTS]),
+      );
+    };
+  }, [globalArrowCaptureEnabled, supportsGlobalArrowCapture]);
 
   useEffect(() => {
     const updateViewportMode = () => {
@@ -206,6 +292,10 @@ function App() {
       }
 
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+
+      if (supportsGlobalArrowCapture && globalArrowCaptureEnabled && event.key.startsWith('Arrow')) {
         return;
       }
 
@@ -359,6 +449,24 @@ function App() {
           currentFacing={currentFacing}
           onForward={() => moveInDirection(currentFacing)}
           onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Tauri"
+          title="Global Arrow Test"
+          body="Tauri 実行時のみ Arrow の global shortcut を登録します。ゲーム側フォーカス中でも反応するかの確認用です。"
+        />
+        <ActionButton
+          active={globalArrowCaptureEnabled}
+          disabled={!supportsGlobalArrowCapture}
+          label={globalArrowCaptureEnabled ? 'capture on' : 'capture off'}
+          onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
+        />
+        <KeyValueRow
+          label="Capture Status"
+          value={supportsGlobalArrowCapture ? globalArrowCaptureStatus : 'tauri only'}
         />
       </section>
 
@@ -857,4 +965,9 @@ function getFacingAfterTurn(
 }
 
 export default App;
+
+
+
+
+
 

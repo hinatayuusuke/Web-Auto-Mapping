@@ -32,6 +32,9 @@
           "path": "$APPLOCALDATA/web-auto-mapping.document.json"
         }
       ]
-    }
+    },
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister"
   ]
 }
