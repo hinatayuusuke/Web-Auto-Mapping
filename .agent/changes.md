@@ -1371,3 +1371,57 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 15:50 (Asia/Taipei) — Movementサイズの再調整**
+
+### Summary
+- `Movement` の正方形ボタンを小型化し、パネル内で収まるサイズへ再調整した
+
+### Context / Goal
+- 前回の正方形サイズ統一では、`Movement` の各ボタンが大きすぎてパネル内で窮屈になっていた
+- 同じ外形サイズは維持しつつ、占有を下げてレイアウト破綻を避けたかった
+
+### Changes
+- `IconButton` の `square` サイズを小さくした
+- 中央の `N / E / S / W` 表示枠も同じ縮小サイズへ合わせた
+
+### Files Touched
+- `src/App.tsx` — `Movement` 用の正方形サイズ定義と中央表示の寸法を縮小した
+
+### Behavioral Impact
+- `Movement` セクションの上下左右ボタンと中央表示は同サイズのまま、全体の占有だけが減った
+- 操作内容やキーバインドの挙動は変わっていない
+
+### Risk & Mitigation
+- Risk: 小さくしすぎると押しにくくなる可能性がある
+- Mitigation: 等サイズは維持したまま一段だけ縮小し、最低限の視認性と押下領域を残した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 15:53 (Asia/Taipei) — Movement中心線の整列修正**
+
+### Summary
+- `Movement` を単一の 3x3 grid に統一し、中央の向き表示と上下ボタンの中心線ズレを解消した
+
+### Context / Goal
+- `Movement` では中央表示だけが左右ボタン用の grid に置かれ、上下ボタンは別の `flex` 行に置かれていたため、視覚上の中心線が揃っていなかった
+- すべてを同じレイアウト基準に載せて、方向パッドとして一体に見せたかった
+
+### Changes
+- `MovementPad` を 3x3 の単一 grid 構成へ変更した
+- 上下ボタン、左右ボタン、中央の `N / E / S / W` 表示を同じ grid セル基準で配置するようにした
+
+### Files Touched
+- `src/App.tsx` — `MovementPad` のレイアウトを `flex + grid` の混在構成から単一 grid 構成へ変更した
+
+### Behavioral Impact
+- `Movement` セクションの中央表示と上下左右ボタンの中心線が揃い、方向パッド全体の見た目が安定した
+- ボタン動作やキーバインドの挙動は変わっていない
+
+### Risk & Mitigation
+- Risk: grid 再配置でパネル内の縦横間隔が想定より詰まる可能性がある
+- Mitigation: 既存の `gap-2` は維持し、配置基準だけを統一した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

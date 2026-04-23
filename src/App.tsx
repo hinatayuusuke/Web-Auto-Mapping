@@ -1006,8 +1006,9 @@ type MovementPadProps = {
 
 function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
   return (
-    <div className="grid gap-2">
-      <div className="flex justify-center">
+    <div className="grid grid-cols-3 justify-items-center gap-2">
+      <div />
+      <div>
         <IconButton
           label="Move forward"
           icon={<ArrowIcon direction="up" />}
@@ -1015,24 +1016,24 @@ function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
           size="square"
         />
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        <IconButton
-          label="Turn left"
-          icon={<ArrowIcon direction="left" />}
-          onClick={() => onTurn('turn-left')}
-          size="square"
-        />
-        <div className="flex size-16 items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] text-center text-lg font-semibold uppercase tracking-[0.2em] text-[var(--color-text-strong)]">
-          {getFacingLabel(currentFacing)}
-        </div>
-        <IconButton
-          label="Turn right"
-          icon={<ArrowIcon direction="right" />}
-          onClick={() => onTurn('turn-right')}
-          size="square"
-        />
+      <div />
+      <IconButton
+        label="Turn left"
+        icon={<ArrowIcon direction="left" />}
+        onClick={() => onTurn('turn-left')}
+        size="square"
+      />
+      <div className="flex size-16 items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] text-center text-lg font-semibold uppercase tracking-[0.2em] text-[var(--color-text-strong)]">
+        {getFacingLabel(currentFacing)}
       </div>
-      <div className="flex justify-center">
+      <IconButton
+        label="Turn right"
+        icon={<ArrowIcon direction="right" />}
+        onClick={() => onTurn('turn-right')}
+        size="square"
+      />
+      <div />
+      <div>
         <IconButton
           label="Turn back"
           icon={<ArrowIcon direction="down" />}
@@ -1040,6 +1041,7 @@ function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
           size="square"
         />
       </div>
+      <div />
     </div>
   );
 }
