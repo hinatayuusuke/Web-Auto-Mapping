@@ -613,9 +613,8 @@ function trimHistory(history: PersistedDocument[]) {
 }
 
 function sanitizeDocumentTitle(title: string) {
-  const normalized = title.trim();
-
-  return normalized.length > 0 ? normalized : DEFAULT_TITLE;
+  // WHY: 入力中に trim すると単語間や末尾のスペースが即時消えて、通常のタイトル編集を妨げる。
+  return title.trim().length > 0 ? title : DEFAULT_TITLE;
 }
 
 function sanitizeFloorName(name: string, fallback: string) {

@@ -1516,3 +1516,31 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 16:51 (Asia/Taipei) — タイトル入力スペース保持修正**
+
+### Summary
+- `Title` 入力中にスペースが即時削除されないよう、タイトル正規化処理を修正した
+
+### Context / Goal
+- `Title` 入力で単語間スペースを入力しても、store 側の `trim()` により即座に消えていた
+- 空白だけのタイトルは既定名へ戻しつつ、通常のタイトル文字列内スペースは保持したかった
+
+### Changes
+- `sanitizeDocumentTitle()` で保存値そのものに `trim()` を適用しないようにした
+- 空判定だけ `title.trim().length` を使い、値は元の `title` を保持するようにした
+- 入力中のスペース保持理由をコメントとして明記した
+
+### Files Touched
+- `src/store/appStore.ts` — タイトル正規化処理を変更し、入力中のスペースを保持するようにした
+
+### Behavioral Impact
+- `Title` に単語間スペースや末尾スペースを入力できるようになった
+- 空文字または空白のみのタイトルは従来どおり `Untitled Map` に戻る
+
+### Risk & Mitigation
+- Risk: 末尾スペースも保存されるため、意図しない空白がタイトルに残る可能性がある
+- Mitigation: 入力中の編集性を優先し、空白のみの場合だけ既定名へ戻すガードを維持した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
