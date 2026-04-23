@@ -5,6 +5,7 @@ import {
   applyForwardEdgeEdit,
   createExploreSeedFloorState,
   expandFloorGrid,
+  getCoordinateInDirection,
   movePlayerInExploreMode,
   movePlayerInMapMode,
   placeSelectedCellIconAtPlayer,
@@ -244,7 +245,11 @@ export const useAppStore = create<AppStore>((set) => ({
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
           state.mode === 'explore'
-            ? movePlayerInExploreMode(floor, facing, state.autoMapping)
+            ? movePlayerInExploreMode(
+                expandFloorForExploreMove(floor, facing),
+                facing,
+                state.autoMapping,
+              )
             : movePlayerInMapMode(floor, facing),
         ),
       })),
@@ -606,6 +611,35 @@ function createEmptyHistory(): HistoryState {
 
 function getSelectedFloorFromState(state: Pick<AppState, 'floors' | 'selectedFloorId'>) {
   return state.floors.find((floor) => floor.id === state.selectedFloorId);
+}
+
+function expandFloorForExploreMove(floor: FloorState, facing: Facing) {
+  // WHY: 上/左拡張時はプレイヤーやアイコン座標もシフトするため、既存の拡張処理を先に通してから通常移動させる。
+  const destination = getCoordinateInDirection(
+    {
+      x: floor.player.x,
+      y: floor.player.y,
+    },
+    facing,
+  );
+
+  if (destination.x < 0) {
+    return expandFloorGrid(floor, { left: GRID_EXPAND_STEP });
+  }
+
+  if (destination.x >= floor.width) {
+    return expandFloorGrid(floor, { right: GRID_EXPAND_STEP });
+  }
+
+  if (destination.y < 0) {
+    return expandFloorGrid(floor, { up: GRID_EXPAND_STEP });
+  }
+
+  if (destination.y >= floor.height) {
+    return expandFloorGrid(floor, { down: GRID_EXPAND_STEP });
+  }
+
+  return floor;
 }
 
 function trimHistory(history: PersistedDocument[]) {

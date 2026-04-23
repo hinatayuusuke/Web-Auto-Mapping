@@ -576,51 +576,48 @@ function App() {
       title="Workspace"
     >
       <section className="space-y-3">
-        <PanelHeading eyebrow="State" title="Current Status" />
+        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Map mode only" />
         <div className="grid gap-2">
-          <KeyValueRow label="Selected Tool" value={selectedTool} />
-          <KeyValueRow label="Selected Icon" value={selectedCellIconKind} />
-          <KeyValueRow label="Current Floor" value={selectedFloor?.name ?? 'N/A'} />
-          <KeyValueRow label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
+          {EDIT_TOOL_OPTIONS.map((tool) => (
+            <ActionButton
+              key={tool.value}
+              active={selectedTool === tool.value}
+              label={tool.label}
+              onClick={() => setSelectedTool(tool.value)}
+            />
+          ))}
         </div>
-        {mapStateNotice ? (
-          <NoticeCard message={mapStateNotice.message} tone={mapStateNotice.tone} />
-        ) : null}
       </section>
 
       <section className="space-y-3">
         <PanelHeading
-          eyebrow="Persistence"
-          title="Save / Load"
-          body="Autosave + JSON import/export"
+          eyebrow="Palette"
+          title="Cell Icons"
+          body="[ ] cycle, I place, Alt+I forward, Backspace remove"
         />
-        <div className="grid gap-2">
-          <ShortcutButton label="Save JSON" onClick={handleExport} />
-          <ShortcutButton label="Load JSON" onClick={handleImportClick} />
+        <div className="grid grid-cols-2 gap-2">
+          {CELL_ICON_KINDS.map((kind) => (
+            <ActionButton
+              key={kind}
+              active={selectedCellIconKind === kind}
+              label={kind}
+              onClick={() => setSelectedCellIconKind(kind)}
+            />
+          ))}
         </div>
-        <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
-          <p>Auto save target: `{storageDescriptor.label}`</p>
-        </div>
-        {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
       </section>
 
       <section className="space-y-3">
-        <PanelHeading eyebrow="History" title="Undo / Redo" body="Ctrl+Z / Ctrl+Y" />
-        <div className="grid grid-cols-2 gap-2">
-          <IconButton
-            active={canUndo}
-            label="Undo"
-            icon={<UndoIcon />}
-            onClick={undo}
-            disabled={!canUndo}
-          />
-          <IconButton
-            active={canRedo}
-            label="Redo"
-            icon={<RedoIcon />}
-            onClick={redo}
-            disabled={!canRedo}
-          />
+        <PanelHeading eyebrow="Auto Mapping" title="Completion Level" />
+        <div className="grid gap-2">
+          {AUTO_MAPPING_LEVELS.map((level) => (
+            <ActionButton
+              key={level}
+              active={autoMapping === level}
+              label={level}
+              onClick={() => setAutoMapping(level)}
+            />
+          ))}
         </div>
       </section>
 
@@ -675,49 +672,22 @@ function App() {
       </section>
 
       <section className="space-y-3">
-        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Map mode only" />
-        <div className="grid gap-2">
-          {EDIT_TOOL_OPTIONS.map((tool) => (
-            <ActionButton
-              key={tool.value}
-              active={selectedTool === tool.value}
-              label={tool.label}
-              onClick={() => setSelectedTool(tool.value)}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
         <PanelHeading
-          eyebrow="Palette"
-          title="Cell Icons"
-          body="[ ] cycle, I place, Alt+I forward, Backspace remove"
+          eyebrow="Persistence"
+          title="Save / Load"
+          body="Autosave + JSON import/export"
         />
-        <div className="grid grid-cols-2 gap-2">
-          {CELL_ICON_KINDS.map((kind) => (
-            <ActionButton
-              key={kind}
-              active={selectedCellIconKind === kind}
-              label={kind}
-              onClick={() => setSelectedCellIconKind(kind)}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <PanelHeading eyebrow="Auto Mapping" title="Completion Level" />
         <div className="grid gap-2">
-          {AUTO_MAPPING_LEVELS.map((level) => (
-            <ActionButton
-              key={level}
-              active={autoMapping === level}
-              label={level}
-              onClick={() => setAutoMapping(level)}
-            />
-          ))}
+          <ShortcutButton label="Save JSON" onClick={handleExport} />
+          <ShortcutButton label="Load JSON" onClick={handleImportClick} />
         </div>
+        <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
+          <p>Auto save target: `{storageDescriptor.label}`</p>
+        </div>
+        {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
+        {mapStateNotice ? (
+          <NoticeCard message={mapStateNotice.message} tone={mapStateNotice.tone} />
+        ) : null}
       </section>
     </ShellPanel>
   );

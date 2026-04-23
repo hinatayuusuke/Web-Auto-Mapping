@@ -1660,3 +1660,69 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:30 (Asia/Taipei) — Workspace右ペインの編集パレット優先化**
+
+### Summary
+- 右ペインから `State` と `History` を削除し、編集アイコン群を最上段へ移動した
+
+### Context / Goal
+- `State` はヘッダーや各 active 表示と重複し、`History` は `MapCanvas` ヘッダーの Undo / Redo と重複していた
+- 右ペインを状態表示よりも編集パレットとして使いやすくしたかった
+
+### Changes
+- `Workspace` の `Current Status` セクションを削除した
+- `Workspace` の `Undo / Redo` セクションを削除した
+- `Edit Tool` を右ペイン最上段へ移動した
+- `Cell Icons` と `Auto Mapping` を上位に移動した
+- `Save / Load` を下部へ移動し、既存の通知表示は残した
+- 空フロアなどの map state notice は `Save / Load` 付近へ移して保持した
+
+### Files Touched
+- `src/App.tsx` — `Workspace` セクションの削除と並び替えを行った
+
+### Behavioral Impact
+- 右ペインの先頭が編集操作に直結する構成になった
+- `State` と `History` の重複表示がなくなり、縦方向の占有が減った
+- Undo / Redo 自体は `MapCanvas` ヘッダーから引き続き操作できる
+
+### Risk & Mitigation
+- Risk: `Selected Tool` や `Selected Icon` の一覧表示がなくなり、現在状態を見失う可能性がある
+- Mitigation: それぞれの選択ボタンの active 表示で状態を確認できるため、重複表示だけを削除した
+- Risk: 空フロアなどの通知が消えると状態異常に気づきにくい
+- Mitigation: `mapStateNotice` は削除せず `Save / Load` セクション下へ移動した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:43 (Asia/Taipei) — Explore移動時の自動グリッド拡張**
+
+### Summary
+- Explore Mode の移動先がグリッド外になる場合、移動前に自動で `+4` 拡張するようにした
+
+### Context / Goal
+- Explore Mode で端に到達するたびに手動で `Expand Grid` を押す必要があり、自動マッピングの流れが途切れていた
+- 探索中は移動に合わせて地図が自然に広がる挙動にしたかった
+
+### Changes
+- `moveInDirection` の Explore 分岐で、移動前に `expandFloorForExploreMove()` を通すようにした
+- 移動先が西 / 北 / 東 / 南の範囲外になる場合、それぞれ left / up / right / down に `GRID_EXPAND_STEP` 分だけ拡張する処理を追加した
+- 上 / 左拡張時の座標シフトは既存の `expandFloorGrid()` に任せ、拡張後に通常の `movePlayerInExploreMode()` を実行するようにした
+- Map Mode の移動では自動拡張しない挙動を維持した
+
+### Files Touched
+- `src/store/appStore.ts` — Explore Mode 移動前の自動拡張処理と補助関数を追加した
+
+### Behavioral Impact
+- Explore Mode では端から外へ移動しようとすると、グリッドが自動で `+4` 拡張されてから移動する
+- 自動拡張と移動は既存の `applyTrackedMutation()` 内で行われるため、Undo 1 回でまとめて戻せる
+- Map Mode では従来どおり範囲外移動でグリッドは拡張されない
+
+### Risk & Mitigation
+- Risk: 上 / 左拡張時は既存セルやアイコン、プレイヤー座標がシフトするため、移動前後の座標計算を誤るとズレる可能性がある
+- Mitigation: 手動拡張と同じ `expandFloorGrid()` を先に通し、座標シフト後の floor に対して既存の Explore 移動処理を呼ぶようにした
+- Risk: 自動拡張により意図せずマップサイズが増え続ける可能性がある
+- Mitigation: 対象を Explore Mode の範囲外移動時だけに限定し、Map Mode では発火しないようにした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
