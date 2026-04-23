@@ -1255,3 +1255,62 @@
 - `cargo build --manifest-path .\src-tauri\Cargo.toml`
 - `npm run tauri build`
 - Web と Tauri のビルド成功を確認。非フォーカス時の Arrow 実機入力確認は未実施
+**2026-04-23 15:36 (Asia/Taipei) — ボタンのアイコン化提案追加**
+
+### Summary
+- 現状ボタンの棚卸しとアイコン化優先順位を `Doc/ButtonIconProposal.md` に整理した
+
+### Context / Goal
+- 各パネルのボタンが UI 面積を圧迫しているため、どの操作を先にアイコン化するかの判断基準が必要だった
+- 危険操作や意味が曖昧な操作まで一律にアイコン化しない方針を先に文書化したかった
+
+### Changes
+- 現在の主要ボタン群を用途別に整理した
+- 頻用操作、危険操作、状態切替でアイコン化の優先度を分けた
+- `IconButton` / `TextIconButton` を軸にした段階的な実装手順をまとめた
+
+### Files Touched
+- `Doc/ButtonIconProposal.md` — ボタンの棚卸し、アイコン化の対象分類、実装手順、リスクを整理した
+
+### Behavioral Impact
+- ドキュメント追加のみで、現行アプリの挙動変更はない
+
+### Risk & Mitigation
+- Risk: 実装前の提案書だけでは、実際の画面バランスと差が出る可能性がある
+- Mitigation: 頻用ボタンから段階実装し、危険操作は text 併用を維持する前提にした
+
+### Tests / Verification
+- 未実施
+- 文書追加のみのため、現時点ではコードビルドや実機確認は行っていない
+**2026-04-23 15:43 (Asia/Taipei) — ボタンのSVGアイコン化実装**
+
+### Summary
+- `Doc/ButtonIconProposal.md` に沿って頻用ボタンを SVG ベースのアイコンボタンへ置き換えた
+
+### Context / Goal
+- `MapCanvas`、`Workspace`、`Navigator` の頻用ボタンがテキスト中心で、横幅と高さを圧迫していた
+- 危険操作や保存系はテキストを残しつつ、意味が固定された操作だけを先にアイコン化したかった
+
+### Changes
+- `MapCanvas` 上部の `Undo / Redo / Zoom - / Zoom + / Reset View` を SVG アイコンボタンへ変更した
+- `Workspace` の `Undo / Redo` と `Viewport` のパン / リセット / ズーム操作を SVG アイコンボタンへ変更した
+- `Navigator` の `Expand Grid` と `Movement` を SVG アイコン主体の操作系へ変更した
+- アイコンのみボタンに `title` と `aria-label` を付け、tooltip と支援技術の両方で操作名が分かるようにした
+
+### Files Touched
+- `src/App.tsx` — `IconButton` と各種 SVG アイコンを追加し、頻用ボタン群の見た目と配置をアイコン主体へ変更した
+
+### Behavioral Impact
+- 頻用操作ボタンの占有面積が減り、`MapCanvas` 周辺と各パネル内の密度が上がった
+- `Add / Duplicate / Delete`、`Save JSON / Load JSON`、モードやツール選択などは従来どおりテキストを維持している
+- 操作内容自体は変わらず、ボタン表示だけがアイコン中心になった
+
+### Risk & Mitigation
+- Risk: アイコンだけでは初見で意味が伝わりにくい
+- Mitigation: `title` と `aria-label` を必須にし、hover と支援技術の両方でラベルを露出するようにした
+- Risk: 危険操作までアイコン化すると誤操作しやすくなる
+- Mitigation: `Delete`、`Save JSON`、`Load JSON` は今回もテキストのまま残した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

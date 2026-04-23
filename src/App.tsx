@@ -432,10 +432,30 @@ function App() {
           body="右 / 下は末尾へ、上 / 左は既存要素を平行移動して 4 マスずつ拡張します。"
         />
         <div className="grid grid-cols-2 gap-2">
-          <ShortcutButton label="+4 Left" onClick={() => expandSelectedFloorLeft()} />
-          <ShortcutButton label="+4 Up" onClick={() => expandSelectedFloorUp()} />
-          <ShortcutButton label="+4 Right" onClick={() => expandSelectedFloorRight()} />
-          <ShortcutButton label="+4 Down" onClick={() => expandSelectedFloorDown()} />
+          <IconButton
+            label="Expand left by 4"
+            icon={<ArrowIcon direction="left" />}
+            badge="4"
+            onClick={() => expandSelectedFloorLeft()}
+          />
+          <IconButton
+            label="Expand up by 4"
+            icon={<ArrowIcon direction="up" />}
+            badge="4"
+            onClick={() => expandSelectedFloorUp()}
+          />
+          <IconButton
+            label="Expand right by 4"
+            icon={<ArrowIcon direction="right" />}
+            badge="4"
+            onClick={() => expandSelectedFloorRight()}
+          />
+          <IconButton
+            label="Expand down by 4"
+            icon={<ArrowIcon direction="down" />}
+            badge="4"
+            onClick={() => expandSelectedFloorDown()}
+          />
         </div>
       </section>
 
@@ -509,18 +529,39 @@ function App() {
           </h2>
         </div>
 
-        <div className="grid gap-1.5 sm:grid-cols-3 xl:grid-cols-6">
-          <ToolbarButton label="Undo" onClick={undo} disabled={!canUndo} />
-          <ToolbarButton label="Redo" onClick={redo} disabled={!canRedo} />
-          <ToolbarButton
-            label="Zoom -"
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <IconButton
+            label="Undo"
+            icon={<UndoIcon />}
+            onClick={undo}
+            disabled={!canUndo}
+            size="toolbar"
+          />
+          <IconButton
+            label="Redo"
+            icon={<RedoIcon />}
+            onClick={redo}
+            disabled={!canRedo}
+            size="toolbar"
+          />
+          <IconButton
+            label="Zoom out"
+            icon={<ZoomOutIcon />}
             onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
+            size="toolbar"
           />
-          <ToolbarButton
-            label="Zoom +"
+          <IconButton
+            label="Zoom in"
+            icon={<ZoomInIcon />}
             onClick={() => setViewport({ zoom: viewport.zoom + 0.15 })}
+            size="toolbar"
           />
-          <ToolbarButton label="Reset View" onClick={resetViewport} />
+          <IconButton
+            label="Reset view"
+            icon={<ResetViewIcon />}
+            onClick={resetViewport}
+            size="toolbar"
+          />
           <div className="px-1 py-1.5 text-center text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
             {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
           </div>
@@ -580,8 +621,20 @@ function App() {
           body="`Ctrl+Z`, `Ctrl+Y`, `Ctrl+Shift+Z` に対応します。編集、移動、階層操作、グリッド拡張を巻き戻せます。"
         />
         <div className="grid grid-cols-2 gap-2">
-          <ActionButton active={canUndo} label="Undo" onClick={undo} disabled={!canUndo} />
-          <ActionButton active={canRedo} label="Redo" onClick={redo} disabled={!canRedo} />
+          <IconButton
+            active={canUndo}
+            label="Undo"
+            icon={<UndoIcon />}
+            onClick={undo}
+            disabled={!canUndo}
+          />
+          <IconButton
+            active={canRedo}
+            label="Redo"
+            icon={<RedoIcon />}
+            onClick={redo}
+            disabled={!canRedo}
+          />
         </div>
       </section>
 
@@ -592,30 +645,30 @@ function App() {
           body="ホイールでズーム、Canvas 上では Alt+drag または middle drag でパンできます。ボタンからも調整できます。"
         />
         <div className="grid grid-cols-3 gap-2">
-          <ActionButton
-            active={false}
-            label="Left"
+          <IconButton
+            label="Pan left"
+            icon={<ArrowIcon direction="left" />}
             onClick={() => setViewport({ offsetX: viewport.offsetX - VIEWPORT_PAN_STEP })}
           />
-          <ActionButton active={false} label="Center" onClick={resetViewport} />
-          <ActionButton
-            active={false}
-            label="Right"
+          <IconButton label="Reset view" icon={<ResetViewIcon />} onClick={resetViewport} />
+          <IconButton
+            label="Pan right"
+            icon={<ArrowIcon direction="right" />}
             onClick={() => setViewport({ offsetX: viewport.offsetX + VIEWPORT_PAN_STEP })}
           />
-          <ActionButton
-            active={false}
-            label="Up"
+          <IconButton
+            label="Pan up"
+            icon={<ArrowIcon direction="up" />}
             onClick={() => setViewport({ offsetY: viewport.offsetY - VIEWPORT_PAN_STEP })}
           />
-          <ActionButton
-            active={false}
-            label="Zoom -"
+          <IconButton
+            label="Zoom out"
+            icon={<ZoomOutIcon />}
             onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
           />
-          <ActionButton
-            active={false}
-            label="Down"
+          <IconButton
+            label="Pan down"
+            icon={<ArrowIcon direction="down" />}
             onClick={() => setViewport({ offsetY: viewport.offsetY + VIEWPORT_PAN_STEP })}
           />
         </div>
@@ -885,19 +938,58 @@ function ShortcutButton({ disabled = false, label, onClick }: ShortcutButtonProp
   );
 }
 
-function ToolbarButton({ disabled = false, label, onClick }: ShortcutButtonProps) {
+type IconButtonProps = {
+  active?: boolean;
+  badge?: string;
+  disabled?: boolean;
+  icon: JSX.Element;
+  label: string;
+  onClick: () => void;
+  size?: 'default' | 'toolbar';
+  tone?: 'default' | 'danger';
+};
+
+function IconButton({
+  active = false,
+  badge,
+  disabled = false,
+  icon,
+  label,
+  onClick,
+  size = 'default',
+  tone = 'default',
+}: IconButtonProps) {
+  const sizeClass =
+    size === 'toolbar'
+      ? 'min-w-0 rounded-xl px-2 py-1.5'
+      : 'min-h-11 rounded-2xl px-3 py-2';
+  const toneClass =
+    tone === 'danger'
+      ? 'border-rose-500/60 bg-rose-500/8 text-rose-100 hover:border-rose-300/80 hover:text-rose-50'
+      : active
+        ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)]'
+        : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]';
+
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-xl border px-2.5 py-1.5 text-[13px] font-medium leading-5 transition ${
+      // WHY: アイコンのみでも操作名を露出し、hover と支援技術の両方で認識しやすくする。
+      aria-label={label}
+      title={label}
+      className={`relative inline-flex items-center justify-center border transition ${sizeClass} ${
         disabled
           ? 'cursor-not-allowed border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] text-[var(--color-muted)]'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
+          : toneClass
       }`}
     >
-      {label}
+      <span className={size === 'toolbar' ? 'size-4' : 'size-4.5'}>{icon}</span>
+      {badge ? (
+        <span className="absolute bottom-1 right-1 rounded-full border border-[var(--color-border)] bg-[var(--color-app)] px-1 text-[9px] font-semibold leading-4 text-[var(--color-text-strong)]">
+          {badge}
+        </span>
+      ) : null}
     </button>
   );
 }
@@ -912,19 +1004,216 @@ function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
   return (
     <div className="grid gap-2">
       <div className="flex justify-center">
-        <ActionButton active={false} label="forward" onClick={onForward} />
+        <IconButton label="Move forward" icon={<ArrowIcon direction="up" />} onClick={onForward} />
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <ActionButton active={false} label="turn left" onClick={() => onTurn('turn-left')} />
+        <IconButton
+          label="Turn left"
+          icon={<TurnIcon direction="left" />}
+          onClick={() => onTurn('turn-left')}
+        />
         <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-[var(--color-muted)]">
           Facing {currentFacing}
         </div>
-        <ActionButton active={false} label="turn right" onClick={() => onTurn('turn-right')} />
+        <IconButton
+          label="Turn right"
+          icon={<TurnIcon direction="right" />}
+          onClick={() => onTurn('turn-right')}
+        />
       </div>
       <div className="flex justify-center">
-        <ActionButton active={false} label="turn back" onClick={() => onTurn('turn-back')} />
+        <IconButton
+          label="Turn back"
+          icon={<TurnBackIcon />}
+          onClick={() => onTurn('turn-back')}
+        />
       </div>
     </div>
+  );
+}
+
+type ArrowIconProps = {
+  direction: 'up' | 'right' | 'down' | 'left';
+};
+
+function ArrowIcon({ direction }: ArrowIconProps) {
+  const rotation =
+    direction === 'right' ? 'rotate(90 12 12)' : direction === 'down' ? 'rotate(180 12 12)' : direction === 'left' ? 'rotate(270 12 12)' : undefined;
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <g transform={rotation}>
+        <path
+          d="M12 5v13M7.5 9.5 12 5l4.5 4.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+type TurnIconProps = {
+  direction: 'left' | 'right';
+};
+
+function TurnIcon({ direction }: TurnIconProps) {
+  const rotation = direction === 'right' ? 'scale(-1 1) translate(-24 0)' : undefined;
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <g transform={rotation}>
+        <path
+          d="M17 6h-5a5 5 0 0 0-5 5v1"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M11 8 7 12l4 4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+function TurnBackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <path
+        d="M18 6h-6a5 5 0 0 0-5 5v7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m11 8-4 4 4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m14 15 4 4 4-4"
+        transform="translate(-3 0)"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <path
+        d="M9 7H6v3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M6.5 9.5A7 7 0 1 1 8.6 19"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function RedoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <g transform="scale(-1 1) translate(-24 0)">
+        <path
+          d="M9 7H6v3"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M6.5 9.5A7 7 0 1 1 8.6 19"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+type ZoomIconProps = {
+  mode: 'in' | 'out';
+};
+
+function ZoomIcon({ mode }: ZoomIconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <circle
+        cx="10.5"
+        cy="10.5"
+        r="5.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m15 15 4 4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 10.5h5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      {mode === 'in' ? (
+        <path
+          d="M10.5 8v5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      ) : null}
+    </svg>
+  );
+}
+
+function ZoomInIcon() {
+  return <ZoomIcon mode="in" />;
+}
+
+function ZoomOutIcon() {
+  return <ZoomIcon mode="out" />;
+}
+
+function ResetViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <circle cx="12" cy="12" r="5.25" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
