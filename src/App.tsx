@@ -945,7 +945,7 @@ type IconButtonProps = {
   icon: JSX.Element;
   label: string;
   onClick: () => void;
-  size?: 'default' | 'toolbar';
+  size?: 'default' | 'toolbar' | 'square';
   tone?: 'default' | 'danger';
 };
 
@@ -962,6 +962,8 @@ function IconButton({
   const sizeClass =
     size === 'toolbar'
       ? 'min-w-0 rounded-xl px-2 py-1.5'
+      : size === 'square'
+        ? 'size-16 rounded-2xl p-0'
       : 'min-h-11 rounded-2xl px-3 py-2';
   const toneClass =
     tone === 'danger'
@@ -984,7 +986,9 @@ function IconButton({
           : toneClass
       }`}
     >
-      <span className={size === 'toolbar' ? 'size-4' : 'size-4.5'}>{icon}</span>
+      <span className={size === 'toolbar' ? 'size-4' : size === 'square' ? 'size-5' : 'size-4.5'}>
+        {icon}
+      </span>
       {badge ? (
         <span className="absolute bottom-1 right-1 rounded-full border border-[var(--color-border)] bg-[var(--color-app)] px-1 text-[9px] font-semibold leading-4 text-[var(--color-text-strong)]">
           {badge}
@@ -1004,28 +1008,36 @@ function MovementPad({ currentFacing, onForward, onTurn }: MovementPadProps) {
   return (
     <div className="grid gap-2">
       <div className="flex justify-center">
-        <IconButton label="Move forward" icon={<ArrowIcon direction="up" />} onClick={onForward} />
+        <IconButton
+          label="Move forward"
+          icon={<ArrowIcon direction="up" />}
+          onClick={onForward}
+          size="square"
+        />
       </div>
       <div className="grid grid-cols-3 gap-2">
         <IconButton
           label="Turn left"
-          icon={<TurnIcon direction="left" />}
+          icon={<ArrowIcon direction="left" />}
           onClick={() => onTurn('turn-left')}
+          size="square"
         />
-        <div className="rounded-2xl border border-dashed border-[var(--color-border)] px-3 py-3 text-center text-xs uppercase tracking-[0.2em] text-[var(--color-muted)]">
-          Facing {currentFacing}
+        <div className="flex size-16 items-center justify-center rounded-2xl border border-dashed border-[var(--color-border)] text-center text-lg font-semibold uppercase tracking-[0.2em] text-[var(--color-text-strong)]">
+          {getFacingLabel(currentFacing)}
         </div>
         <IconButton
           label="Turn right"
-          icon={<TurnIcon direction="right" />}
+          icon={<ArrowIcon direction="right" />}
           onClick={() => onTurn('turn-right')}
+          size="square"
         />
       </div>
       <div className="flex justify-center">
         <IconButton
           label="Turn back"
-          icon={<TurnBackIcon />}
+          icon={<ArrowIcon direction="down" />}
           onClick={() => onTurn('turn-back')}
+          size="square"
         />
       </div>
     </div>
@@ -1051,64 +1063,6 @@ function ArrowIcon({ direction }: ArrowIconProps) {
           strokeLinejoin="round"
         />
       </g>
-    </svg>
-  );
-}
-
-type TurnIconProps = {
-  direction: 'left' | 'right';
-};
-
-function TurnIcon({ direction }: TurnIconProps) {
-  const rotation = direction === 'right' ? 'scale(-1 1) translate(-24 0)' : undefined;
-
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
-      <g transform={rotation}>
-        <path
-          d="M17 6h-5a5 5 0 0 0-5 5v1"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d="M11 8 7 12l4 4"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </g>
-    </svg>
-  );
-}
-
-function TurnBackIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
-      <path
-        d="M18 6h-6a5 5 0 0 0-5 5v7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="m11 8-4 4 4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="m14 15 4 4 4-4"
-        transform="translate(-3 0)"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 }
@@ -1251,6 +1205,19 @@ function getFacingAfterTurn(
   const offset = action === 'turn-right' ? 1 : -1;
 
   return facings[(currentIndex + offset + facings.length) % facings.length];
+}
+
+function getFacingLabel(facing: Facing): 'N' | 'E' | 'S' | 'W' {
+  switch (facing) {
+    case 'north':
+      return 'N';
+    case 'east':
+      return 'E';
+    case 'south':
+      return 'S';
+    case 'west':
+      return 'W';
+  }
 }
 
 export default App;

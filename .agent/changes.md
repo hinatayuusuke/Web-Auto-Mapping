@@ -1314,3 +1314,60 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 15:48 (Asia/Taipei) — Movementアイコンの単純化**
+
+### Summary
+- `Movement` の回転系アイコンを単純な矢印へ変え、中央の向き表示を `N / E / S / W` の1文字化に変更した
+
+### Context / Goal
+- `Movement` の現行アイコンは回転記号寄りで、方向操作として一目で理解しにくかった
+- 中央表示の `Facing` 文字も面積を消費していたため、向きだけを簡潔に見せたかった
+
+### Changes
+- 左右の方向変更アイコンを回転矢印から単純な左右矢印へ変更した
+- 後方転回アイコンを Uターン風記号から下矢印へ変更した
+- 中央の向き表示から `Facing` 文言を削除し、`N / E / S / W` の1文字だけを表示するようにした
+- 向き表示用に `Facing` から1文字へ変換するヘルパーを追加した
+
+### Files Touched
+- `src/App.tsx` — `MovementPad` のアイコン構成と中央表示を更新し、不要になった回転系 SVG を削除した
+
+### Behavioral Impact
+- `Movement` セクションの見た目が上下左右の素直な矢印へ統一され、方向把握がしやすくなった
+- 操作内容そのものは変わらず、表示だけが簡潔になった
+
+### Risk & Mitigation
+- Risk: `turn left / right / back` が移動矢印に見えて、回転操作だと誤解される可能性がある
+- Mitigation: 配置は従来どおり維持し、ボタンの `title` / `aria-label` で操作名は残した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 15:49 (Asia/Taipei) — Movementボタンサイズ統一**
+
+### Summary
+- `Movement` の上下左右ボタンと中央の向き表示を同じ外形サイズへ揃えた
+
+### Context / Goal
+- `Movement` セクションで上下ボタンだけ小さく見え、視覚的なまとまりが崩れていた
+- 4方向ボタンと中央表示を同一サイズにして、方向パッドとして一体に見せたかった
+
+### Changes
+- `IconButton` に正方形サイズ指定を追加した
+- `Movement` の前進、左右、後方ボタンを同じ正方形サイズへ統一した
+- 中央の `N / E / S / W` 表示も同じサイズの枠へ揃えた
+
+### Files Touched
+- `src/App.tsx` — `IconButton` のサイズバリエーションを追加し、`MovementPad` の各要素を同一サイズへ変更した
+
+### Behavioral Impact
+- `Movement` セクションの方向ボタンが均一サイズになり、見た目のバランスが整った
+- 操作内容やキーバインドの挙動自体は変わっていない
+
+### Risk & Mitigation
+- Risk: 正方形サイズの導入で他のアイコンボタンにも流用され、意図しないサイズ差が出る可能性がある
+- Mitigation: `square` は `Movement` でだけ使う明示指定に留め、既存サイズには影響しない形にした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
