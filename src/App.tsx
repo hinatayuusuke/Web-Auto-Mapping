@@ -1,8 +1,9 @@
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
 import { getFloorStats } from './lib/mapModel';
-import { createPersistedDocument, parsePersistedDocument, STORAGE_KEY } from './lib/persistence';
+import { createPersistedDocument } from './lib/persistence';
+import { exportDocument, getStorageDescriptor, importDocument } from './lib/storageAdapter';
 import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
 
@@ -30,7 +31,6 @@ type RelativeControlAction = 'forward' | 'turn-left' | 'turn-right' | 'turn-back
 function App() {
   const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
   const [isTallViewport, setIsTallViewport] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const autoMapping = useAppStore((state) => state.autoMapping);
   const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
   const canUndo = useAppStore((state) => state.history.undoStack.length > 0);
@@ -49,6 +49,7 @@ function App() {
   const expandSelectedFloorUp = useAppStore((state) => state.expandSelectedFloorUp);
   const expandSelectedFloorDown = useAppStore((state) => state.expandSelectedFloorDown);
   const expandSelectedFloorRight = useAppStore((state) => state.expandSelectedFloorRight);
+  const hydratePersistedState = useAppStore((state) => state.hydratePersistedState);
   const loadPersistedDocument = useAppStore((state) => state.loadPersistedDocument);
   const moveInDirection = useAppStore((state) => state.moveInDirection);
   const placeSelectedIconAtCurrentCell = useAppStore((state) => state.placeSelectedIconAtCurrentCell);
@@ -69,6 +70,11 @@ function App() {
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
+  const storageDescriptor = useMemo(() => getStorageDescriptor(), []);
+
+  useEffect(() => {
+    void hydratePersistedState();
+  }, [hydratePersistedState]);
 
   useEffect(() => {
     const updateViewportMode = () => {
@@ -236,60 +242,34 @@ function App() {
     undo,
   ]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const documentState = createPersistedDocument(useAppStore.getState());
-    const blob = new Blob([JSON.stringify(documentState, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-
-    anchor.href = url;
-    anchor.download = `${slugify(documentState.title)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setIoNotice({
-      tone: 'success',
-      message: 'JSON を書き出しました。',
-    });
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
-    event.target.value = '';
-
-    if (!file) {
+    const result = await exportDocument(documentState);
+    if (result.kind !== 'saved') {
       return;
     }
-
-    try {
-      const text = await file.text();
-      const parsed = parsePersistedDocument(JSON.parse(text));
-
-      if (!parsed) {
-        setIoNotice({
-          tone: 'error',
-          message: 'JSON の形式が不正です。',
-        });
-        return;
-      }
-
-      const loaded = loadPersistedDocument(parsed);
-      setIoNotice({
-        tone: loaded ? 'success' : 'error',
-        message: loaded ? 'JSON を読み込みました。' : 'JSON の読込に失敗しました。',
-      });
-    } catch {
+    setIoNotice({
+      tone: 'success',
+      message: 'JSON を保存しました。',
+    });
+  };
+  const handleImportClick = async () => {
+    const result = await importDocument();
+    if (result.kind === 'cancelled') {
+      return;
+    }
+    if (result.kind === 'invalid') {
       setIoNotice({
         tone: 'error',
         message: 'JSON の読込に失敗しました。',
       });
+      return;
     }
+    const loaded = loadPersistedDocument(result.document);
+    setIoNotice({
+      tone: loaded ? 'success' : 'error',
+      message: loaded ? 'JSON を読み込みました。' : 'JSON の読込に失敗しました。',
+    });
   };
 
   const navigatorPanel = (
@@ -472,15 +452,15 @@ function App() {
         <PanelHeading
           eyebrow="Persistence"
           title="Save / Load"
-          body="変更は自動で localStorage に保存され、ページ再読込時に復元されます。JSON でも入出力できます。"
+          body="変更は現在の実行環境に応じた autosave 先へ保存され、JSON でも入出力できます。"
         />
         <div className="grid gap-2">
           <ShortcutButton label="Save JSON" onClick={handleExport} />
           <ShortcutButton label="Load JSON" onClick={handleImportClick} />
         </div>
         <div className="border-t border-[var(--color-border)] pt-3 text-sm leading-6 text-[var(--color-text-soft)]">
-          <p>Auto save key: `{STORAGE_KEY}`</p>
-          <p>Auto save は状態更新ごとに localStorage へ書き込みます。</p>
+          <p>Auto save target: `{storageDescriptor.label}`</p>
+          <p>Detail: `{storageDescriptor.detail}`</p>
         </div>
         {ioNotice ? <NoticeCard message={ioNotice.message} tone={ioNotice.tone} /> : null}
       </section>
@@ -629,14 +609,6 @@ function App() {
         isTallViewport ? 'min-h-[100dvh]' : 'h-[100dvh] overflow-hidden'
       }`}
     >
-      <input
-        ref={fileInputRef}
-        className="hidden"
-        type="file"
-        accept="application/json,.json"
-        onChange={handleImportFile}
-      />
-
       <div
         className={`mx-auto flex w-full max-w-[1680px] flex-col px-3 py-3 sm:px-4 lg:px-5 ${
           isTallViewport ? 'min-h-[100dvh]' : 'h-full'
@@ -865,10 +837,5 @@ function getFacingAfterTurn(
   return facings[(currentIndex + offset + facings.length) % facings.length];
 }
 
-function slugify(value: string) {
-  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-  return normalized.length > 0 ? normalized : 'web-auto-mapping';
-}
-
 export default App;
+

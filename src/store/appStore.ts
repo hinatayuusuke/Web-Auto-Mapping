@@ -17,10 +17,9 @@ import {
 } from '../lib/mapModel';
 import {
   createPersistedDocument,
-  loadPersistedDocumentFromStorage,
   parsePersistedDocument,
-  savePersistedDocumentToStorage,
 } from '../lib/persistence';
+import { loadDocument, saveDocument } from '../lib/storageAdapter';
 import {
   AppMode,
   AutoMappingLevel,
@@ -50,6 +49,7 @@ type AppState = {
   history: HistoryState;
   mapTitle: string;
   mode: AppMode;
+  persistenceReady: boolean;
   selectedCellIconKind: CellIconKind;
   selectedFloorId: string;
   selectedTool: EditTool;
@@ -67,6 +67,7 @@ type AppActions = {
   expandSelectedFloorUp: (amount?: number) => void;
   expandSelectedFloorDown: (amount?: number) => void;
   expandSelectedFloorRight: (amount?: number) => void;
+  hydratePersistedState: () => Promise<boolean>;
   loadPersistedDocument: (document: PersistedDocument) => boolean;
   moveInDirection: (facing: Facing) => void;
   placeSelectedIconAtCurrentCell: () => void;
@@ -110,9 +111,8 @@ const CELL_ICON_ORDER: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
 const HISTORY_LIMIT = 80;
 const GRID_EXPAND_STEP = 4;
 
-const initialDocument = loadPersistedDocumentFromStorage() ?? createDefaultDocument();
 const initialState: AppState = {
-  ...toAppState(initialDocument),
+  ...toAppState(createDefaultDocument()),
   history: createEmptyHistory(),
 };
 
@@ -208,6 +208,22 @@ export const useAppStore = create<AppStore>((set) => ({
         floors: updateSelectedFloor(state, (floor) => expandFloorGrid(floor, { right: amount })),
       })),
     ),
+  hydratePersistedState: async () => {
+    const document = await loadDocument();
+
+    if (!document) {
+      set({ persistenceReady: true });
+      return false;
+    }
+
+    set({
+      ...toAppState(clonePersistedDocument(document)),
+      history: createEmptyHistory(),
+      persistenceReady: true,
+    });
+
+    return true;
+  },
   loadPersistedDocument: (document) => {
     const parsed = parsePersistedDocument(document);
 
@@ -218,6 +234,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({
       ...toAppState(clonePersistedDocument(parsed)),
       history: createEmptyHistory(),
+      persistenceReady: true,
     });
 
     return true;
@@ -258,6 +275,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
+        persistenceReady: state.persistenceReady,
         history: {
           undoStack: trimHistory([
             ...state.history.undoStack,
@@ -400,6 +418,7 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
+        persistenceReady: state.persistenceReady,
         history: {
           undoStack: state.history.undoStack.slice(0, -1),
           redoStack: trimHistory([
@@ -511,7 +530,12 @@ function initializeAutoSave() {
   guardedWindow.__wam_auto_save_initialized__ = true;
 
   useAppStore.subscribe((state) => {
-    savePersistedDocumentToStorage(createPersistedDocument(state));
+    if (!state.persistenceReady) {
+      return;
+    }
+
+    // WHY: 非同期 hydrate 前に既定状態を書き戻すと、既存の保存内容を上書きし得る。
+    void saveDocument(createPersistedDocument(state));
   });
 }
 
@@ -526,6 +550,7 @@ function toAppState(document: PersistedDocument): Omit<AppState, 'history'> {
     floors: document.floors.length > 0 ? document.floors : [fallbackFloor],
     mapTitle: sanitizeDocumentTitle(document.title),
     mode: document.settings.mode,
+    persistenceReady: false,
     selectedCellIconKind: document.settings.selectedCellIconKind,
     selectedFloorId,
     selectedTool: document.settings.selectedTool,

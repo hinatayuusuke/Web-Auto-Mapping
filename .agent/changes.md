@@ -113,6 +113,52 @@
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-23 13:19 (Asia/Taipei) — Tauri 移植 Phase B 実装**
+
+### Summary
+- 保存 I/O を runtime 判定付き adapter 層へ切り出し、Web と Tauri で同じ UI から保存 / 読込を切り替えられるようにした
+
+### Context / Goal
+- `Doc/TauriMigrationProposal.md` の Phase B として、保存 / 読込 / export / import の呼び出し点をブラウザ API 直結から外す必要があった
+- Web 版は既存挙動を保ちつつ、Tauri 版では dialog / fs plugin を使うネイティブ I/O へ接続したかった
+
+### Changes
+- `src/lib/runtime.ts` を追加し、`@tauri-apps/api/core` の `isTauri()` で runtime 判定を行う層を追加した
+- `src/lib/storageAdapter.ts` を追加し、Web 版の `localStorage` / download / file picker と、Tauri 版の `AppData` autosave / native open-save dialog を同じ関数群へ統一した
+- `src/store/appStore.ts` は同期初期化をやめ、`hydratePersistedState()` による非同期復元へ変更した
+- autosave は `persistenceReady` が立つまで抑止し、初期 hydrate 前に既定状態で既存データを上書きしないようにした
+- `src/App.tsx` は import / export UI を adapter 経由へ切り替え、autosave 先の表示も runtime 依存にした
+- Tauri 側へ `@tauri-apps/api`、`@tauri-apps/plugin-dialog`、`@tauri-apps/plugin-fs` と対応する Rust plugin を追加し、capability を更新した
+
+### Files Touched
+- `src/lib/runtime.ts` — `web` / `tauri` 判定を追加
+- `src/lib/storageAdapter.ts` — 保存 / 読込 / export / import の adapter 実装を追加
+- `src/store/appStore.ts` — 非同期 hydrate、autosave ガード、adapter 経由保存へ変更
+- `src/App.tsx` — import / export UI と autosave 表示を adapter 連携へ更新
+- `package.json` — Tauri API / dialog / fs の JS 依存関係を追加
+- `package-lock.json` — npm 依存関係更新を反映
+- `src-tauri/Cargo.toml` — dialog / fs plugin を追加
+- `src-tauri/Cargo.lock` — Rust 依存関係ロックを更新
+- `src-tauri/src/lib.rs` — dialog / fs plugin を初期化
+- `src-tauri/capabilities/default.json` — dialog と fs 書込権限を追加
+
+### Behavioral Impact
+- Web 版では従来どおり `localStorage` とブラウザ download / file picker を使う
+- Tauri 版では autosave が `AppData` 側の JSON へ保存され、明示的な Save / Load はネイティブ dialog と fs plugin を使う
+- store 初期化は非同期 hydrate へ変わったが、UI からの利用方法は変わらない
+
+### Risk & Mitigation
+- Risk: 非同期 hydrate 前に autosave が走ると既存保存内容を既定状態で上書きする
+- Mitigation: `persistenceReady` が立つまで autosave を無効化し、hydrate 完了後のみ保存するようにした
+- Risk: Tauri の fs / dialog permission 不足で runtime では読書きが拒否される可能性がある
+- Mitigation: 公式ドキュメントに合わせて `dialog:default`、`fs:default`、`fs:allow-app-write`、`fs:allow-write-text-file` を capability に追加した
+
+### Tests / Verification
+- `npm install`
+- `npm run build`
+- `cargo build --manifest-path .\src-tauri\Cargo.toml`
+- `npm run tauri build`
+
 **2026-04-23 11:51 (Asia/Taipei) — Tauri 移植 Phase A 実装**
 
 ### Summary
