@@ -192,3 +192,12 @@
 - Use one accent color, neutral surfaces, subtle borders, restrained shadows, and minimal motion.
 - Prefer semantic HTML, CSS-first solutions, reused components, and performance-safe choices.
 - Complete all states: hover, focus, loading, empty, error, success.
+
+## UI restraint rules
+- Default to flat, well-spaced sections; cards are an exception, not the baseline.
+- Use cards only for truly distinct, repeatable groups.
+- Prefer hierarchy through spacing, typography, and headings before borders, tints, or shadows.
+- Do not wrap every block in a container.
+- Use at most 1–2 container styles per page.
+- Avoid dashboard-like chrome: nested panels, heavy shadows, tinted boxes, and decorative separators.
+- If a container adds no semantic or usability value, remove it.

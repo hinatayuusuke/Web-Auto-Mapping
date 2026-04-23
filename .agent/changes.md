@@ -112,6 +112,69 @@
 ### Tests / Verification
 - `C:\3rd\nodejs\npm.cmd run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 09:50 (Asia/Taipei) — Marker メッセージ機能を実装**
+
+### Summary
+- `marker` アイコンにメッセージを持たせ、ダブルクリック編集、hover 表示、先頭 1 文字 glyph を実装した
+
+### Context / Goal
+- `Doc/MarkerMessageProposal.md` に沿って、`marker` を単なる記号ではなく軽い注釈ノードとして扱えるようにする必要があった
+- 保存データへメッセージを保持しつつ、既存のクリック編集とダブルクリック編集の競合も抑える必要があった
+
+### Changes
+- `CellIcon` に optional の `message` を追加した
+- `mapModel.ts` に marker メッセージ更新処理を追加し、store から履歴付きで更新できるようにした
+- `MapCanvas` に marker hover 判定、上段メッセージ表示、ダブルクリック編集用の入力 UI を追加した
+- `marker` 上の左クリックだけ短い遅延を入れ、ダブルクリック編集と通常クリック編集の競合を抑えた
+- marker glyph を `message` の先頭 1 文字、空時は `M` に切り替えた
+
+### Files Touched
+- `src/types/map.ts` — `CellIcon` に `message?: string` を追加
+- `src/lib/mapModel.ts` — marker メッセージ更新関数を追加
+- `src/store/appStore.ts` — marker メッセージ更新 action を追加
+- `src/components/MapCanvas.tsx` — hover 表示、編集 UI、glyph 切替、marker hit test を追加
+
+### Behavioral Impact
+- Map 上の `marker` をダブルクリックするとメッセージを編集できるようになった
+- `marker` にマウスオーバーすると `MapCanvas` 上段に全文が表示されるようになった
+- `marker` の表示文字はメッセージ先頭 1 文字、空メッセージ時は `M` になる
+- 保存 / 読込後も marker メッセージが保持される
+
+### Risk & Mitigation
+- Risk: ダブルクリックと既存のシングルクリック編集が衝突すると、意図しないセル編集が走る可能性がある
+- Mitigation: `marker` 上の左クリックだけ 220ms 遅延し、2 回目クリックで編集を優先するようにした
+- Risk: hover 文言が長いと `MapCanvas` 上部を圧迫する可能性がある
+- Mitigation: 上段表示は 1 行の `truncate` 表示に留めた
+
+### Tests / Verification
+- `C:\3rd\nodejs\npm.cmd run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-22 18:45 (Asia/Taipei) — Marker メッセージ機能の実装案を追加**
+
+### Summary
+- `marker` アイコンへメッセージを持たせる実装案を `Doc/MarkerMessageProposal.md` に追加した
+
+### Context / Goal
+- `marker` を注釈ノードとして使えるようにし、ダブルクリック編集、hover 表示、先頭 1 文字 glyph という仕様を整理する必要があった
+- 初回実装でどこまでをゴールにするか、保存構造や UI 競合を含めて明文化したかった
+
+### Changes
+- `marker` 専用メッセージ機能について、データ構造、操作、表示ルール、実装手順、リスクを提案書へ整理した
+- glyph は「メッセージ先頭 1 文字」、空時は `M` を使う前提を明記した
+
+### Files Touched
+- `Doc/MarkerMessageProposal.md` — `marker` メッセージ機能の実装案を新規追加
+
+### Behavioral Impact
+- 実装はまだ変えていない
+- 次段階で `marker` メッセージ機能を実装するための基準文書が追加された
+
+### Risk & Mitigation
+- Risk: ダブルクリック編集と既存クリック編集の競合が後で曖昧になる可能性がある
+- Mitigation: 提案書で `marker` 限定、Map モード限定、hover 表示位置、保存構造まで先に固定した
+
+### Tests / Verification
+- 未実施（ドキュメント追加のみ）
 **2026-04-22 18:18 (Asia/Taipei) — MapCanvas のホイールでページスクロールが漏れる問題を修正**
 
 ### Summary

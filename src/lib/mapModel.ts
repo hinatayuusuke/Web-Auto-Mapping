@@ -406,6 +406,39 @@ export function placeSelectedCellIconInFront(
   );
 }
 
+export function updateMarkerMessageAt(
+  floor: FloorState,
+  coordinate: CellCoordinate,
+  message: string,
+): FloorState {
+  let changed = false;
+  const normalizedMessage = normalizeMarkerMessage(message);
+
+  const cellIcons = floor.cellIcons.map((icon) => {
+    if (!isSameCell(icon.position, coordinate) || icon.kind !== 'marker') {
+      return icon;
+    }
+
+    const nextIcon = normalizedMessage
+      ? { ...icon, message: normalizedMessage }
+      : { ...icon, message: undefined };
+
+    if (nextIcon.message === icon.message) {
+      return icon;
+    }
+
+    changed = true;
+    return nextIcon;
+  });
+
+  return changed
+    ? {
+        ...floor,
+        cellIcons,
+      }
+    : floor;
+}
+
 export function applyCanvasPrimaryEdit(
   floor: FloorState,
   tool: string,
@@ -699,6 +732,12 @@ function getVectorForFacing(facing: Facing) {
 
 function createMatrix<T>(height: number, width: number, initialValue: T): T[][] {
   return Array.from({ length: height }, () => Array.from({ length: width }, () => initialValue));
+}
+
+function normalizeMarkerMessage(message: string): string | undefined {
+  const normalized = message.replace(/\s+/g, ' ').trim().slice(0, 120);
+
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 function createRow<T>(width: number, initialValue: T): T[] {

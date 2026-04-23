@@ -59,6 +59,7 @@ export type PlayerState = {
 export type CellIcon = {
   id: string;
   kind: CellIconKind;
+  message?: string;
   position: CellCoordinate;
 };
 

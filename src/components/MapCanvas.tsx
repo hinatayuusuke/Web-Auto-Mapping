@@ -1,6 +1,7 @@
 import { MouseEvent, WheelEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStore, useSelectedFloor } from '../store/appStore';
 import {
+  CellCoordinate,
   EdgeAxis,
   Facing,
   FloorState,
@@ -23,12 +24,22 @@ type PanState = {
 
 export function MapCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const clickTimeoutRef = useRef<number | null>(null);
+  const editorInputRef = useRef<HTMLInputElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const panStateRef = useRef<PanState | null>(null);
+  const [editingMarkerCoordinate, setEditingMarkerCoordinate] = useState<CellCoordinate | null>(
+    null,
+  );
+  const [hoveredMarkerCoordinate, setHoveredMarkerCoordinate] = useState<CellCoordinate | null>(
+    null,
+  );
+  const [messageDraft, setMessageDraft] = useState('');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const mode = useAppStore((state) => state.mode);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
+  const setSelectedMarkerMessage = useAppStore((state) => state.setSelectedMarkerMessage);
   const selectedFloor = useSelectedFloor();
   const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
   const applyCanvasSecondaryInteraction = useAppStore(
@@ -48,6 +59,22 @@ export function MapCanvas() {
       viewport,
     });
   }, [selectedFloor, size.height, size.width, viewport]);
+
+  const editingMarker = useMemo(() => {
+    if (!selectedFloor || !editingMarkerCoordinate) {
+      return null;
+    }
+
+    return getMarkerIconAtCoordinate(selectedFloor, editingMarkerCoordinate);
+  }, [editingMarkerCoordinate, selectedFloor]);
+
+  const hoveredMarker = useMemo(() => {
+    if (!selectedFloor || !hoveredMarkerCoordinate) {
+      return null;
+    }
+
+    return getMarkerIconAtCoordinate(selectedFloor, hoveredMarkerCoordinate);
+  }, [hoveredMarkerCoordinate, selectedFloor]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -72,6 +99,34 @@ export function MapCanvas() {
     observer.observe(frame);
 
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!editingMarkerCoordinate) {
+      return;
+    }
+
+    if (!editingMarker) {
+      setEditingMarkerCoordinate(null);
+      setMessageDraft('');
+    }
+  }, [editingMarker, editingMarkerCoordinate]);
+
+  useEffect(() => {
+    if (!editingMarkerCoordinate) {
+      return;
+    }
+
+    editorInputRef.current?.focus();
+    editorInputRef.current?.select();
+  }, [editingMarkerCoordinate]);
+
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current !== null) {
+        window.clearTimeout(clickTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -145,6 +200,12 @@ export function MapCanvas() {
     }
 
     const target = getInteractionTarget(event, selectedFloor, layout);
+    const marker = getMarkerAtCanvasPoint(
+      event.clientX - event.currentTarget.getBoundingClientRect().left,
+      event.clientY - event.currentTarget.getBoundingClientRect().top,
+      selectedFloor,
+      layout,
+    );
 
     if (!target) {
       return;
@@ -157,11 +218,43 @@ export function MapCanvas() {
     }
 
     if (event.button === 0) {
+      if (mode === 'map' && marker) {
+        if (clickTimeoutRef.current !== null) {
+          window.clearTimeout(clickTimeoutRef.current);
+          clickTimeoutRef.current = null;
+        }
+
+        if (event.detail > 1) {
+          event.preventDefault();
+          setEditingMarkerCoordinate(marker.position);
+          setMessageDraft(marker.message ?? '');
+          return;
+        }
+
+        clickTimeoutRef.current = window.setTimeout(() => {
+          applyCanvasPrimaryInteraction(target);
+          clickTimeoutRef.current = null;
+        }, 220);
+        return;
+      }
+
       applyCanvasPrimaryInteraction(target);
     }
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
+    if (selectedFloor && layout) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const marker = getMarkerAtCanvasPoint(
+        event.clientX - rect.left,
+        event.clientY - rect.top,
+        selectedFloor,
+        layout,
+      );
+
+      setHoveredMarkerCoordinate(marker?.position ?? null);
+    }
+
     const panState = panStateRef.current;
 
     if (!panState) {
@@ -177,6 +270,11 @@ export function MapCanvas() {
 
   const handleMouseUp = () => {
     panStateRef.current = null;
+  };
+
+  const handleMouseLeave = () => {
+    handleMouseUp();
+    setHoveredMarkerCoordinate(null);
   };
 
   const handleWheel = (event: WheelEvent<HTMLCanvasElement>) => {
@@ -215,17 +313,80 @@ export function MapCanvas() {
     });
   };
 
+  const handleMarkerMessageSubmit = () => {
+    if (!editingMarker) {
+      return;
+    }
+
+    setSelectedMarkerMessage(editingMarker.position, messageDraft);
+    setEditingMarkerCoordinate(null);
+  };
+
   return (
     <div
       ref={frameRef}
       className="relative h-full min-h-[360px] overflow-hidden overscroll-contain border-x border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
     >
+      {hoveredMarker?.message && !editingMarkerCoordinate ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(9,15,24,0.84)] px-3 py-1.5 backdrop-blur">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+            Marker Message
+          </p>
+          <p className="mt-0.5 truncate text-sm leading-5 text-[var(--color-text-strong)]">
+            {hoveredMarker.message}
+          </p>
+        </div>
+      ) : null}
+
+      {editingMarker ? (
+        <form
+          className="absolute inset-x-3 top-3 z-20 rounded-2xl border border-[var(--color-border-strong)] bg-[rgba(8,17,28,0.95)] p-3 shadow-[0_18px_48px_rgba(0,0,0,0.32)]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleMarkerMessageSubmit();
+          }}
+        >
+          <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
+            Marker Message
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              ref={editorInputRef}
+              className="min-w-0 flex-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm text-[var(--color-text-strong)] outline-none ring-0 transition focus:border-[var(--color-border-strong)]"
+              value={messageDraft}
+              maxLength={120}
+              onChange={(event) => setMessageDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  setEditingMarkerCoordinate(null);
+                }
+              }}
+              placeholder="Marker message"
+            />
+            <button
+              type="submit"
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-sm text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-2.5 text-sm text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]"
+              onClick={() => setEditingMarkerCoordinate(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
+
       <canvas
         ref={canvasRef}
         className="block h-full w-full"
         onContextMenu={(event) => event.preventDefault()}
         onMouseDown={handleMouseDown}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onWheel={handleWheel}
@@ -535,7 +696,7 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   for (const icon of floor.cellIcons) {
     const centerX = layout.originX + icon.position.x * layout.cellSize + layout.cellSize / 2;
     const centerY = layout.originY + icon.position.y * layout.cellSize + layout.cellSize / 2;
-    const iconRadius = Math.min(layout.cellSize * 0.5 - 1, Math.max(4, layout.cellSize * 0.46));
+    const iconRadius = getCellIconRadius(layout.cellSize);
 
     context.fillStyle = '#f6d58d';
     context.beginPath();
@@ -543,7 +704,7 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
     context.fill();
 
     context.fillStyle = '#0b1320';
-    context.fillText(getCellIconGlyph(icon.kind), centerX, centerY + 0.5);
+    context.fillText(getCellIconGlyph(icon), centerX, centerY + 0.5);
   }
 
   for (const icon of floor.edgeIcons) {
@@ -702,12 +863,14 @@ function getEdgeKey(x: number, y: number, axis: EdgeAxis) {
   return `${axis}:${x}:${y}`;
 }
 
-function getCellIconGlyph(kind: FloorState['cellIcons'][number]['kind']) {
-  switch (kind) {
+function getCellIconGlyph(icon: FloorState['cellIcons'][number]) {
+  if (icon.kind === 'marker') {
+    return getMarkerGlyph(icon.message);
+  }
+
+  switch (icon.kind) {
     case 'chest':
       return 'C';
-    case 'marker':
-      return 'M';
     case 'pit':
       return 'P';
     case 'stairs':
@@ -734,4 +897,58 @@ function shouldStartPan(event: MouseEvent<HTMLCanvasElement>) {
 
 function clampZoom(value: number) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))));
+}
+
+function getCellIconRadius(cellSize: number) {
+  return Math.min(cellSize * 0.5 - 1, Math.max(4, cellSize * 0.46));
+}
+
+function getMarkerGlyph(message?: string) {
+  const normalized = message?.trim();
+
+  return normalized ? normalized.charAt(0) : 'M';
+}
+
+function getMarkerIconAtCoordinate(
+  floor: FloorState,
+  coordinate: CellCoordinate,
+): FloorState['cellIcons'][number] | null {
+  return (
+    floor.cellIcons.find(
+      (icon) =>
+        icon.kind === 'marker' &&
+        icon.position.x === coordinate.x &&
+        icon.position.y === coordinate.y,
+    ) ?? null
+  );
+}
+
+function getMarkerAtCanvasPoint(
+  localX: number,
+  localY: number,
+  floor: FloorState,
+  layout: GridLayout,
+): FloorState['cellIcons'][number] | null {
+  const gridX = localX - layout.originX;
+  const gridY = localY - layout.originY;
+
+  if (gridX < 0 || gridY < 0 || gridX > layout.gridWidth || gridY > layout.gridHeight) {
+    return null;
+  }
+
+  const cellX = Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1);
+  const cellY = Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1);
+  const marker = getMarkerIconAtCoordinate(floor, { x: cellX, y: cellY });
+
+  if (!marker) {
+    return null;
+  }
+
+  const centerX = layout.originX + marker.position.x * layout.cellSize + layout.cellSize / 2;
+  const centerY = layout.originY + marker.position.y * layout.cellSize + layout.cellSize / 2;
+  const dx = localX - centerX;
+  const dy = localY - centerY;
+  const hitRadius = getCellIconRadius(layout.cellSize) + 4;
+
+  return dx * dx + dy * dy <= hitRadius * hitRadius ? marker : null;
 }
