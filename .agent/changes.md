@@ -1578,3 +1578,30 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:06 (Asia/Taipei) — GitHub Pagesデプロイ提案追加**
+
+### Summary
+- push をトリガーに Web 版を GitHub Pages へデプロイする実装案を追加した
+
+### Context / Goal
+- Vite + React の Web 版を GitHub Pages で自動公開できるようにしたい
+- Tauri 配布とは分け、`dist/` の Pages deploy だけを対象にする方針を整理したかった
+
+### Changes
+- GitHub Actions workflow の構成案を整理した
+- GitHub Actions 実行時だけ Vite `base` を `/Web-Auto-Mapping/` に切り替える方針を明記した
+- 必要 permissions、Pages artifact、deploy 手順、GitHub 側 Pages source 設定をまとめた
+
+### Files Touched
+- `Doc/GitHubPagesDeployProposal.md` — GitHub Pages デプロイの実装方針、手順、リスク、完了条件を追加した
+
+### Behavioral Impact
+- ドキュメント追加のみで、現行アプリの挙動変更はない
+
+### Risk & Mitigation
+- Risk: 実装時に Pages URL と Vite base がずれると asset が 404 になる
+- Mitigation: リポジトリ名 `Web-Auto-Mapping` 前提で `/Web-Auto-Mapping/` を使う方針を明記した
+
+### Tests / Verification
+- 未実施
+- 文書追加のみのため、コードビルドや GitHub Actions 実行は行っていない
