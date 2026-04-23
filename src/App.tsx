@@ -328,8 +328,10 @@ function App() {
     redo,
     removeCurrentCellIcon,
     setPlayerFacing,
+    supportsGlobalArrowCapture,
     toggleMode,
     undo,
+    globalArrowCaptureEnabled,
   ]);
 
   const handleExport = async () => {
@@ -467,24 +469,6 @@ function App() {
 
       <section className="space-y-3">
         <PanelHeading
-          eyebrow="Tauri"
-          title="Global Arrow Test"
-          body="Tauri only"
-        />
-        <ActionButton
-          active={globalArrowCaptureEnabled}
-          disabled={!supportsGlobalArrowCapture}
-          label={globalArrowCaptureEnabled ? 'capture on' : 'capture off'}
-          onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
-        />
-        <KeyValueRow
-          label="Capture Status"
-          value={supportsGlobalArrowCapture ? globalArrowCaptureStatus : 'tauri only'}
-        />
-      </section>
-
-      <section className="space-y-3">
-        <PanelHeading
           eyebrow="Shortcuts"
           title="Forward Edge"
           body="1 wall / 2 door / 3 open / 4 closed / 0 unknown"
@@ -523,6 +507,29 @@ function App() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-0.5">
+            <CompactToggleButton
+              active={mode === 'explore'}
+              label="Explore"
+              onClick={() => setMode('explore')}
+            />
+            <CompactToggleButton
+              active={mode === 'map'}
+              label="Map"
+              onClick={() => setMode('map')}
+            />
+          </div>
+          <CompactToggleButton
+            active={globalArrowCaptureEnabled}
+            disabled={!supportsGlobalArrowCapture}
+            label={globalArrowCaptureEnabled ? 'Arrow on' : 'Arrow off'}
+            title={
+              supportsGlobalArrowCapture
+                ? `Global Arrow: ${globalArrowCaptureStatus}`
+                : 'Global Arrow is available only in Tauri'
+            }
+            onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
+          />
           <IconButton
             label="Undo"
             icon={<UndoIcon />}
@@ -669,18 +676,6 @@ function App() {
             value={`${(selectedFloorStats?.cellIcons ?? 0) + (selectedFloorStats?.edgeIcons ?? 0)}`}
           />
         </dl>
-      </section>
-
-      <section className="space-y-3">
-        <PanelHeading eyebrow="Mode" title="Explore / Map" />
-        <div className="grid grid-cols-2 gap-2">
-          <ActionButton
-            active={mode === 'explore'}
-            label="Explore"
-            onClick={() => setMode('explore')}
-          />
-          <ActionButton active={mode === 'map'} label="Map" onClick={() => setMode('map')} />
-        </div>
       </section>
 
       <section className="space-y-3">
@@ -853,6 +848,40 @@ function NoticeCard({ message, tone }: NoticeCardProps) {
     <div className={`border-l-2 pl-3 text-sm leading-6 ${toneClass}`}>
       {message}
     </div>
+  );
+}
+
+type CompactToggleButtonProps = {
+  active: boolean;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  title?: string;
+};
+
+function CompactToggleButton({
+  active,
+  disabled = false,
+  label,
+  onClick,
+  title = label,
+}: CompactToggleButtonProps) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      className={`rounded-lg px-2.5 py-1.5 text-[12px] font-semibold leading-4 transition ${
+        disabled
+          ? 'cursor-not-allowed text-[var(--color-muted)] opacity-50'
+          : active
+            ? 'bg-[rgba(87,159,255,0.18)] text-[var(--color-text-strong)]'
+            : 'text-[var(--color-text-soft)] hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--color-text-strong)]'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

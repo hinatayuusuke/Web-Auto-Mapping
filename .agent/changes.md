@@ -1544,3 +1544,37 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:01 (Asia/Taipei) — MapCanvasヘッダーへの操作トグル集約**
+
+### Summary
+- `Map / Explore` と `Global Arrow` の切り替えを `MapCanvas` ヘッダーへ移動し、左右ペインから削除した
+
+### Context / Goal
+- `Map / Explore` と `Global Arrow` はマップ操作の現在状態に直結しており、左右ペインより中央の `MapCanvas` 近くに置く方が自然だった
+- 左右ペインの縦スペースを減らしつつ、操作状態をマップ上部で確認・切替できるようにしたかった
+
+### Changes
+- `MapCanvas` ヘッダーへ `Explore / Map` の小型セグメントトグルを追加した
+- `MapCanvas` ヘッダーへ `Arrow on / Arrow off` の小型トグルを追加した
+- `Navigator` の `Global Arrow Test` セクションを削除した
+- `Workspace` の `Explore / Map` セクションを削除した
+- 小型ヘッダートグル用に `CompactToggleButton` を追加した
+- global capture 有効中のローカル Arrow 抑制が最新 state を参照するよう、キーボード effect の依存を補正した
+
+### Files Touched
+- `src/App.tsx` — `MapCanvas` ヘッダーへ操作トグルを集約し、左右ペインの重複セクションを削除した
+
+### Behavioral Impact
+- `Map / Explore` と `Global Arrow` の切り替え位置が `MapCanvas` 上部に変わった
+- 左右ペインから該当セクションがなくなり、縦方向の占有が減った
+- 操作内容、保存形式、global shortcut の登録仕様は変わっていない
+
+### Risk & Mitigation
+- Risk: `MapCanvas` ヘッダーに操作が集まりすぎて横幅が窮屈になる可能性がある
+- Mitigation: 既存 toolbar より小さい `CompactToggleButton` を使い、折り返し可能な `flex-wrap` 内に配置した
+- Risk: `Global Arrow` が Tauri 限定であることが見えづらくなる
+- Mitigation: Web 実行時は disabled にし、`title` で Tauri 限定であることを表示するようにした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
