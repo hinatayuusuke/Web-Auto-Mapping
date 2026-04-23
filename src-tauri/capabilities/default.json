@@ -9,7 +9,29 @@
     "core:default",
     "dialog:default",
     "fs:default",
-    "fs:allow-app-write",
-    "fs:allow-write-text-file"
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        }
+      ]
+    }
   ]
 }

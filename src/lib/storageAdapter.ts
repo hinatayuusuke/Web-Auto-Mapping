@@ -130,12 +130,12 @@ async function importDocumentFromWeb(): Promise<DocumentImportResult> {
 async function loadDocumentFromTauri() {
   const { BaseDirectory, exists, readTextFile } = await import('@tauri-apps/plugin-fs');
 
-  if (!(await exists(TAURI_AUTOSAVE_FILENAME, { baseDir: BaseDirectory.AppData }))) {
+  if (!(await exists(TAURI_AUTOSAVE_FILENAME, { baseDir: BaseDirectory.AppLocalData }))) {
     return null;
   }
 
   try {
-    const text = await readTextFile(TAURI_AUTOSAVE_FILENAME, { baseDir: BaseDirectory.AppData });
+    const text = await readTextFile(TAURI_AUTOSAVE_FILENAME, { baseDir: BaseDirectory.AppLocalData });
 
     return parsePersistedDocument(JSON.parse(text));
   } catch {
@@ -149,7 +149,7 @@ async function saveDocumentToTauri(persistedDocument: PersistedDocument) {
   await writeTextFile(
     TAURI_AUTOSAVE_FILENAME,
     JSON.stringify(persistedDocument, null, 2),
-    { baseDir: BaseDirectory.AppData },
+    { baseDir: BaseDirectory.AppLocalData },
   );
 }
 

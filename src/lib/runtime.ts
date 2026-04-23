@@ -1,5 +1,3 @@
-import { isTauri } from '@tauri-apps/api/core';
-
 export type RuntimeEnvironment = 'tauri' | 'web';
 
 export function getRuntimeEnvironment(): RuntimeEnvironment {
@@ -7,7 +5,13 @@ export function getRuntimeEnvironment(): RuntimeEnvironment {
     return 'web';
   }
 
-  return isTauri() ? 'tauri' : 'web';
+  const tauriWindow = window as Window & {
+    __TAURI_INTERNALS__?: object;
+  };
+
+  // WHY: core.isTauri() は withGlobalTauri と同系統のグローバル注入に依存し、
+  // release 実行ファイルでも false になり得る。内部 IPC があれば Tauri 実行中とみなす。
+  return typeof tauriWindow.__TAURI_INTERNALS__ === 'object' ? 'tauri' : 'web';
 }
 
 export function isTauriRuntime() {

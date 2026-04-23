@@ -159,6 +159,40 @@
 - `cargo build --manifest-path .\src-tauri\Cargo.toml`
 - `npm run tauri build`
 
+**2026-04-23 14:02 (Asia/Taipei) — Tauri autosave runtime 判定修正**
+
+### Summary
+- Tauri 実行ファイルで Web 扱いになっていた runtime 判定を修正し、autosave が `AppLocalData` の JSON ファイルへ保存されるようにした
+
+### Context / Goal
+- `web_auto_mapping.exe` 実行時に autosave が Tauri 側ファイルへ保存されず、再起動後に状態が復元されなかった
+- 原因を切り分けた結果、`core.isTauri()` 依存の判定と autosave 保存先スコープが実環境と噛み合っていなかった
+
+### Changes
+- `src/lib/runtime.ts` の runtime 判定を `core.isTauri()` から `window.__TAURI_INTERNALS__` ベースへ変更した
+- `src/lib/storageAdapter.ts` の Tauri autosave 保存先を `BaseDirectory.AppLocalData` へ切り替えた
+- `src-tauri/capabilities/default.json` は autosave 用 JSON ファイルだけを対象にした `exists` / `read-text-file` / `write-text-file` 権限へ絞った
+
+### Files Touched
+- `src/lib/runtime.ts` — `withGlobalTauri` 非依存の Tauri 判定へ変更
+- `src/lib/storageAdapter.ts` — Tauri autosave の baseDir を `AppLocalData` へ変更
+- `src-tauri/capabilities/default.json` — autosave ファイル向けの限定スコープ権限へ更新
+
+### Behavioral Impact
+- `web_auto_mapping.exe` 実行時、autosave は `C:\Users\<user>\AppData\Local\com.fineart.web-automapping\web-auto-mapping.document.json` に保存される
+- これにより Tauri 実行ファイルの再起動後も autosave から復元できる前提が成立した
+
+### Risk & Mitigation
+- Risk: runtime 判定を内部グローバルに依存するため、将来の Tauri API 実装変更で再調整が必要になる可能性がある
+- Mitigation: 判定ロジックを `runtime.ts` に閉じ込め、他モジュールへ広げない形を維持した
+- Risk: autosave 権限を広げすぎるとローカルファイルアクセス範囲が不要に広くなる
+- Mitigation: capability は固定 autosave ファイルのみに限定した
+
+### Tests / Verification
+- `npm run build`
+- `npm run tauri build`
+- `src-tauri\target\release\web_auto_mapping.exe` を起動して数秒後に終了し、`C:\Users\yuugao.FINEART\AppData\Local\com.fineart.web-automapping\web-auto-mapping.document.json` の生成を確認
+
 **2026-04-23 11:51 (Asia/Taipei) — Tauri 移植 Phase A 実装**
 
 ### Summary
