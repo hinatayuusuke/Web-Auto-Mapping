@@ -1886,3 +1886,62 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 13:59 (Asia/Taipei) — 登り階段アイコン差し替え**
+
+### Summary
+- `stairs` アイコンを文字表示から、指定 SVG ベースの登り階段ピクセルアート描画へ変更した
+
+### Context / Goal
+- 既存の登り階段は丸背景 + `S` の簡易表示だったため、指定された SVG デザインへ差し替えたかった
+- 既存の `chest` と `stairs-down` と同じく、Canvas 上で直接ピクセルアート描画にしたかった
+
+### Changes
+- `drawIcons()` で `stairs` を専用描画分岐へ切り替えた
+- `getCellIconGlyph()` で `stairs` の文字グリフ出力をやめた
+- `drawUpStairsCellIcon()` を追加し、提示 SVG の各 path を 32x32 の矩形群として Canvas 描画へ落とし込んだ
+- 指定 SVG ベースの再現であることをコメントに明記した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `stairs` の専用ピクセルアート描画を追加し、文字表示から切り替えた
+
+### Behavioral Impact
+- 登り階段アイコンが `S` 表示ではなく、指定 SVG 相当のピクセルアートで表示されるようになった
+- `stairs-down`、`chest`、`pit`、`marker` の描画仕様は維持されている
+
+### Risk & Mitigation
+- Risk: 32x32 ピクセルアートは小さいズームで細部が潰れて見える可能性がある
+- Mitigation: セルサイズに対する相対スケールで描画し、最低限の視認サイズを確保した
+- Risk: SVG の path 群を矩形群へ手変換しているため、色や配置に転記ミスが入る可能性がある
+- Mitigation: path の矩形単位をそのまま `fillRect` に写し、ビルド確認まで行った
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 14:26 (Asia/Taipei) — 登り階段アイコンの再差し替え**
+
+### Summary
+- `stairs` アイコンを新しい rect ベース SVG デザインへ更新した
+
+### Context / Goal
+- 直前に適用した登り階段アイコンを、さらに新しい SVG デザインへ差し替えたかった
+- 今回の SVG は rect だけで構成されていたため、より直接的に Canvas 描画へ写したかった
+
+### Changes
+- `drawUpStairsCellIcon()` の矩形群を新しい SVG に合わせて全面更新した
+- 旧デザイン由来の path 変換矩形を削除し、新しい rect 構成だけを残した
+- 変更理由をコメントに反映した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `stairs` 専用描画の矩形構成を新しい SVG デザインに差し替えた
+
+### Behavioral Impact
+- 登り階段アイコンが新しい階段デザインで表示されるようになった
+- `stairs-down`、`chest`、その他のアイコン描画には影響していない
+
+### Risk & Mitigation
+- Risk: 連続差し替えで旧デザイン由来の矩形が残ると表示が壊れる可能性がある
+- Mitigation: `drawUpStairsCellIcon()` 内の矩形群を全面入れ替え、旧 path 由来の塊を残さない形にした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

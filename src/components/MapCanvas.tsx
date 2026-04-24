@@ -697,6 +697,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
       continue;
     }
 
+    if (icon.kind === 'stairs') {
+      drawUpStairsCellIcon(context, centerX, centerY, layout.cellSize);
+      continue;
+    }
+
     if (icon.kind === 'stairs-down') {
       drawDownStairsCellIcon(context, centerX, centerY, layout.cellSize);
       continue;
@@ -878,7 +883,7 @@ function getCellIconGlyph(icon: FloorState['cellIcons'][number]) {
     case 'pit':
       return 'P';
     case 'stairs':
-      return 'S';
+      return '';
     case 'stairs-down':
       return '';
     case 'chest':
@@ -1053,6 +1058,58 @@ function drawDownStairsCellIcon(
   fillRect(24, 6, 1, 21, '#9daabf');
   fillRect(24, 6, 1, 2, '#d2dbe6');
   fillRect(26, 5, 1, 23, '#586375');
+}
+
+function drawUpStairsCellIcon(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+) {
+  const sourceSize = 32;
+  const iconWidth = Math.max(14, Math.floor(cellSize * 0.9));
+  const scale = iconWidth / sourceSize;
+  const drawSize = sourceSize * scale;
+  const originX = Math.round(centerX - drawSize / 2);
+  const originY = Math.round(centerY - drawSize / 2);
+
+  const fillRect = (x: number, y: number, width: number, height: number, color: string) => {
+    context.fillStyle = color;
+    context.fillRect(
+      originX + x * scale,
+      originY + y * scale,
+      width * scale,
+      height * scale,
+    );
+  };
+
+  // WHY: 新しい指定 SVG は単純な rect 構成だけなので、そのまま Canvas の矩形群へ写して登り階段を再現する。
+  fillRect(4, 14, 24, 14, '#1f242d');
+  fillRect(5, 16, 22, 11, '#333b47');
+
+  fillRect(4, 12, 6, 14, '#1f242d');
+  fillRect(5, 13, 4, 12, '#69768a');
+  fillRect(5, 14, 1, 11, '#9daabf');
+  fillRect(5, 14, 1, 2, '#d2dbe6');
+  fillRect(8, 13, 1, 11, '#586375');
+
+  fillRect(10, 7, 6, 16, '#1f242d');
+  fillRect(11, 8, 4, 14, '#69768a');
+  fillRect(11, 9, 1, 13, '#9daabf');
+  fillRect(11, 9, 1, 2, '#d2dbe6');
+  fillRect(14, 8, 1, 14, '#586375');
+
+  fillRect(16, 4, 6, 15, '#1f242d');
+  fillRect(17, 5, 4, 13, '#69768a');
+  fillRect(17, 5, 1, 12, '#9daabf');
+  fillRect(17, 6, 1, 2, '#d2dbe6');
+  fillRect(20, 5, 1, 13, '#586375');
+
+  fillRect(22, 0, 6, 14, '#1f242d');
+  fillRect(23, 1, 4, 14, '#69768a');
+  fillRect(23, 1, 1, 12, '#9daabf');
+  fillRect(23, 2, 1, 2, '#d2dbe6');
+  fillRect(26, 1, 1, 14, '#586375');
 }
 
 function getMarkerGlyph(message?: string) {
