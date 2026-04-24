@@ -912,7 +912,7 @@ function drawChestCellIcon(
 ) {
   const sourceWidth = 32;
   const sourceHeight = 30;
-  const iconWidth = Math.max(14, Math.floor(cellSize * 0.92));
+  const iconWidth = Math.max(12, Math.floor(cellSize * 0.82));
   const scale = iconWidth / sourceWidth;
   const drawWidth = sourceWidth * scale;
   const drawHeight = sourceHeight * scale;

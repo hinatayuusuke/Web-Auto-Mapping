@@ -1822,3 +1822,30 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 11:10 (Asia/Taipei) — Chestアイコン収まり調整**
+
+### Summary
+- `Chest` アイコンの描画スケールを下げ、セル枠からはみ出しにくいサイズへ調整した
+
+### Context / Goal
+- 新しい `Chest` ピクセルアートがセル内でやや大きく、枠からはみ出して見えていた
+- デザインは維持したまま、セル内に収まる余白を少し増やしたかった
+
+### Changes
+- `drawChestCellIcon()` の `iconWidth` 比率を下げた
+- 最小サイズも少し下げ、ズーム時の過剰な張り付きが起きにくいようにした
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `Chest` 専用描画のスケール値を調整した
+
+### Behavioral Impact
+- `Chest` アイコンがセル枠内に収まりやすくなった
+- 他のアイコン描画や `Chest` のデザイン構成自体は変わっていない
+
+### Risk & Mitigation
+- Risk: 縮小しすぎると小ズーム時の視認性が落ちる可能性がある
+- Mitigation: 最小幅は維持しつつ、比率だけを一段下げる軽微な調整に留めた
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
