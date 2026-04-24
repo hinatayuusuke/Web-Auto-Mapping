@@ -2351,3 +2351,33 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:46 (Asia/Taipei) — Forward Edgeのショートカットをアイコン化**
+
+### Summary
+- 左ペインの `Forward Edge` ショートカットを、数字付きアイコングリッドへ変更した
+
+### Context / Goal
+- 左ペインの `Forward Edge` はテキストボタンで、右ペインのアイコングリッド系 UI と見た目の統一感が弱かった
+- `1 / 2 / 3 / 4 / 0` のショートカットだけを、右ペインと同系統の線枠グリッド + アイコン表示へ寄せたかった
+
+### Changes
+- `Forward Edge` 用に `FORWARD_EDGE_SHORTCUTS` 定義を追加した
+- `1 wall / 2 door / 3 open / 4 closed / 0 unknown` を、左に数字、右に edge プレビューを置く `ForwardEdgeShortcutButton` へ差し替えた
+- 既存の `EdgeToolPreview`、`OpenDoorToolPreview`、`UnknownEdgeToolPreview` を流用してアイコン表示を統一した
+- `Save / Load` など他の `ShortcutButton` セクションは変更していない
+
+### Files Touched
+- `src/App.tsx` — `Forward Edge` のショートカット UI を数字付きアイコングリッドへ変更し、専用プレビュー部品を追加
+
+### Behavioral Impact
+- 左ペインの `Forward Edge` は文字ラベルではなく、数字付きアイコンボタンで選べるようになった
+- ショートカットの意味自体は変わらず、`1 / 2 / 3 / 4 / 0` の対応も維持される
+
+### Risk & Mitigation
+- Risk: テキストが減ったことで初見では意味が分かりにくくなる可能性がある
+- Mitigation: 各ボタンに `title` と `aria-label` を残し、数字も左に常時表示して認識しやすくした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

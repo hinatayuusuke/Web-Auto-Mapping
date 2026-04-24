@@ -6,7 +6,7 @@ import { createPersistedDocument } from './lib/persistence';
 import { isTauriRuntime } from './lib/runtime';
 import { exportDocument, getStorageDescriptor, importDocument } from './lib/storageAdapter';
 import { useAppStore, useSelectedFloor } from './store/appStore';
-import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
+import { AutoMappingLevel, CellIconKind, EditTool, EdgeEditIntent, Facing } from './types/map';
 
 const AUTO_MAPPING_LEVELS: AutoMappingLevel[] = ['off', 'basic', 'corridor'];
 const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'stairs-down', 'pit', 'chest', 'marker'];
@@ -18,6 +18,16 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'edge closed door', value: 'edge-closed-door' },
   { label: 'edge open', value: 'edge-open' },
   { label: 'edge unknown', value: 'edge-unknown' },
+];
+const FORWARD_EDGE_SHORTCUTS: Array<{
+  keyLabel: '1' | '2' | '3' | '4' | '0';
+  intent: EdgeEditIntent;
+}> = [
+  { keyLabel: '1', intent: 'wall' },
+  { keyLabel: '2', intent: 'door' },
+  { keyLabel: '3', intent: 'open' },
+  { keyLabel: '4', intent: 'closed-door' },
+  { keyLabel: '0', intent: 'unknown' },
 ];
 const VIEWPORT_PAN_STEP = 64;
 const GLOBAL_ARROW_SHORTCUTS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
@@ -521,18 +531,15 @@ function App() {
           title="Forward Edge"
           body="1 wall / 2 door / 3 open / 4 closed / 0 unknown"
         />
-        <div className="grid grid-cols-2 gap-2">
-          <ShortcutButton label="1 wall" onClick={() => applyForwardEdgeShortcut('wall')} />
-          <ShortcutButton label="2 open door" onClick={() => applyForwardEdgeShortcut('door')} />
-          <ShortcutButton label="3 open" onClick={() => applyForwardEdgeShortcut('open')} />
-          <ShortcutButton
-            label="4 closed door"
-            onClick={() => applyForwardEdgeShortcut('closed-door')}
-          />
-          <ShortcutButton
-            label="0 unknown"
-            onClick={() => applyForwardEdgeShortcut('unknown')}
-          />
+        <div className="grid grid-cols-2 gap-px bg-[var(--color-border)]">
+          {FORWARD_EDGE_SHORTCUTS.map((shortcut) => (
+            <ForwardEdgeShortcutButton
+              key={shortcut.keyLabel}
+              keyLabel={shortcut.keyLabel}
+              intent={shortcut.intent}
+              onClick={() => applyForwardEdgeShortcut(shortcut.intent)}
+            />
+          ))}
         </div>
       </section>
     </ShellPanel>
@@ -953,6 +960,54 @@ function ShortcutButton({ disabled = false, label, onClick }: ShortcutButtonProp
       {label}
     </button>
   );
+}
+
+type ForwardEdgeShortcutButtonProps = {
+  intent: EdgeEditIntent;
+  keyLabel: '1' | '2' | '3' | '4' | '0';
+  onClick: () => void;
+};
+
+function ForwardEdgeShortcutButton({
+  intent,
+  keyLabel,
+  onClick,
+}: ForwardEdgeShortcutButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${keyLabel} ${getForwardEdgeIntentLabel(intent)}`}
+      title={`${keyLabel} ${getForwardEdgeIntentLabel(intent)}`}
+      className="grid min-h-10 grid-cols-[1.1rem_1fr] items-center gap-1 bg-[var(--color-panel)] px-2 py-1 transition hover:bg-[rgba(255,255,255,0.03)]"
+    >
+      <span className="text-[11px] font-semibold leading-none text-[var(--color-muted)]">
+        {keyLabel}
+      </span>
+      <span className="mx-auto size-6">
+        <ForwardEdgeShortcutPreview intent={intent} />
+      </span>
+    </button>
+  );
+}
+
+type ForwardEdgeShortcutPreviewProps = {
+  intent: EdgeEditIntent;
+};
+
+function ForwardEdgeShortcutPreview({ intent }: ForwardEdgeShortcutPreviewProps) {
+  switch (intent) {
+    case 'wall':
+      return <EdgeToolPreview lineColor="#d9e3ef" lineWidth={4} />;
+    case 'door':
+      return <OpenDoorToolPreview />;
+    case 'closed-door':
+      return <EdgeToolPreview lineColor="#ef5b5b" lineWidth={4} />;
+    case 'open':
+      return <EdgeToolPreview lineColor="rgba(108, 188, 255, 0.75)" lineWidth={2.5} />;
+    case 'unknown':
+      return <UnknownEdgeToolPreview />;
+  }
 }
 
 type IconButtonProps = {
@@ -1715,6 +1770,21 @@ function getEditToolLabel(tool: EditTool) {
       return 'edge unknown';
     case 'cell-icon':
       return 'cell icon';
+  }
+}
+
+function getForwardEdgeIntentLabel(intent: EdgeEditIntent) {
+  switch (intent) {
+    case 'wall':
+      return 'wall';
+    case 'door':
+      return 'open door';
+    case 'closed-door':
+      return 'closed door';
+    case 'open':
+      return 'open';
+    case 'unknown':
+      return 'unknown';
   }
 }
 
