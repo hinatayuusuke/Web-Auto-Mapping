@@ -630,12 +630,12 @@ function App() {
     >
       <section className="space-y-3">
         <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Map mode only" />
-        <div className="grid gap-2">
+        <div className="grid grid-cols-4 gap-px bg-[var(--color-border)]">
           {EDIT_TOOL_OPTIONS.map((tool) => (
-            <ActionButton
+            <EditToolChoiceButton
               key={tool.value}
               active={selectedTool === tool.value}
-              label={tool.label}
+              tool={tool.value}
               onClick={() => setSelectedTool(tool.value)}
             />
           ))}
@@ -1060,6 +1060,59 @@ function CellIconPreview({ kind }: CellIconPreviewProps) {
   }
 }
 
+type EditToolChoiceButtonProps = {
+  active: boolean;
+  onClick: () => void;
+  tool: EditTool;
+};
+
+function EditToolChoiceButton({ active, onClick, tool }: EditToolChoiceButtonProps) {
+  const label = getEditToolLabel(tool);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex min-h-10 items-center justify-center bg-[var(--color-panel)] p-1 transition ${
+        active
+          ? 'relative z-10 bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)] shadow-[inset_0_0_0_1px_var(--color-border-strong)]'
+          : 'text-[var(--color-text-soft)] hover:bg-[rgba(255,255,255,0.03)]'
+      }`}
+    >
+      <span className="size-7">
+        <EditToolPreview tool={tool} />
+      </span>
+    </button>
+  );
+}
+
+type EditToolPreviewProps = {
+  tool: EditTool;
+};
+
+function EditToolPreview({ tool }: EditToolPreviewProps) {
+  switch (tool) {
+    case 'cell-floor':
+      return <CellFloorToolPreview />;
+    case 'cell-unknown':
+      return <CellUnknownToolPreview />;
+    case 'cell-icon':
+      return <CellIconToolPreview />;
+    case 'edge-wall':
+      return <EdgeToolPreview lineColor="#d9e3ef" lineWidth={4} />;
+    case 'edge-door':
+      return <OpenDoorToolPreview />;
+    case 'edge-closed-door':
+      return <EdgeToolPreview lineColor="#ef5b5b" lineWidth={4} />;
+    case 'edge-open':
+      return <EdgeToolPreview lineColor="rgba(108, 188, 255, 0.75)" lineWidth={2.5} />;
+    case 'edge-unknown':
+      return <UnknownEdgeToolPreview />;
+  }
+}
+
 type ExpandGridButtonProps = {
   direction: ArrowIconProps['direction'];
   label: string;
@@ -1229,6 +1282,108 @@ function MarkerPreview() {
       >
         M
       </text>
+    </svg>
+  );
+}
+
+function CellFloorToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.03)" />
+      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
+      <rect x="7" y="7" width="18" height="18" rx="2" fill="rgba(87,159,255,0.16)" />
+      <rect x="7.5" y="7.5" width="17" height="17" rx="1.5" fill="none" stroke="rgba(214,222,235,0.18)" />
+    </svg>
+  );
+}
+
+function CellUnknownToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.02)" />
+      <rect
+        x="4.5"
+        y="4.5"
+        width="23"
+        height="23"
+        fill="none"
+        stroke="rgba(214,222,235,0.16)"
+        strokeDasharray="3 2"
+      />
+    </svg>
+  );
+}
+
+function CellIconToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.03)" />
+      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
+      <circle cx="16" cy="16" r="8" fill="#f6d58d" />
+      <text
+        x="16"
+        y="16.5"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="10"
+        fontWeight="700"
+        fill="#0b1320"
+      >
+        I
+      </text>
+    </svg>
+  );
+}
+
+type EdgeToolPreviewProps = {
+  lineColor: string;
+  lineWidth: number;
+};
+
+function EdgeToolPreview({ lineColor, lineWidth }: EdgeToolPreviewProps) {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.02)" />
+      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
+      <line
+        x1="8"
+        y1="16"
+        x2="24"
+        y2="16"
+        stroke={lineColor}
+        strokeWidth={lineWidth}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function OpenDoorToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.02)" />
+      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
+      <line x1="8" y1="16" x2="13" y2="16" stroke="#6bcc7d" strokeWidth="4" strokeLinecap="round" />
+      <line x1="19" y1="16" x2="24" y2="16" stroke="#6bcc7d" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UnknownEdgeToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.02)" />
+      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
+      <line
+        x1="8"
+        y1="16"
+        x2="24"
+        y2="16"
+        stroke="rgba(214,222,235,0.2)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="3 3"
+      />
     </svg>
   );
 }
@@ -1560,6 +1715,27 @@ function getCellIconKindLabel(kind: CellIconKind) {
       return 'chest';
     case 'marker':
       return 'marker';
+  }
+}
+
+function getEditToolLabel(tool: EditTool) {
+  switch (tool) {
+    case 'cell-floor':
+      return 'cell floor';
+    case 'cell-unknown':
+      return 'cell unknown';
+    case 'edge-wall':
+      return 'edge wall';
+    case 'edge-door':
+      return 'edge open door';
+    case 'edge-closed-door':
+      return 'edge closed door';
+    case 'edge-open':
+      return 'edge open';
+    case 'edge-unknown':
+      return 'edge unknown';
+    case 'cell-icon':
+      return 'cell icon';
   }
 }
 

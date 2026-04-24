@@ -2173,3 +2173,32 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:17 (Asia/Taipei) — Edit Toolのアイコン化と線枠グリッド化**
+
+### Summary
+- `Edit Tool` をテキスト一覧から、Canvas の意味に寄せたアイコン付き線枠グリッドへ変更した
+
+### Context / Goal
+- `Edit Tool` は文字ボタンの縦並びで、`Cell Icons` に比べて面積効率と視認性が低かった
+- `floor / unknown / wall / door / open` などの編集意図を、Canvas 上の見た目に近い記号で選べるようにしたかった
+
+### Changes
+- `Edit Tool` セクションを 4 列の密な線枠グリッドに変更した
+- `cell floor`、`cell unknown`、`cell icon`、`edge wall`、`edge open door`、`edge closed door`、`edge open`、`edge unknown` の専用プレビューを `App.tsx` に追加した
+- 各ボタンはアイコンのみ表示にしつつ、`title` と `aria-label` で操作名を残した
+
+### Files Touched
+- `src/App.tsx` — `Edit Tool` の UI をアイコン選択グリッドへ差し替え、各編集ツールのプレビューコンポーネントを追加
+
+### Behavioral Impact
+- `Edit Tool` はテキスト一覧ではなく、色と形で編集対象を判断できるパレット表示になった
+- 選択中ツールは `Cell Icons` と同じ強調ルールで見えるようになった
+
+### Risk & Mitigation
+- Risk: 一部ツールは文字より記号の方が初見で分かりにくい可能性がある
+- Mitigation: `title` と `aria-label` を維持し、hover 時や支援技術で名称を確認できるようにした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
