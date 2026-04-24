@@ -648,7 +648,7 @@ function App() {
           title="Cell Icons"
           body="[ ] cycle, I place, Alt+I forward, Backspace remove"
         />
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-px bg-[var(--color-border)]">
           {CELL_ICON_KINDS.map((kind) => (
             <CellIconChoiceButton
               key={kind}
@@ -1028,13 +1028,13 @@ function CellIconChoiceButton({ active, kind, onClick }: CellIconChoiceButtonPro
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex min-h-14 items-center justify-center rounded-2xl border p-2 transition ${
+      className={`flex min-h-10 items-center justify-center bg-[var(--color-panel)] p-1 transition ${
         active
-          ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)]'
-          : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+          ? 'relative z-10 bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)] shadow-[inset_0_0_0_1px_var(--color-border-strong)]'
+          : 'text-[var(--color-text-soft)] hover:bg-[rgba(255,255,255,0.03)]'
       }`}
     >
-      <span className="size-8">
+      <span className="size-7">
         <CellIconPreview kind={kind} />
       </span>
     </button>

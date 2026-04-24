@@ -2115,3 +2115,61 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:11 (Asia/Taipei) — Cell Iconsの線枠グリッド化**
+
+### Summary
+- `Cell Icons` をカード風ボタンから、余白の少ない線枠グリッド表示へ変更した
+
+### Context / Goal
+- `Cell Icons` は選択パレット用途に対して、各ボタンのカード装飾がやや重かった
+- アイコン自体を見せることを優先し、面積効率の良い格子表示へ寄せたかった
+
+### Changes
+- `Cell Icons` セクションの並びを、外周枠付きの 3 列グリッドに変更した
+- 各アイコンボタンから個別の丸み付きカード表現を外し、フラットなセル表示へ切り替えた
+- 選択中だけ inset の強い線枠と薄い背景色で強調する形に整理した
+
+### Files Touched
+- `src/App.tsx` — `Cell Icons` パレットのレイアウトとボタン装飾を線枠グリッド向けに調整
+
+### Behavioral Impact
+- `Cell Icons` は余白の少ない格子配置となり、同じ面積でより密にアイコンを確認できるようになった
+- 非選択状態の装飾は弱くなり、選択中のセルだけが強く見えるようになった
+
+### Risk & Mitigation
+- Risk: 線枠を詰めたことでクリック領域が窮屈に見える可能性がある
+- Mitigation: セル自体の最小高さは維持し、hover と active の視覚差を残して判別性を確保した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:13 (Asia/Taipei) — Cell Iconsの外周装飾削減**
+
+### Summary
+- `Cell Icons` の外周カード装飾を外し、グリッドをさらに密に詰めた
+
+### Context / Goal
+- 線枠グリッド化後も、パレット全体の外周装飾とセル余白がまだ大きかった
+- アイコンをより密に並べ、選択パレットとしての面積効率を上げたかった
+
+### Changes
+- `Cell Icons` グリッドから外周の枠線と角丸コンテナを削除した
+- 各セルボタンの最小高さと内側余白を縮小した
+- アイコン表示サイズも一段小さくして、全体を詰めた
+
+### Files Touched
+- `src/App.tsx` — `Cell Icons` のグリッド外枠とセルサイズを縮小調整
+
+### Behavioral Impact
+- `Cell Icons` は周囲のカード装飾なしで、より密な格子状パレットとして表示される
+- 1 セルあたりの占有が減り、右ペイン内のスペース効率が上がった
+
+### Risk & Mitigation
+- Risk: 詰めすぎで押しやすさや識別性が落ちる可能性がある
+- Mitigation: セル自体のクリック面積は維持しつつ、active 枠と hover 差分は残した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
