@@ -432,6 +432,19 @@ function App() {
       title="Navigator"
     >
       <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Keyboard"
+          title="Movement"
+          body="W/↑ forward, A/← D/→ turn, S/↓ back"
+        />
+        <MovementPad
+          currentFacing={currentFacing}
+          onForward={() => moveInDirection(currentFacing)}
+          onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
+        />
+      </section>
+
+      <section className="space-y-3">
         <PanelHeading eyebrow="Document" title="Map Title" />
         <label className="grid gap-2">
           <span className="text-sm text-[var(--color-text-soft)]">Title</span>
@@ -510,19 +523,6 @@ function App() {
             onClick={() => expandSelectedFloorDown()}
           />
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <PanelHeading
-          eyebrow="Keyboard"
-          title="Movement"
-          body="W/↑ forward, A/← D/→ turn, S/↓ back"
-        />
-        <MovementPad
-          currentFacing={currentFacing}
-          onForward={() => moveInDirection(currentFacing)}
-          onTurn={(action) => setPlayerFacing(getFacingAfterTurn(currentFacing, action))}
-        />
       </section>
 
       <section className="space-y-3">
