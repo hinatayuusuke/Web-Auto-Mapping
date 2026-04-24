@@ -1726,3 +1726,38 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-23 17:53 (Asia/Taipei) — Global Arrow切替ショートカット追加**
+
+### Summary
+- `Ctrl+Alt+F12` で `Global Arrow` の ON/OFF を切り替える global shortcut を追加した
+
+### Context / Goal
+- `Global Arrow` は非フォーカス時に使う機能なので、ON/OFF もアプリへフォーカスを戻さず切り替えられる必要があった
+- Arrow capture 本体とは別に、切替用 shortcut は常時登録しておきたかった
+
+### Changes
+- `GLOBAL_ARROW_TOGGLE_SHORTCUT` として `Ctrl+Alt+F12` を追加した
+- Tauri 実行時だけ `Ctrl+Alt+F12` を global shortcut 登録する effect を追加した
+- `Ctrl+Alt+F12` 押下時に `globalArrowCaptureEnabled` を toggle するようにした
+- Arrow capture の ON/OFF 登録 effect とは分離し、Arrow capture を OFF にしても切替 shortcut は残るようにした
+- `Global Arrow` トグルの title に `Ctrl+Alt+F12` で切替できることを表示するようにした
+
+### Files Touched
+- `src/App.tsx` — `Ctrl+Alt+F12` の常時 global shortcut 登録と UI tooltip 表示を追加した
+
+### Behavioral Impact
+- Tauri アプリでは、非フォーカス時でも `Ctrl+Alt+F12` で `Global Arrow` の ON/OFF を切り替えられるようになった
+- Web 実行時は従来どおり `Global Arrow` は無効のまま
+- Arrow 移動 shortcut の登録 / 解除仕様自体は変わっていない
+
+### Risk & Mitigation
+- Risk: `Ctrl+Alt+F12` が他アプリやドライバ系ツールに確保されている環境では登録または発火しない可能性がある
+- Mitigation: 登録失敗時は `toggle register failed` を状態表示へ出すようにした
+- Risk: Arrow capture OFF 時に切替 shortcut まで解除されると非フォーカス復帰できなくなる
+- Mitigation: 切替 shortcut は Arrow capture 本体とは別 effect で常時登録するようにした
+
+### Tests / Verification
+- `npm run build`
+- `cargo build --manifest-path .\src-tauri\Cargo.toml`
+- `npm run tauri build`
+- Web / Rust / Tauri 配布ビルド成功を確認。`Ctrl+Alt+F12` の実機入力確認は未実施

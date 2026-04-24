@@ -22,6 +22,7 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
 ];
 const VIEWPORT_PAN_STEP = 64;
 const GLOBAL_ARROW_SHORTCUTS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
+const GLOBAL_ARROW_TOGGLE_SHORTCUT = 'Ctrl+Alt+F12';
 
 type NoticeState = {
   message: string;
@@ -80,6 +81,58 @@ function App() {
   useEffect(() => {
     void hydratePersistedState();
   }, [hydratePersistedState]);
+
+  useEffect(() => {
+    if (!supportsGlobalArrowCapture) {
+      return;
+    }
+
+    // WHY: Arrow capture を OFF にしても、再度 ON に戻すための global shortcut は常時残す。
+    let disposed = false;
+    let registered = false;
+
+    const registerToggleShortcut = async () => {
+      try {
+        const { isRegistered, register, unregister } = await import('@tauri-apps/plugin-global-shortcut');
+
+        if (await isRegistered(GLOBAL_ARROW_TOGGLE_SHORTCUT)) {
+          throw new Error(`Shortcut already registered: ${GLOBAL_ARROW_TOGGLE_SHORTCUT}`);
+        }
+
+        await register(GLOBAL_ARROW_TOGGLE_SHORTCUT, (event) => {
+          if (disposed || event.state !== 'Pressed') {
+            return;
+          }
+
+          setGlobalArrowCaptureEnabled((enabled) => !enabled);
+        });
+
+        registered = true;
+
+        if (disposed) {
+          await unregister(GLOBAL_ARROW_TOGGLE_SHORTCUT);
+        }
+      } catch {
+        if (!disposed) {
+          setGlobalArrowCaptureStatus('toggle register failed');
+        }
+      }
+    };
+
+    void registerToggleShortcut();
+
+    return () => {
+      disposed = true;
+
+      if (!registered) {
+        return;
+      }
+
+      void import('@tauri-apps/plugin-global-shortcut').then(({ unregister }) =>
+        unregister(GLOBAL_ARROW_TOGGLE_SHORTCUT),
+      );
+    };
+  }, [supportsGlobalArrowCapture]);
 
   useEffect(() => {
     if (!supportsGlobalArrowCapture) {
@@ -521,7 +574,7 @@ function App() {
             label={globalArrowCaptureEnabled ? 'Arrow on' : 'Arrow off'}
             title={
               supportsGlobalArrowCapture
-                ? `Global Arrow: ${globalArrowCaptureStatus}`
+                ? `Global Arrow: ${globalArrowCaptureStatus}. ${GLOBAL_ARROW_TOGGLE_SHORTCUT} toggles capture.`
                 : 'Global Arrow is available only in Tauri'
             }
             onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
