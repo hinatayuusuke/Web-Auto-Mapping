@@ -1024,40 +1024,50 @@ function drawDownStairsCellIcon(
     );
   };
 
-  // WHY: 指定 SVG は 32x32 のピクセルアートなので、Canvas 上でも同じ矩形群を描いて降り階段の見た目を再現する。
-  fillRect(0, 0, 32, 32, '#7a879d');
+  const fillMirroredRect = (
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: string,
+  ) => {
+    // WHY: transform 反転は描画原点ごと動いて位置合わせが崩れたため、各 rect の x 座標を左右反転した版へ直接変換する。
+    fillRect(sourceSize - x - width, y, width, height, color);
+  };
 
-  fillRect(0, 0, 32, 1, '#aab8cc');
-  fillRect(0, 1, 1, 31, '#aab8cc');
-  fillRect(0, 31, 32, 1, '#4a5363');
-  fillRect(31, 0, 1, 31, '#4a5363');
+  fillMirroredRect(0, 0, 32, 32, '#7a879d');
 
-  fillRect(3, 3, 26, 26, '#1f242d');
-  fillRect(4, 4, 24, 24, '#333b47');
+  fillMirroredRect(0, 0, 32, 1, '#aab8cc');
+  fillMirroredRect(0, 1, 1, 31, '#aab8cc');
+  fillMirroredRect(0, 31, 32, 1, '#4a5363');
+  fillMirroredRect(31, 0, 1, 31, '#4a5363');
 
-  fillRect(4, 16, 6, 12, '#1f242d');
-  fillRect(5, 17, 4, 11, '#69768a');
-  fillRect(6, 18, 1, 9, '#9daabf');
-  fillRect(6, 18, 1, 2, '#d2dbe6');
-  fillRect(8, 17, 1, 11, '#586375');
+  fillMirroredRect(3, 3, 26, 26, '#1f242d');
+  fillMirroredRect(4, 4, 24, 24, '#333b47');
 
-  fillRect(10, 12, 6, 16, '#1f242d');
-  fillRect(11, 13, 4, 15, '#69768a');
-  fillRect(12, 14, 1, 13, '#9daabf');
-  fillRect(12, 14, 1, 2, '#d2dbe6');
-  fillRect(14, 13, 1, 15, '#586375');
+  fillMirroredRect(4, 16, 6, 12, '#1f242d');
+  fillMirroredRect(5, 17, 4, 11, '#69768a');
+  fillMirroredRect(6, 18, 1, 9, '#9daabf');
+  fillMirroredRect(6, 18, 1, 2, '#d2dbe6');
+  fillMirroredRect(8, 17, 1, 11, '#586375');
 
-  fillRect(16, 8, 6, 20, '#1f242d');
-  fillRect(17, 9, 4, 19, '#69768a');
-  fillRect(18, 10, 1, 17, '#9daabf');
-  fillRect(18, 10, 1, 2, '#d2dbe6');
-  fillRect(20, 9, 1, 19, '#586375');
+  fillMirroredRect(10, 12, 6, 16, '#1f242d');
+  fillMirroredRect(11, 13, 4, 15, '#69768a');
+  fillMirroredRect(12, 14, 1, 13, '#9daabf');
+  fillMirroredRect(12, 14, 1, 2, '#d2dbe6');
+  fillMirroredRect(14, 13, 1, 15, '#586375');
 
-  fillRect(22, 4, 6, 24, '#1f242d');
-  fillRect(23, 5, 4, 23, '#69768a');
-  fillRect(24, 6, 1, 21, '#9daabf');
-  fillRect(24, 6, 1, 2, '#d2dbe6');
-  fillRect(26, 5, 1, 23, '#586375');
+  fillMirroredRect(16, 8, 6, 20, '#1f242d');
+  fillMirroredRect(17, 9, 4, 19, '#69768a');
+  fillMirroredRect(18, 10, 1, 17, '#9daabf');
+  fillMirroredRect(18, 10, 1, 2, '#d2dbe6');
+  fillMirroredRect(20, 9, 1, 19, '#586375');
+
+  fillMirroredRect(22, 4, 6, 24, '#1f242d');
+  fillMirroredRect(23, 5, 4, 23, '#69768a');
+  fillMirroredRect(24, 6, 1, 21, '#9daabf');
+  fillMirroredRect(24, 6, 1, 2, '#d2dbe6');
+  fillMirroredRect(26, 5, 1, 23, '#586375');
 }
 
 function drawUpStairsCellIcon(

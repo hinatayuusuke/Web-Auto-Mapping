@@ -1945,3 +1945,87 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 14:29 (Asia/Taipei) — 降り階段アイコンの左右反転**
+
+### Summary
+- `stairs-down` アイコンを Canvas transform で左右反転し、登り階段との差別化を強めた
+
+### Context / Goal
+- 登り階段と降り階段の見た目差を、色だけでなく向きでも明確にしたかった
+- 既存の矩形定義は維持しつつ、最小変更で反転したかった
+
+### Changes
+- `drawDownStairsCellIcon()` を `context.save()` / `translate()` / `scale(-1, 1)` / `restore()` で包んだ
+- 降り階段のピクセルアートを描画範囲内で左右反転するようにした
+- 反転理由をコメントとして明記した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `stairs-down` 描画を Canvas transform で左右反転するようにした
+
+### Behavioral Impact
+- 降り階段アイコンが左右反転され、登り階段と向きでも見分けやすくなった
+- `stairs-down` の色や構造は維持され、向きだけが変わった
+
+### Risk & Mitigation
+- Risk: transform の適用範囲を誤ると他の描画にも反転が漏れる可能性がある
+- Mitigation: `save()` / `restore()` で `drawDownStairsCellIcon()` の内部だけに閉じた
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 14:31 (Asia/Taipei) — 降り階段反転のロールバック**
+
+### Summary
+- `stairs-down` の Canvas transform による左右反転をロールバックした
+
+### Context / Goal
+- `scale(-1, 1)` による左右反転は、セル内の描画座標そのものまでずらして見える問題があった
+- 次は transform ではなく、SVG / 矩形座標自体を左右反転した版へ書き換える前提で整理したかった
+
+### Changes
+- `drawDownStairsCellIcon()` から `save / translate / scale(-1, 1) / restore` を削除した
+- 降り階段アイコンを左右反転前の状態へ戻した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `stairs-down` の transform 反転処理を削除した
+
+### Behavioral Impact
+- 降り階段アイコンは反転前の元の向きに戻った
+- セル内での描画座標ずれは解消された
+
+### Risk & Mitigation
+- Risk: 登り階段との見た目差別化が一時的に元へ戻る
+- Mitigation: 次段階で SVG の `rect x` を左右反転した版へ書き換える前提に切り替えた
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 14:34 (Asia/Taipei) — 降り階段の座標反転実装**
+
+### Summary
+- `stairs-down` を transform ではなく rect の `x` 座標変換で左右反転する方式へ切り替えた
+
+### Context / Goal
+- Canvas の `scale(-1, 1)` 方式では、セル内の描画原点ごと動いて見える問題があった
+- 位置を崩さずに左右反転するため、SVG の rect 座標そのものを反転した版を描く方式へ変えたかった
+
+### Changes
+- `drawDownStairsCellIcon()` に `fillMirroredRect()` を追加した
+- 各矩形を `x' = 32 - x - width` で変換して描く方式へ変更した
+- transform ベースの反転は使わず、元の描画原点は維持した
+- 座標変換方式へ切り替えた理由をコメントとして明記した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `stairs-down` の左右反転方法を transform から矩形座標変換へ変更した
+
+### Behavioral Impact
+- 降り階段アイコンはセル内位置を崩さずに左右反転されるようになった
+- `stairs-down` の見た目差別化は維持しつつ、描画位置ずれは解消される
+
+### Risk & Mitigation
+- Risk: rect の反転変換を個別に適用すると、座標変換漏れがあると左右差が壊れる可能性がある
+- Mitigation: `fillMirroredRect()` に処理を集約し、各矩形は元座標のまま列挙する形にした
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
