@@ -108,7 +108,7 @@ const DEFAULT_VIEWPORT: ViewportState = {
   offsetY: 0,
 };
 const DEFAULT_TITLE = 'Untitled Map';
-const CELL_ICON_ORDER: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
+const CELL_ICON_ORDER: CellIconKind[] = ['stairs', 'stairs-down', 'pit', 'chest', 'marker'];
 const HISTORY_LIMIT = 80;
 const GRID_EXPAND_STEP = 4;
 

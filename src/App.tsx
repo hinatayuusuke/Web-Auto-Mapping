@@ -9,7 +9,7 @@ import { useAppStore, useSelectedFloor } from './store/appStore';
 import { AutoMappingLevel, CellIconKind, EditTool, Facing } from './types/map';
 
 const AUTO_MAPPING_LEVELS: AutoMappingLevel[] = ['off', 'basic', 'corridor'];
-const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'pit', 'chest', 'marker'];
+const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'stairs-down', 'pit', 'chest', 'marker'];
 const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'cell floor', value: 'cell-floor' },
   { label: 'cell unknown', value: 'cell-unknown' },
@@ -653,7 +653,7 @@ function App() {
             <ActionButton
               key={kind}
               active={selectedCellIconKind === kind}
-              label={kind}
+              label={getCellIconKindLabel(kind)}
               onClick={() => setSelectedCellIconKind(kind)}
             />
           ))}
@@ -778,7 +778,7 @@ function App() {
                 <StatusChip label="Floor" value={selectedFloor?.name ?? 'N/A'} />
                 <StatusChip label="Auto Map" value={autoMapping} />
                 <StatusChip label="Tool" value={selectedTool} />
-                <StatusChip label="Icon" value={selectedCellIconKind} />
+                <StatusChip label="Icon" value={getCellIconKindLabel(selectedCellIconKind)} />
                 <StatusChip label="Zoom" value={`${Math.round(viewport.zoom * 100)}%`} />
               </div>
             </div>
@@ -1353,6 +1353,21 @@ function getFacingAfterTurn(
   const offset = action === 'turn-right' ? 1 : -1;
 
   return facings[(currentIndex + offset + facings.length) % facings.length];
+}
+
+function getCellIconKindLabel(kind: CellIconKind) {
+  switch (kind) {
+    case 'stairs':
+      return 'stairs';
+    case 'stairs-down':
+      return 'down stairs';
+    case 'pit':
+      return 'pit';
+    case 'chest':
+      return 'chest';
+    case 'marker':
+      return 'marker';
+  }
 }
 
 function getFacingLabel(facing: Facing): 'N' | 'E' | 'S' | 'W' {

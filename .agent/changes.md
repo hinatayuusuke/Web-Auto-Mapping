@@ -1849,3 +1849,40 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 13:23 (Asia/Taipei) — 降り階段アイコン追加**
+
+### Summary
+- `stairs-down` セルアイコン種別を追加し、指定 SVG ベースの降り階段描画を実装した
+
+### Context / Goal
+- 既存の `stairs` とは別に、降り階段を識別できるアイコンが必要だった
+- 指定 SVG の見た目を Canvas 上でも再現しつつ、保存形式と UI 選択肢にも通したかった
+
+### Changes
+- `CellIconKind` に `stairs-down` を追加した
+- パレット順とアイコン巡回順に `stairs-down` を追加した
+- 永続化バリデーションで `stairs-down` を許可した
+- `Cell Icons` パレットとヘッダー表示で `stairs-down` を `down stairs` として表示するようにした
+- `MapCanvas` で `stairs-down` を専用ピクセルアート描画へ分岐し、指定 SVG の矩形構成を Canvas の `fillRect` 群として実装した
+
+### Files Touched
+- `src/types/map.ts` — `CellIconKind` に `stairs-down` を追加した
+- `src/store/appStore.ts` — セルアイコン巡回順に `stairs-down` を追加した
+- `src/lib/persistence.ts` — 永続化時の `CellIconKind` 判定に `stairs-down` を追加した
+- `src/App.tsx` — セルアイコンパレットとヘッダー表示に `down stairs` ラベルを追加した
+- `src/components/MapCanvas.tsx` — `stairs-down` の専用ピクセルアート描画を追加した
+
+### Behavioral Impact
+- `Cell Icons` から `down stairs` を選択して配置できるようになった
+- 保存 / 読込でも `stairs-down` を保持できるようになった
+- 既存の `stairs`、`pit`、`chest`、`marker` の挙動は変わっていない
+
+### Risk & Mitigation
+- Risk: 新しい icon kind を追加すると既存保存データのバリデーションや巡回順と不整合が出る可能性がある
+- Mitigation: 型、巡回順、永続化判定、UI パレットを同時に更新して整合を保った
+- Risk: 小さいズームで 32x32 ピクセルアートが潰れて見える可能性がある
+- Mitigation: セルサイズに対する相対スケールで描画し、最低限の視認サイズを確保した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

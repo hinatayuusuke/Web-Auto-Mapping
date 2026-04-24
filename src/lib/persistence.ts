@@ -157,7 +157,13 @@ function isAppMode(value: unknown): value is AppMode {
 }
 
 function isCellIconKind(value: unknown): value is CellIconKind {
-  return value === 'stairs' || value === 'pit' || value === 'chest' || value === 'marker';
+  return (
+    value === 'stairs' ||
+    value === 'stairs-down' ||
+    value === 'pit' ||
+    value === 'chest' ||
+    value === 'marker'
+  );
 }
 
 function isEditTool(value: unknown): value is EditTool {

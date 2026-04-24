@@ -8,7 +8,7 @@ export type CellState = 'unknown' | 'floor';
 
 export type EdgeState = 'unknown' | 'open' | 'wall';
 
-export type CellIconKind = 'stairs' | 'pit' | 'chest' | 'marker';
+export type CellIconKind = 'stairs' | 'stairs-down' | 'pit' | 'chest' | 'marker';
 
 export type EdgeIconKind = 'door' | 'closed-door' | 'secret-door' | 'one-way';
 
