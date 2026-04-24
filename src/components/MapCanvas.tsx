@@ -697,6 +697,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
       continue;
     }
 
+    if (icon.kind === 'pit') {
+      drawPitCellIcon(context, centerX, centerY, layout.cellSize);
+      continue;
+    }
+
     if (icon.kind === 'stairs') {
       drawUpStairsCellIcon(context, centerX, centerY, layout.cellSize);
       continue;
@@ -881,7 +886,7 @@ function getCellIconGlyph(icon: FloorState['cellIcons'][number]) {
 
   switch (icon.kind) {
     case 'pit':
-      return 'P';
+      return '';
     case 'stairs':
       return '';
     case 'stairs-down':
@@ -914,6 +919,26 @@ function clampZoom(value: number) {
 
 function getCellIconRadius(cellSize: number) {
   return Math.min(cellSize * 0.5 - 1, Math.max(4, cellSize * 0.46));
+}
+
+function drawPitCellIcon(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+) {
+  const radius = Math.max(3, cellSize * 0.22);
+
+  context.fillStyle = '#04070d';
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  context.fill();
+
+  context.strokeStyle = 'rgba(214, 222, 235, 0.18)';
+  context.lineWidth = Math.max(1, cellSize * 0.04);
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  context.stroke();
 }
 
 function drawChestCellIcon(

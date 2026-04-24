@@ -2029,3 +2029,31 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 14:55 (Asia/Taipei) — Pitアイコンの黒丸化**
+
+### Summary
+- `pit` アイコンを文字表示から黒丸の専用描画へ変更した
+
+### Context / Goal
+- `pit` は意味が単純で、文字よりも穴に見える単純な記号の方が分かりやすかった
+- 階段や Chest のような絵柄系とは分けて、最小表現に寄せたかった
+
+### Changes
+- `drawIcons()` で `pit` を専用描画分岐へ切り替えた
+- `getCellIconGlyph()` で `pit` の文字グリフ出力をやめた
+- `drawPitCellIcon()` を追加し、セル中央に小さめの黒丸と薄い縁を描くようにした
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `pit` 用の専用描画を追加し、文字表示から切り替えた
+
+### Behavioral Impact
+- `pit` は `P` 表示ではなく、黒丸の穴記号として表示されるようになった
+- `stairs`、`stairs-down`、`chest`、`marker` の描画仕様は変わっていない
+
+### Risk & Mitigation
+- Risk: 黒丸だけだと背景によっては見落としやすい可能性がある
+- Mitigation: 完全な塗りつぶしだけでなく、薄い外周線を足して輪郭を保った
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
