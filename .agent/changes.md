@@ -2057,3 +2057,61 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:05 (Asia/Taipei) — Cell Iconsパレットの実アイコン化**
+
+### Summary
+- `Cell Icons` をテキストボタンからアイコンのみの選択ボタンへ変更した
+
+### Context / Goal
+- 右ペインの `Cell Icons` は文字ラベル中心で、実際にマップへ置かれる見た目と一致していなかった
+- パレット上でも同じ見た目を見せて、選択時の認知負荷を下げたかった
+
+### Changes
+- `Cell Icons` セクションを 3 列のアイコン専用ボタンへ置き換えた
+- `stairs`、`stairs-down`、`pit`、`chest`、`marker` の簡易プレビュー SVG を `App.tsx` に追加した
+- `marker` は暫定仕様として丸背景に `M` を描くプレビューにした
+
+### Files Touched
+- `src/App.tsx` — `Cell Icons` の UI をアイコン専用ボタンへ差し替え、各アイコンのプレビューコンポーネントを追加
+
+### Behavioral Impact
+- 右ペインの `Cell Icons` はラベル文字ではなく、実アイコンに近い見た目で選択できるようになった
+- ボタン自体は `title` と `aria-label` を維持しているため、操作名の参照性は残している
+
+### Risk & Mitigation
+- Risk: パレット用 SVG と Canvas 上の実描画が将来的にずれる可能性がある
+- Mitigation: まずは主要な形状だけを合わせ、見た目差分が問題になったら共通のプレビュー定義へ寄せる
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:08 (Asia/Taipei) — Cell Iconsの宝箱プレビュー差し替え**
+
+### Summary
+- `Cell Icons` パレットの `chest` プレビューだけを完全版 SVG に差し替えた
+
+### Context / Goal
+- `Cell Icons` の宝箱表示は簡略版で、提示されたピクセルアートとの差分が残っていた
+- `MapCanvas` 側は触らず、パレット上の見た目だけを指定 SVG に合わせたかった
+
+### Changes
+- `ChestPreview()` の `viewBox` を `32x32` に揃えた
+- 提示された宝箱 SVG の `rect` 群を UI プレビューへ反映した
+- `MapCanvas` の宝箱描画ロジックは変更していない
+
+### Files Touched
+- `src/App.tsx` — `Cell Icons` 用の `ChestPreview` を完全版 SVG に更新
+
+### Behavioral Impact
+- 右ペインの `Cell Icons` に表示される宝箱アイコンだけが詳細版の見た目になった
+- 実際にマップへ配置される `chest` 描画は従来のまま
+
+### Risk & Mitigation
+- Risk: UI プレビューと `MapCanvas` 上の `chest` 表示に差分が残る
+- Mitigation: 今回はパレットだけを対象に限定し、必要になった時点で `MapCanvas` 側も同じ SVG ベースへ寄せる
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

@@ -648,12 +648,12 @@ function App() {
           title="Cell Icons"
           body="[ ] cycle, I place, Alt+I forward, Backspace remove"
         />
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {CELL_ICON_KINDS.map((kind) => (
-            <ActionButton
+            <CellIconChoiceButton
               key={kind}
               active={selectedCellIconKind === kind}
-              label={getCellIconKindLabel(kind)}
+              kind={kind}
               onClick={() => setSelectedCellIconKind(kind)}
             />
           ))}
@@ -1013,6 +1013,53 @@ function IconButton({
   );
 }
 
+type CellIconChoiceButtonProps = {
+  active: boolean;
+  kind: CellIconKind;
+  onClick: () => void;
+};
+
+function CellIconChoiceButton({ active, kind, onClick }: CellIconChoiceButtonProps) {
+  const label = getCellIconKindLabel(kind);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={`flex min-h-14 items-center justify-center rounded-2xl border p-2 transition ${
+        active
+          ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)]'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)]'
+      }`}
+    >
+      <span className="size-8">
+        <CellIconPreview kind={kind} />
+      </span>
+    </button>
+  );
+}
+
+type CellIconPreviewProps = {
+  kind: CellIconKind;
+};
+
+function CellIconPreview({ kind }: CellIconPreviewProps) {
+  switch (kind) {
+    case 'stairs':
+      return <StairsUpPreview />;
+    case 'stairs-down':
+      return <StairsDownPreview />;
+    case 'pit':
+      return <PitPreview />;
+    case 'chest':
+      return <ChestPreview />;
+    case 'marker':
+      return <MarkerPreview />;
+  }
+}
+
 type ExpandGridButtonProps = {
   direction: ArrowIconProps['direction'];
   label: string;
@@ -1037,6 +1084,152 @@ function ExpandGridButton({ direction, label, onClick }: ExpandGridButtonProps) 
         +4
       </span>
     </button>
+  );
+}
+
+function StairsUpPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true" shapeRendering="crispEdges">
+      <rect x="4" y="14" width="24" height="14" fill="#1f242d" />
+      <rect x="5" y="16" width="22" height="11" fill="#333b47" />
+      <rect x="4" y="12" width="6" height="14" fill="#1f242d" />
+      <rect x="5" y="13" width="4" height="12" fill="#69768a" />
+      <rect x="5" y="14" width="1" height="11" fill="#9daabf" />
+      <rect x="5" y="14" width="1" height="2" fill="#d2dbe6" />
+      <rect x="8" y="13" width="1" height="11" fill="#586375" />
+      <rect x="10" y="7" width="6" height="16" fill="#1f242d" />
+      <rect x="11" y="8" width="4" height="14" fill="#69768a" />
+      <rect x="11" y="9" width="1" height="13" fill="#9daabf" />
+      <rect x="11" y="9" width="1" height="2" fill="#d2dbe6" />
+      <rect x="14" y="8" width="1" height="14" fill="#586375" />
+      <rect x="16" y="4" width="6" height="15" fill="#1f242d" />
+      <rect x="17" y="5" width="4" height="13" fill="#69768a" />
+      <rect x="17" y="5" width="1" height="12" fill="#9daabf" />
+      <rect x="17" y="6" width="1" height="2" fill="#d2dbe6" />
+      <rect x="20" y="5" width="1" height="13" fill="#586375" />
+      <rect x="22" y="0" width="6" height="14" fill="#1f242d" />
+      <rect x="23" y="1" width="4" height="14" fill="#69768a" />
+      <rect x="23" y="1" width="1" height="12" fill="#9daabf" />
+      <rect x="23" y="2" width="1" height="2" fill="#d2dbe6" />
+      <rect x="26" y="1" width="1" height="14" fill="#586375" />
+    </svg>
+  );
+}
+
+function StairsDownPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true" shapeRendering="crispEdges">
+      <g transform="translate(32 0) scale(-1 1)">
+        <rect x="0" y="0" width="32" height="32" fill="#7a879d" />
+        <rect x="0" y="0" width="32" height="1" fill="#aab8cc" />
+        <rect x="0" y="1" width="1" height="31" fill="#aab8cc" />
+        <rect x="0" y="31" width="32" height="1" fill="#4a5363" />
+        <rect x="31" y="0" width="1" height="31" fill="#4a5363" />
+        <rect x="3" y="3" width="26" height="26" fill="#1f242d" />
+        <rect x="4" y="4" width="24" height="24" fill="#333b47" />
+        <rect x="4" y="16" width="6" height="12" fill="#1f242d" />
+        <rect x="5" y="17" width="4" height="11" fill="#69768a" />
+        <rect x="6" y="18" width="1" height="9" fill="#9daabf" />
+        <rect x="6" y="18" width="1" height="2" fill="#d2dbe6" />
+        <rect x="8" y="17" width="1" height="11" fill="#586375" />
+        <rect x="10" y="12" width="6" height="16" fill="#1f242d" />
+        <rect x="11" y="13" width="4" height="15" fill="#69768a" />
+        <rect x="12" y="14" width="1" height="13" fill="#9daabf" />
+        <rect x="12" y="14" width="1" height="2" fill="#d2dbe6" />
+        <rect x="14" y="13" width="1" height="15" fill="#586375" />
+        <rect x="16" y="8" width="6" height="20" fill="#1f242d" />
+        <rect x="17" y="9" width="4" height="19" fill="#69768a" />
+        <rect x="18" y="10" width="1" height="17" fill="#9daabf" />
+        <rect x="18" y="10" width="1" height="2" fill="#d2dbe6" />
+        <rect x="20" y="9" width="1" height="19" fill="#586375" />
+        <rect x="22" y="4" width="6" height="24" fill="#1f242d" />
+        <rect x="23" y="5" width="4" height="23" fill="#69768a" />
+        <rect x="24" y="6" width="1" height="21" fill="#9daabf" />
+        <rect x="24" y="6" width="1" height="2" fill="#d2dbe6" />
+        <rect x="26" y="5" width="1" height="23" fill="#586375" />
+      </g>
+    </svg>
+  );
+}
+
+function PitPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <circle cx="16" cy="16" r="7" fill="#04070d" />
+      <circle cx="16" cy="16" r="7" fill="none" stroke="rgba(214,222,235,0.18)" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function ChestPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true" shapeRendering="crispEdges">
+      <rect x="4" y="2" width="24" height="2" fill="#2A1608" />
+      <rect x="2" y="4" width="28" height="2" fill="#2A1608" />
+      <rect x="0" y="6" width="32" height="12" fill="#2A1608" />
+      <rect x="0" y="18" width="32" height="10" fill="#2A1608" />
+      <rect x="2" y="28" width="28" height="2" fill="#2A1608" />
+      <rect x="4" y="4" width="9" height="2" fill="#F0A432" />
+      <rect x="2" y="6" width="12" height="2" fill="#C8741F" />
+      <rect x="2" y="8" width="12" height="4" fill="#8E4B1A" />
+      <rect x="4" y="8" width="8" height="2" fill="#F0A432" />
+      <rect x="4" y="10" width="8" height="2" fill="#B85F1F" />
+      <rect x="19" y="4" width="9" height="2" fill="#F0A432" />
+      <rect x="18" y="6" width="12" height="2" fill="#C8741F" />
+      <rect x="18" y="8" width="12" height="4" fill="#8E4B1A" />
+      <rect x="20" y="8" width="8" height="2" fill="#F0A432" />
+      <rect x="20" y="10" width="8" height="2" fill="#B85F1F" />
+      <rect x="4" y="12" width="10" height="2" fill="#3B200F" />
+      <rect x="18" y="12" width="10" height="2" fill="#3B200F" />
+      <rect x="13" y="2" width="6" height="2" fill="#3B200F" />
+      <rect x="12" y="4" width="8" height="10" fill="#F2C24A" />
+      <rect x="14" y="4" width="4" height="2" fill="#FFF08A" />
+      <rect x="14" y="6" width="4" height="6" fill="#B97A22" />
+      <rect x="12" y="12" width="8" height="2" fill="#5B3514" />
+      <rect x="0" y="14" width="32" height="4" fill="#2A1608" />
+      <rect x="2" y="18" width="28" height="9" fill="#A9571D" />
+      <rect x="4" y="18" width="24" height="2" fill="#F0A432" />
+      <rect x="4" y="20" width="24" height="2" fill="#C8741F" />
+      <rect x="4" y="22" width="24" height="4" fill="#7C3D17" />
+      <rect x="2" y="18" width="3" height="9" fill="#5B2A12" />
+      <rect x="27" y="18" width="3" height="9" fill="#5B2A12" />
+      <rect x="5" y="25" width="22" height="2" fill="#3B200F" />
+      <rect x="12" y="15" width="8" height="2" fill="#2A1608" />
+      <rect x="11" y="17" width="10" height="9" fill="#2A1608" />
+      <rect x="13" y="17" width="6" height="7" fill="#F2C24A" />
+      <rect x="14" y="18" width="4" height="2" fill="#FFF08A" />
+      <rect x="14" y="20" width="4" height="4" fill="#B97A22" />
+      <rect x="15" y="21" width="2" height="2" fill="#4A2A12" />
+      <rect x="6" y="27" width="20" height="1" fill="#D8902A" />
+      <rect x="4" y="28" width="24" height="1" fill="#5B2A12" />
+      <rect x="5" y="5" width="6" height="1" fill="#FFD45A" />
+      <rect x="21" y="5" width="6" height="1" fill="#FFD45A" />
+      <rect x="5" y="19" width="8" height="1" fill="#FFD45A" />
+      <rect x="20" y="19" width="7" height="1" fill="#FFD45A" />
+      <rect x="2" y="6" width="2" height="2" fill="#3B200F" />
+      <rect x="28" y="6" width="2" height="2" fill="#3B200F" />
+      <rect x="2" y="25" width="2" height="2" fill="#2A1608" />
+      <rect x="28" y="25" width="2" height="2" fill="#2A1608" />
+    </svg>
+  );
+}
+
+function MarkerPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <circle cx="16" cy="16" r="11" fill="#f6d58d" />
+      <text
+        x="16"
+        y="17"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="13"
+        fontWeight="700"
+        fill="#0b1320"
+      >
+        M
+      </text>
+    </svg>
   );
 }
 
