@@ -2381,3 +2381,34 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:51 (Asia/Taipei) — GitHub Pages自動デプロイ設定**
+
+### Summary
+- GitHub Actions で `main` push 時に Web 版を GitHub Pages へデプロイする設定を追加した
+
+### Context / Goal
+- `Doc/GitHubPagesDeployProposal.md` に沿って、ブラウザ版だけを GitHub Pages へ自動公開したかった
+- ローカル開発と Tauri ビルドを壊さず、Pages 用の `base` だけを Actions build 時に切り替えたかった
+
+### Changes
+- `vite.config.ts` を関数化し、`GITHUB_ACTIONS === 'true'` のときだけ `base` を `/Web-Auto-Mapping/` に切り替えるようにした
+- `.github/workflows/deploy-pages.yml` を追加し、`main` push と手動起動で `npm ci` → `npm run build` → Pages artifact upload → deploy を行うようにした
+- workflow には `contents: read`、`pages: write`、`id-token: write`、`concurrency: pages` を設定した
+
+### Files Touched
+- `vite.config.ts` — GitHub Actions 上だけ Pages 用 `base` へ切り替える設定を追加
+- `.github/workflows/deploy-pages.yml` — GitHub Pages デプロイ workflow を新規追加
+
+### Behavioral Impact
+- `main` への push で GitHub Pages デプロイ workflow が走るようになる
+- ローカルと Tauri の build は従来どおり `/` base、GitHub Actions 上の Web build だけ `/Web-Auto-Mapping/` base になる
+
+### Risk & Mitigation
+- Risk: リポジトリ名が将来変わると `base` と Pages URL がずれて asset 404 になる可能性がある
+- Mitigation: `vite.config.ts` の `base` は repo 名に依存しているため、改名時に同時更新すべき箇所として明確化した
+
+### Tests / Verification
+- `npm run build`
+- `$env:GITHUB_ACTIONS='true'; npm run build; Remove-Item Env:\GITHUB_ACTIONS`
+- 通常 build と Pages 想定 build の両方で TypeScript 型検査と Vite 本番ビルド成功を確認
