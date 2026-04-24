@@ -18,7 +18,6 @@ const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'edge closed door', value: 'edge-closed-door' },
   { label: 'edge open', value: 'edge-open' },
   { label: 'edge unknown', value: 'edge-unknown' },
-  { label: 'cell icon', value: 'cell-icon' },
 ];
 const VIEWPORT_PAN_STEP = 64;
 const GLOBAL_ARROW_SHORTCUTS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'] as const;
@@ -646,15 +645,18 @@ function App() {
         <PanelHeading
           eyebrow="Palette"
           title="Cell Icons"
-          body="[ ] cycle, I place, Alt+I forward, Backspace remove"
+          body="Click to enter icon placement, [ ] cycle, I place"
         />
         <div className="grid grid-cols-3 gap-px bg-[var(--color-border)]">
           {CELL_ICON_KINDS.map((kind) => (
             <CellIconChoiceButton
               key={kind}
-              active={selectedCellIconKind === kind}
+              active={selectedTool === 'cell-icon' && selectedCellIconKind === kind}
               kind={kind}
-              onClick={() => setSelectedCellIconKind(kind)}
+              onClick={() => {
+                setSelectedCellIconKind(kind);
+                setSelectedTool('cell-icon');
+              }}
             />
           ))}
         </div>
@@ -1098,8 +1100,6 @@ function EditToolPreview({ tool }: EditToolPreviewProps) {
       return <CellFloorToolPreview />;
     case 'cell-unknown':
       return <CellUnknownToolPreview />;
-    case 'cell-icon':
-      return <CellIconToolPreview />;
     case 'edge-wall':
       return <EdgeToolPreview lineColor="#d9e3ef" lineWidth={4} />;
     case 'edge-door':
@@ -1310,27 +1310,6 @@ function CellUnknownToolPreview() {
         stroke="rgba(214,222,235,0.16)"
         strokeDasharray="3 2"
       />
-    </svg>
-  );
-}
-
-function CellIconToolPreview() {
-  return (
-    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
-      <rect x="4" y="4" width="24" height="24" fill="rgba(255,255,255,0.03)" />
-      <rect x="4.5" y="4.5" width="23" height="23" fill="none" stroke="rgba(214,222,235,0.1)" />
-      <circle cx="16" cy="16" r="8" fill="#f6d58d" />
-      <text
-        x="16"
-        y="16.5"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize="10"
-        fontWeight="700"
-        fill="#0b1320"
-      >
-        I
-      </text>
     </svg>
   );
 }

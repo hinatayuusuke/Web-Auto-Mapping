@@ -2202,3 +2202,61 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:21 (Asia/Taipei) — Edit Toolのcell icon削除案を文書化**
+
+### Summary
+- `Edit Tool` から `cell icon` を外し、`Cell Icons` 側へ導線を寄せる実装案を `Doc/` に追加した
+
+### Context / Goal
+- `Edit Tool` 内の `cell icon` は `Cell Icons` パレットと役割が重複していた
+- UI 実装前に、状態遷移を壊さない削除方針を文書として整理したかった
+
+### Changes
+- `Edit Tool` から `cell icon` を外す前提の設計方針を整理した
+- `Cell Icons` クリック時に `selectedTool = cell-icon` へ自動切替する導線案を明記した
+- ゴール、非ゴール、実装手順、リスクを含む実装案ドキュメントを追加した
+
+### Files Touched
+- `Doc/EditToolCellIconRemovalProposal.md` — `cell icon` UI 削除と `Cell Icons` 側への導線統合案を新規作成
+
+### Behavioral Impact
+- 今回はドキュメント追加のみで、実アプリの挙動変更はない
+
+### Risk & Mitigation
+- Risk: 実装前のため、文書と最終 UI の差分が後で出る可能性がある
+- Mitigation: 非ゴールと状態遷移方針を明記し、変更範囲を `App.tsx` 中心に限定している
+
+### Tests / Verification
+- 未実施（ドキュメント追加のみのため）
+
+**2026-04-24 15:23 (Asia/Taipei) — Edit Toolからcell iconを除去**
+
+### Summary
+- `Edit Tool` から `cell icon` を外し、`Cell Icons` クリック時にアイコン配置モードへ入るようにした
+
+### Context / Goal
+- `Edit Tool` 内の `cell icon` は `Cell Icons` パレットと役割が重複していた
+- UI 上の重複を減らしつつ、既存の `selectedTool = cell-icon` ロジックは維持したかった
+
+### Changes
+- `EDIT_TOOL_OPTIONS` から `cell icon` を除外した
+- `Cell Icons` の各ボタンをクリックしたとき、`selectedCellIconKind` 更新に加えて `selectedTool('cell-icon')` へ切り替えるようにした
+- `Cell Icons` の見出し文を、配置モードへ入る導線が分かる短い説明へ変更した
+- `Edit Tool` 側で不要になった `cell icon` 用プレビューを削除した
+
+### Files Touched
+- `src/App.tsx` — `Edit Tool` の項目削減、`Cell Icons` クリック時の状態遷移追加、不要プレビューの削除
+
+### Behavioral Impact
+- `Edit Tool` には `cell icon` が表示されなくなった
+- `Cell Icons` のいずれかをクリックすると、そのアイコン選択と同時にアイコン配置モードへ入る
+- `Cell Icons` の active 表示は、`cell-icon` モード中の選択アイコンだけを示すようになった
+
+### Risk & Mitigation
+- Risk: `Cell Icons` のクリックで編集モードが変わることに最初は気づきにくい可能性がある
+- Mitigation: 見出し文を更新し、active 表示も `cell-icon` モードと一致させて挙動を揃えた
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
