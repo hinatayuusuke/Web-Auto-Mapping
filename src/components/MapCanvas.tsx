@@ -25,6 +25,7 @@ type PanState = {
 };
 
 type DragPaintState = {
+  edgeAxis: EdgeAxis | null;
   operation: 'paint' | 'erase';
   snapshot: ReturnType<typeof createPersistedDocument>;
   targetKind: MapInteractionTarget['kind'];
@@ -172,6 +173,15 @@ export function MapCanvas() {
       return;
     }
 
+    if (
+      dragPaint.targetKind === 'edge' &&
+      target.kind === 'edge' &&
+      dragPaint.edgeAxis !== null &&
+      target.coordinate.axis !== dragPaint.edgeAxis
+    ) {
+      return;
+    }
+
     const targetKey = getInteractionTargetKey(target);
 
     if (dragPaint.visitedTargets.has(targetKey)) {
@@ -190,6 +200,7 @@ export function MapCanvas() {
 
   const beginDragPaint = (target: MapInteractionTarget, operation: DragPaintState['operation']) => {
     dragPaintRef.current = {
+      edgeAxis: target.kind === 'edge' ? target.coordinate.axis : null,
       operation,
       snapshot: createPersistedDocument(useAppStore.getState()),
       targetKind: target.kind,
@@ -370,6 +381,10 @@ export function MapCanvas() {
           if (dragDistance >= DRAG_START_THRESHOLD) {
             clearPendingMarkerClick();
             dragPaintRef.current = {
+              edgeAxis:
+                pendingMarkerDrag.target.kind === 'edge'
+                  ? pendingMarkerDrag.target.coordinate.axis
+                  : null,
               operation: 'paint',
               snapshot: pendingMarkerDrag.snapshot,
               targetKind: pendingMarkerDrag.target.kind,

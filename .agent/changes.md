@@ -2321,3 +2321,33 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 15:40 (Asia/Taipei) — エッジドラッグの軸固定**
+
+### Summary
+- エッジのドラッグ連続編集を、開始時の縦 / 横軸に固定するようにした
+
+### Context / Goal
+- 連続編集でエッジをドラッグすると、カーソルのぶれで縦横のエッジが混在しやすく、UX が悪かった
+- 最初に触ったエッジの軸に限定して編集し、意図しない壁やドアの混在を防ぎたかった
+
+### Changes
+- ドラッグ編集 state に開始エッジの `axis` を保持するようにした
+- エッジ開始のドラッグ中は、開始時と同じ `horizontal / vertical` の target だけを適用するようにした
+- marker クリック待機からドラッグへ遷移する経路でも、開始 target の軸を引き継ぐようにした
+- 型絞り込みを追加し、`edge` のときだけ `axis` を参照するようにした
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — ドラッグ編集 state にエッジ軸を追加し、適用対象を同軸エッジのみに制限
+
+### Behavioral Impact
+- エッジで開始したドラッグは、縦開始なら縦エッジだけ、横開始なら横エッジだけを連続編集する
+- セル開始のドラッグ挙動は従来どおり変わらない
+
+### Risk & Mitigation
+- Risk: 軸固定により、斜めに動かしたとき一部のエッジが塗られないと感じる可能性がある
+- Mitigation: 誤編集防止を優先した仕様として固定し、必要になれば将来は同軸補間だけ追加しやすい構造にしている
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
