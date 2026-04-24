@@ -60,8 +60,11 @@ type AppState = {
 type AppActions = {
   addFloor: () => void;
   applyCanvasPrimaryInteraction: (target: MapInteractionTarget) => void;
+  applyCanvasPrimaryInteractionPreview: (target: MapInteractionTarget) => void;
   applyCanvasSecondaryInteraction: (target: MapInteractionTarget) => void;
+  applyCanvasSecondaryInteractionPreview: (target: MapInteractionTarget) => void;
   applyForwardEdgeShortcut: (intent: EdgeEditIntent) => void;
+  commitCanvasInteractionSession: (snapshot: PersistedDocument) => void;
   cycleSelectedCellIcon: (direction: 1 | -1) => void;
   duplicateSelectedFloor: () => void;
   expandSelectedFloorLeft: (amount?: number) => void;
@@ -146,9 +149,27 @@ export const useAppStore = create<AppStore>((set) => ({
         ),
       })),
     ),
+  applyCanvasPrimaryInteractionPreview: (target) =>
+    set((state) =>
+      applyUntrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, (floor) =>
+          state.mode === 'map'
+            ? applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target)
+            : floor,
+        ),
+      })),
+    ),
   applyCanvasSecondaryInteraction: (target) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, (floor) =>
+          state.mode === 'map' ? applyCanvasSecondaryEdit(floor, target) : floor,
+        ),
+      })),
+    ),
+  applyCanvasSecondaryInteractionPreview: (target) =>
+    set((state) =>
+      applyUntrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
           state.mode === 'map' ? applyCanvasSecondaryEdit(floor, target) : floor,
         ),
@@ -160,6 +181,21 @@ export const useAppStore = create<AppStore>((set) => ({
         floors: updateSelectedFloor(state, (floor) => applyForwardEdgeEdit(floor, intent)),
       })),
     ),
+  commitCanvasInteractionSession: (snapshot) =>
+    set((state) => {
+      const currentDocument = createPersistedDocument(state);
+
+      if (!hasTrackableDocumentChanged(snapshot, currentDocument)) {
+        return {};
+      }
+
+      return {
+        history: {
+          undoStack: trimHistory([...state.history.undoStack, clonePersistedDocument(snapshot)]),
+          redoStack: [],
+        },
+      };
+    }),
   cycleSelectedCellIcon: (direction) =>
     set((state) => ({
       selectedCellIconKind: cycleIconKind(state.selectedCellIconKind, direction),
@@ -503,11 +539,28 @@ function applyTrackedMutation(
   };
 }
 
+function applyUntrackedMutation(
+  state: AppState,
+  mutate: (state: AppState) => Partial<AppState> | null,
+): Partial<AppStore> {
+  const patch = mutate(state);
+
+  return patch ?? {};
+}
+
 function hasTrackableStateChanged(previous: AppState, next: AppState) {
   return (
     previous.floors !== next.floors ||
     previous.mapTitle !== next.mapTitle ||
     previous.selectedFloorId !== next.selectedFloorId
+  );
+}
+
+function hasTrackableDocumentChanged(previous: PersistedDocument, next: PersistedDocument) {
+  return (
+    previous.title !== next.title ||
+    previous.selectedFloorId !== next.selectedFloorId ||
+    JSON.stringify(previous.floors) !== JSON.stringify(next.floors)
   );
 }
 

@@ -1,4 +1,5 @@
 import { MouseEvent, WheelEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { createPersistedDocument } from '../lib/persistence';
 import { useAppStore, useSelectedFloor } from '../store/appStore';
 import {
   CellCoordinate,
@@ -14,6 +15,7 @@ const GRID_TOP_PADDING = 0;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 3;
 const MIN_CELL_SIZE = 4;
+const DRAG_START_THRESHOLD = 4;
 
 type PanState = {
   offsetX: number;
@@ -22,12 +24,28 @@ type PanState = {
   startY: number;
 };
 
+type DragPaintState = {
+  operation: 'paint' | 'erase';
+  snapshot: ReturnType<typeof createPersistedDocument>;
+  targetKind: MapInteractionTarget['kind'];
+  visitedTargets: Set<string>;
+};
+
+type PendingMarkerDragState = {
+  snapshot: ReturnType<typeof createPersistedDocument>;
+  startX: number;
+  startY: number;
+  target: MapInteractionTarget;
+};
+
 export function MapCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const clickTimeoutRef = useRef<number | null>(null);
+  const dragPaintRef = useRef<DragPaintState | null>(null);
   const editorInputRef = useRef<HTMLInputElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const panStateRef = useRef<PanState | null>(null);
+  const pendingMarkerDragRef = useRef<PendingMarkerDragState | null>(null);
   const [editingMarkerCoordinate, setEditingMarkerCoordinate] = useState<CellCoordinate | null>(
     null,
   );
@@ -42,8 +60,17 @@ export function MapCanvas() {
   const setSelectedMarkerMessage = useAppStore((state) => state.setSelectedMarkerMessage);
   const selectedFloor = useSelectedFloor();
   const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
+  const applyCanvasPrimaryInteractionPreview = useAppStore(
+    (state) => state.applyCanvasPrimaryInteractionPreview,
+  );
   const applyCanvasSecondaryInteraction = useAppStore(
     (state) => state.applyCanvasSecondaryInteraction,
+  );
+  const applyCanvasSecondaryInteractionPreview = useAppStore(
+    (state) => state.applyCanvasSecondaryInteractionPreview,
+  );
+  const commitCanvasInteractionSession = useAppStore(
+    (state) => state.commitCanvasInteractionSession,
   );
 
   const layout = useMemo(() => {
@@ -129,6 +156,59 @@ export function MapCanvas() {
     };
   }, []);
 
+  const clearPendingMarkerClick = () => {
+    if (clickTimeoutRef.current !== null) {
+      window.clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+
+    pendingMarkerDragRef.current = null;
+  };
+
+  const applyDragTarget = (target: MapInteractionTarget) => {
+    const dragPaint = dragPaintRef.current;
+
+    if (!dragPaint || target.kind !== dragPaint.targetKind) {
+      return;
+    }
+
+    const targetKey = getInteractionTargetKey(target);
+
+    if (dragPaint.visitedTargets.has(targetKey)) {
+      return;
+    }
+
+    dragPaint.visitedTargets.add(targetKey);
+
+    if (dragPaint.operation === 'paint') {
+      applyCanvasPrimaryInteractionPreview(target);
+      return;
+    }
+
+    applyCanvasSecondaryInteractionPreview(target);
+  };
+
+  const beginDragPaint = (target: MapInteractionTarget, operation: DragPaintState['operation']) => {
+    dragPaintRef.current = {
+      operation,
+      snapshot: createPersistedDocument(useAppStore.getState()),
+      targetKind: target.kind,
+      visitedTargets: new Set(),
+    };
+    applyDragTarget(target);
+  };
+
+  const finishDragPaint = () => {
+    const dragPaint = dragPaintRef.current;
+    dragPaintRef.current = null;
+
+    if (!dragPaint) {
+      return;
+    }
+
+    commitCanvasInteractionSession(dragPaint.snapshot);
+  };
+
   useEffect(() => {
     const frame = frameRef.current;
 
@@ -199,13 +279,11 @@ export function MapCanvas() {
       return;
     }
 
-    const target = getInteractionTarget(event, selectedFloor, layout);
-    const marker = getMarkerAtCanvasPoint(
-      event.clientX - event.currentTarget.getBoundingClientRect().left,
-      event.clientY - event.currentTarget.getBoundingClientRect().top,
-      selectedFloor,
-      layout,
-    );
+    const rect = event.currentTarget.getBoundingClientRect();
+    const localX = event.clientX - rect.left;
+    const localY = event.clientY - rect.top;
+    const target = getInteractionTargetAtCanvasPoint(localX, localY, selectedFloor, layout);
+    const marker = getMarkerAtCanvasPoint(localX, localY, selectedFloor, layout);
 
     if (!target) {
       return;
@@ -213,6 +291,13 @@ export function MapCanvas() {
 
     if (event.button === 2) {
       event.preventDefault();
+
+      if (mode === 'map') {
+        clearPendingMarkerClick();
+        beginDragPaint(target, 'erase');
+        return;
+      }
+
       applyCanvasSecondaryInteraction(target);
       return;
     }
@@ -231,10 +316,22 @@ export function MapCanvas() {
           return;
         }
 
+        pendingMarkerDragRef.current = {
+          snapshot: createPersistedDocument(useAppStore.getState()),
+          startX: event.clientX,
+          startY: event.clientY,
+          target,
+        };
         clickTimeoutRef.current = window.setTimeout(() => {
           applyCanvasPrimaryInteraction(target);
           clickTimeoutRef.current = null;
+          pendingMarkerDragRef.current = null;
         }, 220);
+        return;
+      }
+
+      if (mode === 'map') {
+        beginDragPaint(target, 'paint');
         return;
       }
 
@@ -255,9 +352,45 @@ export function MapCanvas() {
       setHoveredMarkerCoordinate(marker?.position ?? null);
     }
 
+    const pendingMarkerDrag = pendingMarkerDragRef.current;
     const panState = panStateRef.current;
 
     if (!panState) {
+      if (selectedFloor && layout) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const localX = event.clientX - rect.left;
+        const localY = event.clientY - rect.top;
+
+        if (pendingMarkerDrag && (event.buttons & 1) === 1) {
+          const dragDistance = Math.hypot(
+            event.clientX - pendingMarkerDrag.startX,
+            event.clientY - pendingMarkerDrag.startY,
+          );
+
+          if (dragDistance >= DRAG_START_THRESHOLD) {
+            clearPendingMarkerClick();
+            dragPaintRef.current = {
+              operation: 'paint',
+              snapshot: pendingMarkerDrag.snapshot,
+              targetKind: pendingMarkerDrag.target.kind,
+              visitedTargets: new Set(),
+            };
+            applyDragTarget(pendingMarkerDrag.target);
+          }
+        }
+
+        const dragPaint = dragPaintRef.current;
+
+        if (dragPaint) {
+          event.preventDefault();
+          const target = getInteractionTargetAtCanvasPoint(localX, localY, selectedFloor, layout);
+
+          if (target) {
+            applyDragTarget(target);
+          }
+        }
+      }
+
       return;
     }
 
@@ -268,12 +401,27 @@ export function MapCanvas() {
     });
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
     panStateRef.current = null;
+
+    const dragPaint = dragPaintRef.current;
+
+    if (!dragPaint) {
+      return;
+    }
+
+    if (
+      (dragPaint.operation === 'paint' && event.button === 0) ||
+      (dragPaint.operation === 'erase' && event.button === 2)
+    ) {
+      finishDragPaint();
+    }
   };
 
   const handleMouseLeave = () => {
-    handleMouseUp();
+    clearPendingMarkerClick();
+    finishDragPaint();
+    panStateRef.current = null;
     setHoveredMarkerCoordinate(null);
   };
 
@@ -803,14 +951,12 @@ function drawPlayer(context: CanvasRenderingContext2D, floor: FloorState, layout
   context.fill();
 }
 
-function getInteractionTarget(
-  event: MouseEvent<HTMLCanvasElement>,
+function getInteractionTargetAtCanvasPoint(
+  localX: number,
+  localY: number,
   floor: FloorState,
   layout: GridLayout,
 ): MapInteractionTarget | null {
-  const rect = event.currentTarget.getBoundingClientRect();
-  const localX = event.clientX - rect.left;
-  const localY = event.clientY - rect.top;
   const gridX = localX - layout.originX;
   const gridY = localY - layout.originY;
 
@@ -877,6 +1023,14 @@ function getFacingVector(facing: Facing) {
 
 function getEdgeKey(x: number, y: number, axis: EdgeAxis) {
   return `${axis}:${x}:${y}`;
+}
+
+function getInteractionTargetKey(target: MapInteractionTarget) {
+  if (target.kind === 'cell') {
+    return `cell:${target.coordinate.x}:${target.coordinate.y}`;
+  }
+
+  return getEdgeKey(target.coordinate.x, target.coordinate.y, target.coordinate.axis);
 }
 
 function getCellIconGlyph(icon: FloorState['cellIcons'][number]) {
