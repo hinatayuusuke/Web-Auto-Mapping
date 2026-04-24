@@ -2412,3 +2412,60 @@
 - `npm run build`
 - `$env:GITHUB_ACTIONS='true'; npm run build; Remove-Item Env:\GITHUB_ACTIONS`
 - 通常 build と Pages 想定 build の両方で TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 16:23 (Asia/Taipei) — 左ペインのMovementを最上段へ移動**
+
+### Summary
+- 左ペインの `Movement` セクションを最上段へ移動した
+
+### Context / Goal
+- `Movement` は左ペイン内で最も操作頻度が高く、探索や確認時に最初に触る要素だった
+- UX 改善のため、管理系セクションより先に見える位置へ上げたかった
+
+### Changes
+- `navigatorPanel` 内の section 順を入れ替え、`Movement` を最初のセクションに移動した
+- `Map Title`、`Floor Selector`、`Expand Grid`、`Forward Edge` などの内容自体は変更していない
+
+### Files Touched
+- `src/App.tsx` — 左ペイン内の `Movement` セクションを最上段へ並び替え
+
+### Behavioral Impact
+- 左ペインを開いたとき、最初に `Movement` が見えるようになった
+- 操作仕様やショートカット自体は変わっていない
+
+### Risk & Mitigation
+- Risk: 慣れていた利用者には一時的に配置変更の違和感が出る可能性がある
+- Mitigation: 内容はそのままで順序だけを変更し、探索系操作を優先する自然な並びへ寄せた
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-24 16:43 (Asia/Taipei) — favicon.png の反映設定**
+
+### Summary
+- `public/favicon.png` を参照する favicon 設定を `index.html` に追加した
+
+### Context / Goal
+- `public/favicon.png` を作成したため、ローカルと GitHub Pages の両方で favicon として読み込まれるようにしたかった
+- Pages の subpath 配信でも壊れないよう、Vite の `base` に追従する書き方を使いたかった
+
+### Changes
+- `index.html` の `<head>` に `rel="icon"` を追加した
+- `href` は `%BASE_URL%favicon.png` を使い、通常 build と Pages build の両方で正しいパスになるようにした
+
+### Files Touched
+- `index.html` — `public/favicon.png` を参照する favicon link を追加
+
+### Behavioral Impact
+- アプリの favicon は `public/favicon.png` を使うようになった
+- GitHub Pages 配信時も `/Web-Auto-Mapping/favicon.png` を参照できる
+
+### Risk & Mitigation
+- Risk: favicon の更新がブラウザキャッシュに残り、変更がすぐ反映されない可能性がある
+- Mitigation: `%BASE_URL%` を使って path 自体は正しくし、見た目の更新は hard reload で確認しやすくした
+
+### Tests / Verification
+- `npm run build`
+- `$env:GITHUB_ACTIONS='true'; npm run build; Remove-Item Env:\GITHUB_ACTIONS`
+- 通常 build と Pages 想定 build の両方で Vite 本番ビルド成功を確認
