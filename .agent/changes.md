@@ -1761,3 +1761,64 @@
 - `cargo build --manifest-path .\src-tauri\Cargo.toml`
 - `npm run tauri build`
 - Web / Rust / Tauri 配布ビルド成功を確認。`Ctrl+Alt+F12` の実機入力確認は未実施
+**2026-04-24 10:34 (Asia/Taipei) — ChestアイコンのSVG相当描画追加**
+
+### Summary
+- `chest` セルアイコンを文字表示から、指定 SVG と同等のピクセルアート描画へ変更した
+
+### Context / Goal
+- `Chest` アイコンを汎用グリフではなく、ユーザー指定の SVG デザインで表示したかった
+- Canvas 描画ループ内で確実に表示できるよう、非同期画像読込ではなく矩形描画で再現したかった
+
+### Changes
+- `drawIcons()` で `chest` だけを特別扱いし、専用描画関数を呼ぶようにした
+- 指定 SVG の 16x16 ピクセル構成を `drawChestCellIcon()` として Canvas の `fillRect` 群へ落とし込んだ
+- `chest` は文字グリフを使わず、専用ピクセルアートだけを描くようにした
+- 指定 SVG ベースであることをコメントに明記した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `chest` 用の専用ピクセルアート描画を追加し、文字表示から切り替えた
+
+### Behavioral Impact
+- `Chest` アイコンは丸背景 + `C` ではなく、指定 SVG 相当のピクセルアートとして表示されるようになった
+- `stairs`、`pit`、`marker` など他のセルアイコン表示は変わっていない
+
+### Risk & Mitigation
+- Risk: 小さいズームでは 16x16 ピクセルアートが潰れて見える可能性がある
+- Mitigation: セルサイズに対して描画サイズを床関数で量子化し、最低 1px 単位で矩形を維持するようにした
+- Risk: 指定 SVG を画像として直接使っていないため、完全に同一のレンダリング結果にならない可能性がある
+- Mitigation: SVG の矩形構成と色をそのまま Canvas の `fillRect` 群へ写し、視覚差を最小化した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+**2026-04-24 10:53 (Asia/Taipei) — Chestアイコン差し替え更新**
+
+### Summary
+- `Chest` アイコンを新しい SVG ベースのピクセルアートへ更新した
+
+### Context / Goal
+- 既存の `Chest` 表示を、ユーザー提示の別デザインへ差し替えたかった
+- 提示 SVG は `viewBox` が 16x16 なのに実座標が 32x30 まで使われていたため、実際の座標系に合わせて修正が必要だった
+
+### Changes
+- `drawChestCellIcon()` の矩形構成を新しい SVG デザインへ差し替えた
+- SVG の矩形座標を 32x30 のピクセルアートとして解釈し、Canvas 上でも同じ構成で描画するようにした
+- 背景、蓋、金具、ロック、ハイライト、コーナー陰影を新デザインに合わせて更新した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `Chest` 専用描画の矩形群とスケール基準を更新した
+
+### Behavioral Impact
+- `Chest` アイコンが新しいピクセルアートデザインで表示されるようになった
+- 他のセルアイコンやエッジアイコンの描画は変わっていない
+
+### Risk & Mitigation
+- Risk: 提示 SVG の `viewBox` と実座標が不一致だったため、そのままでは縮尺が崩れる
+- Mitigation: 実際に使われている矩形座標を優先し、32x30 のソース座標系として再構成した
+- Risk: 小さいズームで細部が潰れて見える可能性がある
+- Mitigation: セルサイズに対する相対スケールで描画し、最低限の視認サイズを確保した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

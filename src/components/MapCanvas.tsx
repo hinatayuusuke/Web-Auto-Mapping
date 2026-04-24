@@ -691,6 +691,12 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
   for (const icon of floor.cellIcons) {
     const centerX = layout.originX + icon.position.x * layout.cellSize + layout.cellSize / 2;
     const centerY = layout.originY + icon.position.y * layout.cellSize + layout.cellSize / 2;
+
+    if (icon.kind === 'chest') {
+      drawChestCellIcon(context, centerX, centerY, layout.cellSize);
+      continue;
+    }
+
     const iconRadius = getCellIconRadius(layout.cellSize);
 
     context.fillStyle = '#f6d58d';
@@ -864,12 +870,12 @@ function getCellIconGlyph(icon: FloorState['cellIcons'][number]) {
   }
 
   switch (icon.kind) {
-    case 'chest':
-      return 'C';
     case 'pit':
       return 'P';
     case 'stairs':
       return 'S';
+    case 'chest':
+      return '';
   }
 }
 
@@ -896,6 +902,91 @@ function clampZoom(value: number) {
 
 function getCellIconRadius(cellSize: number) {
   return Math.min(cellSize * 0.5 - 1, Math.max(4, cellSize * 0.46));
+}
+
+function drawChestCellIcon(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+) {
+  const sourceWidth = 32;
+  const sourceHeight = 30;
+  const iconWidth = Math.max(14, Math.floor(cellSize * 0.92));
+  const scale = iconWidth / sourceWidth;
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const originX = Math.round(centerX - drawWidth / 2);
+  const originY = Math.round(centerY - drawHeight / 2);
+
+  const fillRect = (x: number, y: number, width: number, height: number, color: string) => {
+    context.fillStyle = color;
+    context.fillRect(
+      originX + x * scale,
+      originY + y * scale,
+      width * scale,
+      height * scale,
+    );
+  };
+
+  // WHY: 提示 SVG は viewBox 16x16 に対して 32x30 座標を使っていたため、実際の矩形座標系を優先して 32x30 のピクセルアートとして再構成する。
+  fillRect(4, 2, 24, 2, '#2A1608');
+  fillRect(2, 4, 28, 2, '#2A1608');
+  fillRect(0, 6, 32, 12, '#2A1608');
+  fillRect(0, 18, 32, 10, '#2A1608');
+  fillRect(2, 28, 28, 2, '#2A1608');
+
+  fillRect(4, 4, 9, 2, '#F0A432');
+  fillRect(2, 6, 12, 2, '#C8741F');
+  fillRect(2, 8, 12, 4, '#8E4B1A');
+  fillRect(4, 8, 8, 2, '#F0A432');
+  fillRect(4, 10, 8, 2, '#B85F1F');
+
+  fillRect(19, 4, 9, 2, '#F0A432');
+  fillRect(18, 6, 12, 2, '#C8741F');
+  fillRect(18, 8, 12, 4, '#8E4B1A');
+  fillRect(20, 8, 8, 2, '#F0A432');
+  fillRect(20, 10, 8, 2, '#B85F1F');
+
+  fillRect(4, 12, 10, 2, '#3B200F');
+  fillRect(18, 12, 10, 2, '#3B200F');
+
+  fillRect(13, 2, 6, 2, '#3B200F');
+  fillRect(12, 4, 8, 10, '#F2C24A');
+  fillRect(14, 4, 4, 2, '#FFF08A');
+  fillRect(14, 6, 4, 6, '#B97A22');
+  fillRect(12, 12, 8, 2, '#5B3514');
+
+  fillRect(0, 14, 32, 4, '#2A1608');
+
+  fillRect(2, 18, 28, 9, '#A9571D');
+  fillRect(4, 18, 24, 2, '#F0A432');
+  fillRect(4, 20, 24, 2, '#C8741F');
+  fillRect(4, 22, 24, 4, '#7C3D17');
+
+  fillRect(2, 18, 3, 9, '#5B2A12');
+  fillRect(27, 18, 3, 9, '#5B2A12');
+  fillRect(5, 25, 22, 2, '#3B200F');
+
+  fillRect(12, 15, 8, 2, '#2A1608');
+  fillRect(11, 17, 10, 9, '#2A1608');
+  fillRect(13, 17, 6, 7, '#F2C24A');
+  fillRect(14, 18, 4, 2, '#FFF08A');
+  fillRect(14, 20, 4, 4, '#B97A22');
+  fillRect(15, 21, 2, 2, '#4A2A12');
+
+  fillRect(6, 27, 20, 1, '#D8902A');
+  fillRect(4, 28, 24, 1, '#5B2A12');
+
+  fillRect(5, 5, 6, 1, '#FFD45A');
+  fillRect(21, 5, 6, 1, '#FFD45A');
+  fillRect(5, 19, 8, 1, '#FFD45A');
+  fillRect(20, 19, 7, 1, '#FFD45A');
+
+  fillRect(2, 6, 2, 2, '#3B200F');
+  fillRect(28, 6, 2, 2, '#3B200F');
+  fillRect(2, 25, 2, 2, '#2A1608');
+  fillRect(28, 25, 2, 2, '#2A1608');
 }
 
 function getMarkerGlyph(message?: string) {
