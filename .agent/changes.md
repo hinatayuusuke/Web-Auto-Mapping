@@ -2469,3 +2469,32 @@
 - `npm run build`
 - `$env:GITHUB_ACTIONS='true'; npm run build; Remove-Item Env:\GITHUB_ACTIONS`
 - 通常 build と Pages 想定 build の両方で Vite 本番ビルド成功を確認
+
+**2026-04-27 13:20 (Asia/Taipei) — cell-icon 配置時の Cell 優先判定**
+
+### Summary
+- `cell-icon` 選択中は Canvas の Edge 判定をスキップし、Cell を優先するようにした
+
+### Context / Goal
+- Map canvas 縮小時に Edge 判定領域が相対的に大きくなり、Cell アイコン配置が Edge 判定へ吸われやすかった
+- Cell アイコン配置時だけ Cell を狙いやすくし、Edge 編集ツールの操作感は維持したかった
+
+### Changes
+- `MapCanvas` で `selectedTool` を参照するようにした
+- `getInteractionTargetAtCanvasPoint` に `selectedTool` を渡し、`cell-icon` 時はマップ範囲内のクリックを常に Cell target として返すようにした
+- Edge 系ツール選択時の既存 Edge 判定ロジックは維持した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — `cell-icon` 時だけ Edge hit test をスキップする分岐を追加
+
+### Behavioral Impact
+- `cell-icon` 選択中は縮小表示でも Cell アイコンを配置しやすくなる
+- Edge 編集ツール選択時の Edge 判定領域や編集挙動は変わらない
+
+### Risk & Mitigation
+- Risk: `cell-icon` 選択中に右クリックで Edge を unknown に戻す操作はできなくなる
+- Mitigation: Edge を編集する場合は既存どおり Edge 系ツールを選ぶ前提とし、変更範囲を `cell-icon` の hit test に限定した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

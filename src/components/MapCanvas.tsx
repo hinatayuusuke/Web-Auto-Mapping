@@ -3,6 +3,7 @@ import { createPersistedDocument } from '../lib/persistence';
 import { useAppStore, useSelectedFloor } from '../store/appStore';
 import {
   CellCoordinate,
+  EditTool,
   EdgeAxis,
   Facing,
   FloorState,
@@ -56,6 +57,7 @@ export function MapCanvas() {
   const [messageDraft, setMessageDraft] = useState('');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const mode = useAppStore((state) => state.mode);
+  const selectedTool = useAppStore((state) => state.selectedTool);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
   const setSelectedMarkerMessage = useAppStore((state) => state.setSelectedMarkerMessage);
@@ -293,7 +295,13 @@ export function MapCanvas() {
     const rect = event.currentTarget.getBoundingClientRect();
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
-    const target = getInteractionTargetAtCanvasPoint(localX, localY, selectedFloor, layout);
+    const target = getInteractionTargetAtCanvasPoint(
+      localX,
+      localY,
+      selectedFloor,
+      layout,
+      selectedTool,
+    );
     const marker = getMarkerAtCanvasPoint(localX, localY, selectedFloor, layout);
 
     if (!target) {
@@ -398,7 +406,13 @@ export function MapCanvas() {
 
         if (dragPaint) {
           event.preventDefault();
-          const target = getInteractionTargetAtCanvasPoint(localX, localY, selectedFloor, layout);
+          const target = getInteractionTargetAtCanvasPoint(
+            localX,
+            localY,
+            selectedFloor,
+            layout,
+            selectedTool,
+          );
 
           if (target) {
             applyDragTarget(target);
@@ -971,6 +985,7 @@ function getInteractionTargetAtCanvasPoint(
   localY: number,
   floor: FloorState,
   layout: GridLayout,
+  selectedTool: EditTool,
 ): MapInteractionTarget | null {
   const gridX = localX - layout.originX;
   const gridY = localY - layout.originY;
@@ -981,6 +996,15 @@ function getInteractionTargetAtCanvasPoint(
 
   const cellX = Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1);
   const cellY = Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1);
+
+  // WHY: アイコン配置時は縮小表示の Edge 判定幅に吸われると Cell を狙えないため、セル判定を固定する。
+  if (selectedTool === 'cell-icon') {
+    return {
+      kind: 'cell',
+      coordinate: { x: cellX, y: cellY },
+    };
+  }
+
   const offsetX = gridX - cellX * layout.cellSize;
   const offsetY = gridY - cellY * layout.cellSize;
   const threshold = Math.max(6, layout.cellSize * 0.18);
