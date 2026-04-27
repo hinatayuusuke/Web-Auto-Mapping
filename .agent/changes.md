@@ -2499,6 +2499,41 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-27 14:39 (Asia/Taipei) — Global Shortcut 設定のモーダル化**
+
+### Summary
+- Global Shortcut 詳細設定を Workspace 常時表示からアプリ内モーダル表示へ変更した
+
+### Context / Goal
+- Global Shortcut 設定項目が多く、Workspace に常時展開すると右ペインの視認性が落ちていた
+- Workspace には状態サマリーと入口だけを残し、詳細な Record / Clear / Reset 操作は別画面で扱いたかった
+
+### Changes
+- `GlobalShortcutSettings` をサマリー表示と `Configure` ボタン中心の UI に変更した
+- 詳細設定 UI を `GlobalShortcutSettingsDialog` として分離した
+- `Esc` / backdrop / `Close` でモーダルを閉じられるようにした
+- `Record` 中の `Esc` はモーダル close ではなく recording cancel として扱うようにした
+- 実装案 Doc にモーダル UI 方針を追記した
+
+### Files Touched
+- `src/components/GlobalShortcutSettings.tsx` — Workspace 表示をサマリーと `Configure` ボタンに縮小
+- `src/components/GlobalShortcutSettingsDialog.tsx` — Global Shortcut 詳細設定モーダルを追加
+- `Doc/GlobalShortcutRegistrationProposal.md` — モーダル UI 方針と DoD を追記
+
+### Behavioral Impact
+- Workspace の Global Shortcut section は状態確認と設定画面への入口だけになる
+- `Configure` クリックで詳細設定モーダルが開く
+- モーダル内で従来どおり master toggle、binding toggle、Record、Clear、Reset defaults を操作できる
+
+### Risk & Mitigation
+- Risk: `Esc` の役割が modal close と recording cancel で競合する可能性がある
+- Mitigation: recording 中は recording cancel を優先し、modal close は recording していない時だけに限定した
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-27 14:06 (Asia/Taipei) — Tauri Global Shortcut 登録 UI**
 
 ### Summary

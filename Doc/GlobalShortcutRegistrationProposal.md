@@ -54,7 +54,9 @@ Tauri 版に、記録補助操作だけを対象にした Global Shortcut 登録
 - `src/hooks/useGlobalShortcutRegistration.ts`
   - 登録、解除、衝突チェック、状態管理を担当する
 - `src/App.tsx`
-  - Workspace などに登録 UI を追加する
+  - Workspace に入口ボタンと状態サマリーを追加する
+- `src/components/GlobalShortcutSettingsDialog.tsx`
+  - 詳細な登録 UI をアプリ内モーダルとして表示する
 
 ### データフロー
 
@@ -123,7 +125,16 @@ WHY: 単独キーの Global Shortcut は他アプリ入力を妨げやすいた�
 - 表示条件:
   - Tauri 版: 有効
   - Web 版: disabled 表示または非表示
-- Controls:
+- Workspace 上の表示:
+  - master state: `On` / `Off`
+  - active binding count
+  - status summary
+  - `Configure` ボタン
+- `Configure` クリック時:
+  - アプリ内モーダルを開く
+  - 背景は軽く暗くし、Workspace から独立した設定画面として扱う
+  - `Esc` / backdrop / `Close` で閉じられる
+- モーダル内の controls:
   - master toggle
   - action ごとの enabled toggle
   - shortcut 表示
@@ -131,6 +142,8 @@ WHY: 単独キーの Global Shortcut は他アプリ入力を妨げやすいた�
   - `Clear` ボタン
   - `Reset defaults` ボタン
   - status 表示
+
+WHY: 登録対象が多く Workspace に常時展開すると右ペインの視認性が落ちるため、通常時は入口だけにして詳細設定をモーダルへ逃がす。
 
 ### エラー / バリデーション
 
@@ -160,8 +173,10 @@ WHY: 単独キーの Global Shortcut は他アプリ入力を妨げやすいた�
 
 ### Step 4
 
-- Workspace に登録 UI を追加する
+- Workspace に `Global Shortcuts` のサマリーと `Configure` ボタンを追加する
+- 詳細 UI は `GlobalShortcutSettingsDialog` として実装する
 - `Record` 中は次に押されたキー組み合わせを shortcut 候補として取り込む
+- `Record` 中の `Esc` はモーダル close ではなく recording cancel を優先する
 
 ### Step 5
 
@@ -207,7 +222,9 @@ WHY: 単独キーの Global Shortcut は他アプリ入力を妨げやすいた�
 ## 10. 影響範囲
 
 - `src/App.tsx`
-  - Global Shortcut 登録 UI の追加
+  - Global Shortcut サマリーと `Configure` ボタンの追加
+- `src/components/GlobalShortcutSettingsDialog.tsx`
+  - 詳細設定モーダルの追加
 - `src/lib/globalShortcutActions.ts`
   - action 定義と実行処理の追加
 - `src/lib/globalShortcutPreferences.ts`
@@ -221,6 +238,10 @@ WHY: 単独キーの Global Shortcut は他アプリ入力を妨げやすいた�
 
 - Tauri 版で Global Shortcut 登録 UI が表示される
 - Web 版では登録 UI が無効または非表示になる
+- Workspace には状態サマリーと `Configure` ボタンだけが表示される
+- `Configure` クリックで詳細設定モーダルが開く
+- `Esc` / backdrop / `Close` で詳細設定モーダルを閉じられる
+- `Record` 中の `Esc` は recording cancel として動く
 - master toggle が off の初期状態では何も登録されない
 - Forward Edge の 5 操作を Global Shortcut 登録できる
 - Cell Icon の previous / next / current 配置 / current 削除を Global Shortcut 登録できる

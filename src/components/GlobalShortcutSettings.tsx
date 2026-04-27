@@ -1,214 +1,75 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useGlobalShortcutRegistration } from '../hooks/useGlobalShortcutRegistration';
+import { useMemo, useState } from 'react';
 import {
-  GLOBAL_SHORTCUT_ACTIONS,
-  GlobalShortcutActionId,
-} from '../lib/globalShortcutActions';
+  GlobalShortcutRegistrationStatus,
+  useGlobalShortcutRegistration,
+} from '../hooks/useGlobalShortcutRegistration';
+import { GlobalShortcutSettingsDialog } from './GlobalShortcutSettingsDialog';
 
 type GlobalShortcutSettingsProps = {
   supported: boolean;
 };
 
-const SHORTCUT_GROUPS = ['Forward Edge', 'Cell Icon'] as const;
-const MODIFIER_KEYS = new Set(['Alt', 'Control', 'Meta', 'Shift']);
-
 export function GlobalShortcutSettings({ supported }: GlobalShortcutSettingsProps) {
-  const [recordingActionId, setRecordingActionId] = useState<GlobalShortcutActionId | null>(null);
-  const {
-    activeCount,
-    loaded,
-    preferences,
-    resetDefaults,
-    setBindingEnabled,
-    setEnabled,
-    setShortcut,
-    statusByAction,
-  } = useGlobalShortcutRegistration(supported);
-  const bindingByAction = useMemo(
-    () => new Map(preferences.bindings.map((binding) => [binding.actionId, binding])),
-    [preferences.bindings],
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const registration = useGlobalShortcutRegistration(supported);
+  const statusSummary = useMemo(
+    () => getStatusSummary(Object.values(registration.statusByAction)),
+    [registration.statusByAction],
   );
-
-  useEffect(() => {
-    if (!recordingActionId) {
-      return undefined;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (event.key === 'Escape') {
-        setRecordingActionId(null);
-        return;
-      }
-
-      if (MODIFIER_KEYS.has(event.key)) {
-        return;
-      }
-
-      setShortcut(recordingActionId, formatShortcutFromKeyboardEvent(event));
-      setRecordingActionId(null);
-    };
-
-    window.addEventListener('keydown', handleKeyDown, true);
-
-    return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [recordingActionId, setShortcut]);
+  const canConfigure = supported && registration.loaded;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium text-[var(--color-text-strong)]">
-            {supported ? `${activeCount} active bindings` : 'Tauri only'}
+            {supported
+              ? `${registration.preferences.enabled ? 'On' : 'Off'} / ${registration.activeCount} active`
+              : 'Tauri only'}
           </p>
           <p className="mt-0.5 text-xs leading-5 text-[var(--color-text-soft)]">
-            {supported
-              ? 'Forward Edge and current-cell icon helpers only'
-              : 'Global shortcut registration is unavailable in the web runtime'}
+            {supported ? statusSummary : 'Global shortcut registration is unavailable in web runtime'}
           </p>
         </div>
         <button
           type="button"
-          disabled={!supported || !loaded}
-          onClick={() => setEnabled(!preferences.enabled)}
-          className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
-            !supported || !loaded
-              ? 'cursor-not-allowed border-[var(--color-border)] text-[var(--color-muted)] opacity-60'
-              : preferences.enabled
-                ? 'border-[var(--color-border-strong)] bg-[rgba(87,159,255,0.12)] text-[var(--color-text-strong)]'
-                : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-soft)] hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]'
-          }`}
+          disabled={!canConfigure}
+          onClick={() => setDialogOpen(true)}
+          className="rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm font-medium text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {preferences.enabled ? 'On' : 'Off'}
+          Configure
         </button>
       </div>
 
-      <div className="border-y border-[var(--color-border)]">
-        {SHORTCUT_GROUPS.map((group) => (
-          <div key={group} className="border-b border-[var(--color-border)] last:border-b-0">
-            <p className="px-1 py-2 text-[11px] uppercase tracking-[0.2em] text-[var(--color-muted)]">
-              {group}
-            </p>
-            <div className="divide-y divide-[var(--color-border)]">
-              {GLOBAL_SHORTCUT_ACTIONS.filter((action) => action.group === group).map((action) => {
-                const binding = bindingByAction.get(action.id);
-                const status = statusByAction[action.id];
-
-                if (!binding) {
-                  return null;
-                }
-
-                return (
-                  <div key={action.id} className="grid gap-2 py-2 sm:grid-cols-[1fr_auto]">
-                    <div className="min-w-0">
-                      <label className="flex items-center gap-2 text-sm text-[var(--color-text-strong)]">
-                        <input
-                          type="checkbox"
-                          checked={binding.enabled}
-                          disabled={!supported || !loaded}
-                          onChange={(event) =>
-                            setBindingEnabled(action.id, event.currentTarget.checked)
-                          }
-                        />
-                        <span>{action.label}</span>
-                      </label>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-soft)]">
-                        <code className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[11px] text-[var(--color-text-strong)]">
-                          {recordingActionId === action.id
-                            ? 'Press shortcut...'
-                            : binding.shortcut || 'Unassigned'}
-                        </code>
-                        <span className={getStatusClassName(status.tone)}>{status.message}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        disabled={!supported || !loaded}
-                        onClick={() => setRecordingActionId(action.id)}
-                        className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Record
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!supported || !loaded}
-                        onClick={() => setShortcut(action.id, '')}
-                        className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={!supported || !loaded}
-          onClick={() => {
-            resetDefaults();
-            setRecordingActionId(null);
-          }}
-          className="rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Reset defaults
-        </button>
-      </div>
+      {dialogOpen ? (
+        <GlobalShortcutSettingsDialog
+          activeCount={registration.activeCount}
+          preferences={registration.preferences}
+          resetDefaults={registration.resetDefaults}
+          setBindingEnabled={registration.setBindingEnabled}
+          setEnabled={registration.setEnabled}
+          setShortcut={registration.setShortcut}
+          statusByAction={registration.statusByAction}
+          supported={supported}
+          loaded={registration.loaded}
+          onClose={() => setDialogOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
 
-function formatShortcutFromKeyboardEvent(event: KeyboardEvent) {
-  const parts: string[] = [];
+function getStatusSummary(statuses: GlobalShortcutRegistrationStatus[]) {
+  const errorCount = statuses.filter((status) => status.tone === 'error').length;
+  const registeredCount = statuses.filter((status) => status.message === 'Registered').length;
 
-  if (event.ctrlKey) {
-    parts.push('Ctrl');
+  if (errorCount > 0) {
+    return `${errorCount} registration issue${errorCount === 1 ? '' : 's'}`;
   }
 
-  if (event.altKey) {
-    parts.push('Alt');
+  if (registeredCount > 0) {
+    return `${registeredCount} shortcut${registeredCount === 1 ? '' : 's'} registered`;
   }
 
-  if (event.shiftKey) {
-    parts.push('Shift');
-  }
-
-  if (event.metaKey) {
-    parts.push('Meta');
-  }
-
-  parts.push(normalizeShortcutKey(event.key));
-
-  return parts.join('+');
-}
-
-function normalizeShortcutKey(key: string) {
-  if (key.length === 1) {
-    return key.toUpperCase();
-  }
-
-  if (key === ' ') {
-    return 'Space';
-  }
-
-  return key;
-}
-
-function getStatusClassName(tone: 'idle' | 'success' | 'error') {
-  switch (tone) {
-    case 'success':
-      return 'text-emerald-200';
-    case 'error':
-      return 'text-rose-200';
-    case 'idle':
-      return 'text-[var(--color-muted)]';
-  }
+  return statuses[0]?.message ?? 'Not registered';
 }
