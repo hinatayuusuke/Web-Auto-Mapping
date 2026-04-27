@@ -635,7 +635,7 @@ function App() {
       title="Workspace"
     >
       <section className="space-y-3">
-        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Map mode only" />
+        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Terrain edits require Map mode" />
         <div className="grid grid-cols-4 gap-px bg-[var(--color-border)]">
           {EDIT_TOOL_OPTIONS.map((tool) => (
             <EditToolChoiceButton
@@ -652,7 +652,7 @@ function App() {
         <PanelHeading
           eyebrow="Palette"
           title="Cell Icons"
-          body="Click to enter icon placement, [ ] cycle, I place"
+          body="Explore or Map placement, [ ] cycle, I place"
         />
         <div className="grid grid-cols-3 gap-px bg-[var(--color-border)]">
           {CELL_ICON_KINDS.map((kind) => (

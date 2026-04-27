@@ -2498,3 +2498,34 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-27 13:32 (Asia/Taipei) — Explore Mode での Cell Icon マウス配置対応**
+
+### Summary
+- Explore Mode でも `cell-icon` 選択中は Canvas クリックで Cell Icon を配置・削除できるようにした
+
+### Context / Goal
+- 既存仕様ではキーボードの `I` / `Alt+I` は Explore Mode でもアイコン配置できたが、マウス配置は Map Mode 限定だった
+- Explore 中に発見物をその場で記録できるよう、Cell Icon だけを例外的にマウス操作可能にしたかった
+
+### Changes
+- Canvas primary interaction の許可条件を整理し、Map Mode に加えて Explore Mode の `cell-icon` + Cell target を許可した
+- Explore Mode の `cell-icon` 右クリックでは Cell 状態を変更せず、対象 Cell の Icon だけ削除するようにした
+- Workspace の説明文を、地形編集は Map Mode 限定、Cell Icons は Explore / Map 両対応と分かる内容へ更新した
+
+### Files Touched
+- `src/store/appStore.ts` — Explore Mode で Cell Icon の配置・削除だけを許可する Canvas interaction 分岐を追加
+- `src/App.tsx` — Workspace の Edit Tool / Cell Icons 説明文を更新
+
+### Behavioral Impact
+- Explore Mode で `cell-icon` を選択して Canvas 左クリックすると、クリックした Cell に選択中アイコンを配置できる
+- Explore Mode で `cell-icon` を選択して Canvas 右クリックすると、クリックした Cell のアイコンだけ削除できる
+- `cell-floor` / `cell-unknown` / `edge-*` のマウス編集は、従来どおり Map Mode 限定のまま
+
+### Risk & Mitigation
+- Risk: Explore Mode 中に Cell Icon だけマウス編集できるため、モード差分が分かりづらくなる可能性がある
+- Mitigation: Workspace の説明文を更新し、地形編集と Cell Icon 配置の扱いを分けて表示した
+
+### Tests / Verification
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認

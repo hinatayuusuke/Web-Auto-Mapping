@@ -143,7 +143,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map'
+          canApplyCanvasPrimaryInteraction(state.mode, state.selectedTool, target)
             ? applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target)
             : floor,
         ),
@@ -153,7 +153,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyUntrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map'
+          canApplyCanvasPrimaryInteraction(state.mode, state.selectedTool, target)
             ? applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target)
             : floor,
         ),
@@ -163,7 +163,11 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map' ? applyCanvasSecondaryEdit(floor, target) : floor,
+          state.mode === 'map'
+            ? applyCanvasSecondaryEdit(floor, target)
+            : canApplyExploreCellIconInteraction(state.mode, state.selectedTool, target)
+              ? removeCellIconAt(floor, target.coordinate)
+              : floor,
         ),
       })),
     ),
@@ -171,7 +175,11 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyUntrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map' ? applyCanvasSecondaryEdit(floor, target) : floor,
+          state.mode === 'map'
+            ? applyCanvasSecondaryEdit(floor, target)
+            : canApplyExploreCellIconInteraction(state.mode, state.selectedTool, target)
+              ? removeCellIconAt(floor, target.coordinate)
+              : floor,
         ),
       })),
     ),
@@ -562,6 +570,23 @@ function hasTrackableDocumentChanged(previous: PersistedDocument, next: Persiste
     previous.selectedFloorId !== next.selectedFloorId ||
     JSON.stringify(previous.floors) !== JSON.stringify(next.floors)
   );
+}
+
+function canApplyCanvasPrimaryInteraction(
+  mode: AppMode,
+  selectedTool: EditTool,
+  target: MapInteractionTarget,
+) {
+  return mode === 'map' || canApplyExploreCellIconInteraction(mode, selectedTool, target);
+}
+
+function canApplyExploreCellIconInteraction(
+  mode: AppMode,
+  selectedTool: EditTool,
+  target: MapInteractionTarget,
+) {
+  // WHY: Explore は地形編集を閉じる一方、発見物メモとしての Cell Icon だけは移動中に記録できるようにする。
+  return mode === 'explore' && selectedTool === 'cell-icon' && target.kind === 'cell';
 }
 
 function cycleIconKind(current: CellIconKind, direction: 1 | -1): CellIconKind {
