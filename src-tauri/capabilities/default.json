@@ -14,6 +14,9 @@
       "allow": [
         {
           "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        },
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.preferences.json"
         }
       ]
     },
@@ -22,6 +25,9 @@
       "allow": [
         {
           "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        },
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.preferences.json"
         }
       ]
     },
@@ -30,6 +36,9 @@
       "allow": [
         {
           "path": "$APPLOCALDATA/web-auto-mapping.document.json"
+        },
+        {
+          "path": "$APPLOCALDATA/web-auto-mapping.preferences.json"
         }
       ]
     },

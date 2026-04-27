@@ -2499,6 +2499,47 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-27 14:06 (Asia/Taipei) — Tauri Global Shortcut 登録 UI**
+
+### Summary
+- Tauri 版向けに Forward Edge と Cell Icon 操作用の Global Shortcut 登録 UI を追加した
+
+### Context / Goal
+- 既存の移動ショートカットと Global Arrow Capture は現状維持しつつ、記録補助操作だけを Global Shortcut として登録できるようにしたかった
+- Global Shortcut は OS 全体へ作用するため、初期状態では無効にし、対象操作も Forward Edge と current cell の Cell Icon 操作に限定したかった
+
+### Changes
+- Global Shortcut 対象 action、既定候補 shortcut、実行処理を `globalShortcutActions` に分離した
+- Tauri app local data に `web-auto-mapping.preferences.json` として Global Shortcut 設定を保存 / 読込する処理を追加した
+- 登録 / 解除 / 重複検出 / status 表示を担当する `useGlobalShortcutRegistration` hook を追加した
+- Workspace に Tauri 専用の `Global Shortcuts` 設定 UI を追加した
+- preferences 保存先を Tauri fs capability に追加した
+
+### Files Touched
+- `src/App.tsx` — Workspace に `GlobalShortcutSettings` section を追加
+- `src/components/GlobalShortcutSettings.tsx` — Global Shortcut 登録 UI を追加
+- `src/hooks/useGlobalShortcutRegistration.ts` — Tauri Global Shortcut の登録状態管理を追加
+- `src/lib/globalShortcutActions.ts` — 登録対象 action と実行処理を追加
+- `src/lib/globalShortcutPreferences.ts` — app local data への設定保存 / 読込を追加
+- `src-tauri/capabilities/default.json` — preferences ファイルの read/write/exists 権限を追加
+
+### Behavioral Impact
+- Tauri 版で Forward Edge 5種、Cell Icon previous / next、current cell 配置、current cell 削除を Global Shortcut として登録できる
+- 初期状態では master toggle が off のため Global Shortcut は登録されない
+- Web runtime では UI が disabled 表示になり、登録処理は動かない
+- 既存の移動ショートカット、Global Arrow Capture、`Ctrl+Alt+F12` toggle は変更していない
+
+### Risk & Mitigation
+- Risk: Global Shortcut が他アプリや OS shortcut と競合する可能性がある
+- Mitigation: 登録状態を action ごとに表示し、同一設定内の重複 shortcut は登録しないようにした
+- Risk: Tauri preferences 保存権限が不足すると設定保存に失敗する可能性がある
+- Mitigation: `default.json` に `$APPLOCALDATA/web-auto-mapping.preferences.json` の許可を追加した
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- `npm run tauri:build` は Vite build まで成功したが、`src-tauri/target/release/web_auto_mapping.exe` の削除が OS error 5 で拒否され、Rust build 前に停止した
+
 **2026-04-27 13:40 (Asia/Taipei) — 全 Cell Icon メッセージ対応**
 
 ### Summary

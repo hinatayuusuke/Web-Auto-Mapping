@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import { GlobalShortcutSettings } from './components/GlobalShortcutSettings';
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
 import { getFloorStats } from './lib/mapModel';
@@ -667,6 +668,15 @@ function App() {
             />
           ))}
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <PanelHeading
+          eyebrow="Tauri"
+          title="Global Shortcuts"
+          body="Forward Edge and current-cell icon helpers"
+        />
+        <GlobalShortcutSettings supported={supportsGlobalArrowCapture} />
       </section>
 
       <section className="space-y-3">
