@@ -2499,6 +2499,40 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-27 13:40 (Asia/Taipei) — 全 Cell Icon メッセージ対応**
+
+### Summary
+- `marker` 限定だったメッセージ編集・hover 表示を、全 Cell Icon で使えるようにした
+
+### Context / Goal
+- 既存の `CellIcon.message?: string` は全アイコンで保持できる形だったが、編集 UI と hover 表示は `marker` のみ対象だった
+- 階段、落とし穴、宝箱にも補足メモを付けられるようにしつつ、地図上のアイコン種別は識別しやすいままにしたかった
+
+### Changes
+- `updateMarkerMessageAt` / `setSelectedMarkerMessage` を Cell Icon 汎用の `updateCellIconMessageAt` / `setSelectedCellIconMessage` に変更した
+- Canvas 上のダブルクリック編集と hover メッセージ表示を、全 Cell Icon 対象へ広げた
+- `marker` は従来どおりメッセージ先頭 1 文字を glyph として表示する仕様を維持した
+- `marker` 以外の Cell Icon は既存描画を維持し、メッセージ付きの場合だけ小さいバッジを表示するようにした
+
+### Files Touched
+- `src/lib/mapModel.ts` — Cell Icon の種類に関係なく `message` を更新できる関数へ汎用化
+- `src/store/appStore.ts` — Cell Icon メッセージ更新アクション名と呼び出し先を汎用化
+- `src/components/MapCanvas.tsx` — hover / double click / edit form / hit test を全 Cell Icon 対応へ変更し、非 marker 用メッセージバッジを追加
+
+### Behavioral Impact
+- `stairs` / `stairs-down` / `pit` / `chest` / `marker` のすべてにメッセージを記入・保存できる
+- メッセージ付き Cell Icon に hover すると全文が Canvas 上部に表示される
+- `marker` 以外はメッセージがあっても既存アイコン形状を維持し、種類を識別しやすい
+
+### Risk & Mitigation
+- Risk: 全 Cell Icon でダブルクリック編集を受け付けるため、通常クリック配置との競合範囲が広がる
+- Mitigation: 既存の遅延クリック処理を Cell Icon 汎用に拡張し、ドラッグ開始しない通常クリックだけ編集判定と共存させた
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-27 13:32 (Asia/Taipei) — Explore Mode での Cell Icon マウス配置対応**
 
 ### Summary

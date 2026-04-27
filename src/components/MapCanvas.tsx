@@ -33,7 +33,7 @@ type DragPaintState = {
   visitedTargets: Set<string>;
 };
 
-type PendingMarkerDragState = {
+type PendingCellIconDragState = {
   snapshot: ReturnType<typeof createPersistedDocument>;
   startX: number;
   startY: number;
@@ -47,11 +47,11 @@ export function MapCanvas() {
   const editorInputRef = useRef<HTMLInputElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const panStateRef = useRef<PanState | null>(null);
-  const pendingMarkerDragRef = useRef<PendingMarkerDragState | null>(null);
-  const [editingMarkerCoordinate, setEditingMarkerCoordinate] = useState<CellCoordinate | null>(
+  const pendingCellIconDragRef = useRef<PendingCellIconDragState | null>(null);
+  const [editingCellIconCoordinate, setEditingCellIconCoordinate] = useState<CellCoordinate | null>(
     null,
   );
-  const [hoveredMarkerCoordinate, setHoveredMarkerCoordinate] = useState<CellCoordinate | null>(
+  const [hoveredCellIconCoordinate, setHoveredCellIconCoordinate] = useState<CellCoordinate | null>(
     null,
   );
   const [messageDraft, setMessageDraft] = useState('');
@@ -60,7 +60,7 @@ export function MapCanvas() {
   const selectedTool = useAppStore((state) => state.selectedTool);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
-  const setSelectedMarkerMessage = useAppStore((state) => state.setSelectedMarkerMessage);
+  const setSelectedCellIconMessage = useAppStore((state) => state.setSelectedCellIconMessage);
   const selectedFloor = useSelectedFloor();
   const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
   const applyCanvasPrimaryInteractionPreview = useAppStore(
@@ -90,21 +90,21 @@ export function MapCanvas() {
     });
   }, [selectedFloor, size.height, size.width, viewport]);
 
-  const editingMarker = useMemo(() => {
-    if (!selectedFloor || !editingMarkerCoordinate) {
+  const editingCellIcon = useMemo(() => {
+    if (!selectedFloor || !editingCellIconCoordinate) {
       return null;
     }
 
-    return getMarkerIconAtCoordinate(selectedFloor, editingMarkerCoordinate);
-  }, [editingMarkerCoordinate, selectedFloor]);
+    return getCellIconAtCoordinate(selectedFloor, editingCellIconCoordinate);
+  }, [editingCellIconCoordinate, selectedFloor]);
 
-  const hoveredMarker = useMemo(() => {
-    if (!selectedFloor || !hoveredMarkerCoordinate) {
+  const hoveredCellIcon = useMemo(() => {
+    if (!selectedFloor || !hoveredCellIconCoordinate) {
       return null;
     }
 
-    return getMarkerIconAtCoordinate(selectedFloor, hoveredMarkerCoordinate);
-  }, [hoveredMarkerCoordinate, selectedFloor]);
+    return getCellIconAtCoordinate(selectedFloor, hoveredCellIconCoordinate);
+  }, [hoveredCellIconCoordinate, selectedFloor]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -132,24 +132,24 @@ export function MapCanvas() {
   }, []);
 
   useEffect(() => {
-    if (!editingMarkerCoordinate) {
+    if (!editingCellIconCoordinate) {
       return;
     }
 
-    if (!editingMarker) {
-      setEditingMarkerCoordinate(null);
+    if (!editingCellIcon) {
+      setEditingCellIconCoordinate(null);
       setMessageDraft('');
     }
-  }, [editingMarker, editingMarkerCoordinate]);
+  }, [editingCellIcon, editingCellIconCoordinate]);
 
   useEffect(() => {
-    if (!editingMarkerCoordinate) {
+    if (!editingCellIconCoordinate) {
       return;
     }
 
     editorInputRef.current?.focus();
     editorInputRef.current?.select();
-  }, [editingMarkerCoordinate]);
+  }, [editingCellIconCoordinate]);
 
   useEffect(() => {
     return () => {
@@ -159,13 +159,13 @@ export function MapCanvas() {
     };
   }, []);
 
-  const clearPendingMarkerClick = () => {
+  const clearPendingCellIconClick = () => {
     if (clickTimeoutRef.current !== null) {
       window.clearTimeout(clickTimeoutRef.current);
       clickTimeoutRef.current = null;
     }
 
-    pendingMarkerDragRef.current = null;
+    pendingCellIconDragRef.current = null;
   };
 
   const applyDragTarget = (target: MapInteractionTarget) => {
@@ -302,7 +302,7 @@ export function MapCanvas() {
       layout,
       selectedTool,
     );
-    const marker = getMarkerAtCanvasPoint(localX, localY, selectedFloor, layout);
+    const cellIcon = getCellIconAtCanvasPoint(localX, localY, selectedFloor, layout);
 
     if (!target) {
       return;
@@ -312,7 +312,7 @@ export function MapCanvas() {
       event.preventDefault();
 
       if (mode === 'map') {
-        clearPendingMarkerClick();
+        clearPendingCellIconClick();
         beginDragPaint(target, 'erase');
         return;
       }
@@ -322,7 +322,7 @@ export function MapCanvas() {
     }
 
     if (event.button === 0) {
-      if (mode === 'map' && marker) {
+      if (cellIcon) {
         if (clickTimeoutRef.current !== null) {
           window.clearTimeout(clickTimeoutRef.current);
           clickTimeoutRef.current = null;
@@ -330,12 +330,12 @@ export function MapCanvas() {
 
         if (event.detail > 1) {
           event.preventDefault();
-          setEditingMarkerCoordinate(marker.position);
-          setMessageDraft(marker.message ?? '');
+          setEditingCellIconCoordinate(cellIcon.position);
+          setMessageDraft(cellIcon.message ?? '');
           return;
         }
 
-        pendingMarkerDragRef.current = {
+        pendingCellIconDragRef.current = {
           snapshot: createPersistedDocument(useAppStore.getState()),
           startX: event.clientX,
           startY: event.clientY,
@@ -344,7 +344,7 @@ export function MapCanvas() {
         clickTimeoutRef.current = window.setTimeout(() => {
           applyCanvasPrimaryInteraction(target);
           clickTimeoutRef.current = null;
-          pendingMarkerDragRef.current = null;
+          pendingCellIconDragRef.current = null;
         }, 220);
         return;
       }
@@ -361,17 +361,17 @@ export function MapCanvas() {
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
     if (selectedFloor && layout) {
       const rect = event.currentTarget.getBoundingClientRect();
-      const marker = getMarkerAtCanvasPoint(
+      const cellIcon = getCellIconAtCanvasPoint(
         event.clientX - rect.left,
         event.clientY - rect.top,
         selectedFloor,
         layout,
       );
 
-      setHoveredMarkerCoordinate(marker?.position ?? null);
+      setHoveredCellIconCoordinate(cellIcon?.position ?? null);
     }
 
-    const pendingMarkerDrag = pendingMarkerDragRef.current;
+    const pendingCellIconDrag = pendingCellIconDragRef.current;
     const panState = panStateRef.current;
 
     if (!panState) {
@@ -380,25 +380,25 @@ export function MapCanvas() {
         const localX = event.clientX - rect.left;
         const localY = event.clientY - rect.top;
 
-        if (pendingMarkerDrag && (event.buttons & 1) === 1) {
+        if (pendingCellIconDrag && (event.buttons & 1) === 1) {
           const dragDistance = Math.hypot(
-            event.clientX - pendingMarkerDrag.startX,
-            event.clientY - pendingMarkerDrag.startY,
+            event.clientX - pendingCellIconDrag.startX,
+            event.clientY - pendingCellIconDrag.startY,
           );
 
           if (dragDistance >= DRAG_START_THRESHOLD) {
-            clearPendingMarkerClick();
+            clearPendingCellIconClick();
             dragPaintRef.current = {
               edgeAxis:
-                pendingMarkerDrag.target.kind === 'edge'
-                  ? pendingMarkerDrag.target.coordinate.axis
+                pendingCellIconDrag.target.kind === 'edge'
+                  ? pendingCellIconDrag.target.coordinate.axis
                   : null,
               operation: 'paint',
-              snapshot: pendingMarkerDrag.snapshot,
-              targetKind: pendingMarkerDrag.target.kind,
+              snapshot: pendingCellIconDrag.snapshot,
+              targetKind: pendingCellIconDrag.target.kind,
               visitedTargets: new Set(),
             };
-            applyDragTarget(pendingMarkerDrag.target);
+            applyDragTarget(pendingCellIconDrag.target);
           }
         }
 
@@ -448,10 +448,10 @@ export function MapCanvas() {
   };
 
   const handleMouseLeave = () => {
-    clearPendingMarkerClick();
+    clearPendingCellIconClick();
     finishDragPaint();
     panStateRef.current = null;
-    setHoveredMarkerCoordinate(null);
+    setHoveredCellIconCoordinate(null);
   };
 
   const handleWheel = (event: WheelEvent<HTMLCanvasElement>) => {
@@ -490,13 +490,13 @@ export function MapCanvas() {
     });
   };
 
-  const handleMarkerMessageSubmit = () => {
-    if (!editingMarker) {
+  const handleCellIconMessageSubmit = () => {
+    if (!editingCellIcon) {
       return;
     }
 
-    setSelectedMarkerMessage(editingMarker.position, messageDraft);
-    setEditingMarkerCoordinate(null);
+    setSelectedCellIconMessage(editingCellIcon.position, messageDraft);
+    setEditingCellIconCoordinate(null);
   };
 
   return (
@@ -504,27 +504,27 @@ export function MapCanvas() {
       ref={frameRef}
       className="relative h-full min-h-[360px] overflow-hidden overscroll-contain border-x border-b border-[var(--color-border)] bg-[radial-gradient(circle_at_top,_rgba(87,159,255,0.12),_transparent_38%),linear-gradient(180deg,_rgba(255,255,255,0.03),_rgba(255,255,255,0))]"
     >
-      {hoveredMarker?.message && !editingMarkerCoordinate ? (
+      {hoveredCellIcon?.message && !editingCellIconCoordinate ? (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(9,15,24,0.84)] px-3 py-1.5 backdrop-blur">
           <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
-            Marker Message
+            Cell Icon Message
           </p>
           <p className="mt-0.5 truncate text-sm leading-5 text-[var(--color-text-strong)]">
-            {hoveredMarker.message}
+            {hoveredCellIcon.message}
           </p>
         </div>
       ) : null}
 
-      {editingMarker ? (
+      {editingCellIcon ? (
         <form
           className="absolute inset-x-3 top-3 z-20 rounded-2xl border border-[var(--color-border-strong)] bg-[rgba(8,17,28,0.95)] p-3 shadow-[0_18px_48px_rgba(0,0,0,0.32)]"
           onSubmit={(event) => {
             event.preventDefault();
-            handleMarkerMessageSubmit();
+            handleCellIconMessageSubmit();
           }}
         >
           <p className="text-[11px] uppercase tracking-[0.22em] text-[var(--color-muted)]">
-            Marker Message
+            Cell Icon Message
           </p>
           <div className="mt-2 flex items-center gap-2">
             <input
@@ -536,10 +536,10 @@ export function MapCanvas() {
               onKeyDown={(event) => {
                 if (event.key === 'Escape') {
                   event.preventDefault();
-                  setEditingMarkerCoordinate(null);
+                  setEditingCellIconCoordinate(null);
                 }
               }}
-              placeholder="Marker message"
+              placeholder="Cell icon message"
             />
             <button
               type="submit"
@@ -550,7 +550,7 @@ export function MapCanvas() {
             <button
               type="button"
               className="rounded-2xl border border-[var(--color-border)] bg-[rgba(255,255,255,0.02)] px-4 py-2.5 text-sm text-[var(--color-text-soft)] transition hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-strong)]"
-              onClick={() => setEditingMarkerCoordinate(null)}
+              onClick={() => setEditingCellIconCoordinate(null)}
             >
               Cancel
             </button>
@@ -871,21 +871,25 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
 
     if (icon.kind === 'chest') {
       drawChestCellIcon(context, centerX, centerY, layout.cellSize);
+      drawCellIconMessageBadge(context, icon, centerX, centerY, layout.cellSize);
       continue;
     }
 
     if (icon.kind === 'pit') {
       drawPitCellIcon(context, centerX, centerY, layout.cellSize);
+      drawCellIconMessageBadge(context, icon, centerX, centerY, layout.cellSize);
       continue;
     }
 
     if (icon.kind === 'stairs') {
       drawUpStairsCellIcon(context, centerX, centerY, layout.cellSize);
+      drawCellIconMessageBadge(context, icon, centerX, centerY, layout.cellSize);
       continue;
     }
 
     if (icon.kind === 'stairs-down') {
       drawDownStairsCellIcon(context, centerX, centerY, layout.cellSize);
+      drawCellIconMessageBadge(context, icon, centerX, centerY, layout.cellSize);
       continue;
     }
 
@@ -1112,6 +1116,31 @@ function clampZoom(value: number) {
 
 function getCellIconRadius(cellSize: number) {
   return Math.min(cellSize * 0.5 - 1, Math.max(4, cellSize * 0.46));
+}
+
+function drawCellIconMessageBadge(
+  context: CanvasRenderingContext2D,
+  icon: FloorState['cellIcons'][number],
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+) {
+  if (!icon.message || icon.kind === 'marker') {
+    return;
+  }
+
+  // WHY: marker 以外は種類の識別を優先し、メッセージ有無だけを小さい印で知らせる。
+  const radius = Math.max(2, Math.min(5, cellSize * 0.11));
+  const offset = Math.max(4, cellSize * 0.31);
+
+  context.fillStyle = '#f6d58d';
+  context.beginPath();
+  context.arc(centerX + offset, centerY - offset, radius, 0, Math.PI * 2);
+  context.fill();
+
+  context.strokeStyle = '#0b1320';
+  context.lineWidth = Math.max(1, radius * 0.35);
+  context.stroke();
 }
 
 function drawPitCellIcon(
@@ -1346,21 +1375,20 @@ function getMarkerGlyph(message?: string) {
   return normalized ? normalized.charAt(0) : 'M';
 }
 
-function getMarkerIconAtCoordinate(
+function getCellIconAtCoordinate(
   floor: FloorState,
   coordinate: CellCoordinate,
 ): FloorState['cellIcons'][number] | null {
   return (
     floor.cellIcons.find(
       (icon) =>
-        icon.kind === 'marker' &&
         icon.position.x === coordinate.x &&
         icon.position.y === coordinate.y,
     ) ?? null
   );
 }
 
-function getMarkerAtCanvasPoint(
+function getCellIconAtCanvasPoint(
   localX: number,
   localY: number,
   floor: FloorState,
@@ -1375,17 +1403,17 @@ function getMarkerAtCanvasPoint(
 
   const cellX = Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1);
   const cellY = Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1);
-  const marker = getMarkerIconAtCoordinate(floor, { x: cellX, y: cellY });
+  const cellIcon = getCellIconAtCoordinate(floor, { x: cellX, y: cellY });
 
-  if (!marker) {
+  if (!cellIcon) {
     return null;
   }
 
-  const centerX = layout.originX + marker.position.x * layout.cellSize + layout.cellSize / 2;
-  const centerY = layout.originY + marker.position.y * layout.cellSize + layout.cellSize / 2;
+  const centerX = layout.originX + cellIcon.position.x * layout.cellSize + layout.cellSize / 2;
+  const centerY = layout.originY + cellIcon.position.y * layout.cellSize + layout.cellSize / 2;
   const dx = localX - centerX;
   const dy = localY - centerY;
   const hitRadius = getCellIconRadius(layout.cellSize) + 4;
 
-  return dx * dx + dy * dy <= hitRadius * hitRadius ? marker : null;
+  return dx * dx + dy * dy <= hitRadius * hitRadius ? cellIcon : null;
 }

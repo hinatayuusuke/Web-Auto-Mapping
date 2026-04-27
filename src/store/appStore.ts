@@ -11,7 +11,7 @@ import {
   placeSelectedCellIconAtPlayer,
   placeSelectedCellIconInFront,
   removeCellIconAt,
-  updateMarkerMessageAt,
+  updateCellIconMessageAt,
   updateFloorCellState,
   updateFloorEdgeState,
   updateFloorPlayer,
@@ -85,7 +85,7 @@ type AppActions = {
   setMapTitle: (title: string) => void;
   setMode: (mode: AppMode) => void;
   setPlayerFacing: (facing: Facing) => void;
-  setSelectedMarkerMessage: (coordinate: CellCoordinate, message: string) => void;
+  setSelectedCellIconMessage: (coordinate: CellCoordinate, message: string) => void;
   setPlayerPosition: (coordinate: CellCoordinate) => void;
   setSelectedCellIconKind: (kind: CellIconKind) => void;
   setSelectedFloor: (floorId: string) => void;
@@ -395,11 +395,11 @@ export const useAppStore = create<AppStore>((set) => ({
         floors: updateSelectedFloor(state, (floor) => updateFloorPlayer(floor, { facing })),
       })),
     ),
-  setSelectedMarkerMessage: (coordinate, message) =>
+  setSelectedCellIconMessage: (coordinate, message) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          updateMarkerMessageAt(floor, coordinate, message),
+          updateCellIconMessageAt(floor, coordinate, message),
         ),
       })),
     ),
