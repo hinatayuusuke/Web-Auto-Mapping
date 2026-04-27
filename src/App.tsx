@@ -778,7 +778,7 @@ function App() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs leading-5 text-[var(--color-text-soft)]">
-                  左右は独立スクロール、中央は常時表示のままホイールでズームします。
+                  マウスクリックでアイコン配置、右クリックで削除、アイコンダブルクリックでメッセージ追加、マウス中ボタン押しでマップドラッグ
                 </p>
               </div>
 
