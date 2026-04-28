@@ -2902,3 +2902,36 @@
 - `git diff --check`
 - `npm run build`
 - GitHub Actions 上の Tauri build / release 作成は未実施（remote runner 実行が必要）
+
+**2026-04-28 15:48 (Asia/Taipei) — Free Move ボタン追加**
+
+### Summary
+- Map Canvas ヘッダーに Free move ボタンを追加し、マップ内容に影響しないプレイヤー移動モードを実装した
+
+### Context / Goal
+- Explore / Map の通常移動とは別に、Cell / Edge / Icon / Auto Mapping に影響せずプレイヤー位置だけ調整できるようにする
+- 既存 toolbar と同じ形式の SVG アイコンボタンとして追加する
+
+### Changes
+- app store に `freeMoveEnabled`、`setFreeMoveEnabled`、`toggleFreeMove` を追加
+- `moveInDirection` で Free Move ON 時は専用分岐を使い、`player.x` / `player.y` / `facing` だけ更新するようにした
+- Free Move 中は floor / wall / unknown / Auto Mapping 判定を無視するようにした
+- Free Move 中も map 範囲外には移動せず、範囲外方向への入力では向きだけ更新するようにした
+- Map Canvas ヘッダーの toolbar に `Free move` ボタンと同じ線画スタイルの SVG アイコンを追加
+
+### Files Touched
+- `src/store/appStore.ts` — Free Move state と専用移動分岐を追加
+- `src/App.tsx` — Free Move toolbar ボタンと SVG アイコンを追加
+
+### Behavioral Impact
+- Free Move ON 中は移動しても Cell / Edge / Icon / Auto Mapping が変更されない
+- Free Move ON 中は壁や unknown Cell に影響されず、map 範囲内で player だけ移動できる
+- Free Move の ON/OFF は保存データには含めず、Undo / Redo 中は現在の UI 状態を維持する
+
+### Risk & Mitigation
+- Risk: Free Move ON のまま通常探索すると、Auto Mapping や Edge 更新が走らない
+- Mitigation: toolbar ボタンを active 表示し、通常探索へ戻すには明示的に OFF にする仕様にした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

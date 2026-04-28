@@ -59,6 +59,7 @@ function App() {
   const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
   const canUndo = useAppStore((state) => state.history.undoStack.length > 0);
   const floors = useAppStore((state) => state.floors);
+  const freeMoveEnabled = useAppStore((state) => state.freeMoveEnabled);
   const mapTitle = useAppStore((state) => state.mapTitle);
   const mode = useAppStore((state) => state.mode);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
@@ -99,6 +100,7 @@ function App() {
   const setSelectedFloor = useAppStore((state) => state.setSelectedFloor);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
   const setViewport = useAppStore((state) => state.setViewport);
+  const toggleFreeMove = useAppStore((state) => state.toggleFreeMove);
   const toggleSelectionMode = useAppStore((state) => state.toggleSelectionMode);
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
@@ -682,6 +684,13 @@ function App() {
             label="Range select"
             icon={<RangeSelectIcon />}
             onClick={toggleSelectionMode}
+            size="toolbar"
+          />
+          <IconButton
+            active={freeMoveEnabled}
+            label="Free move"
+            icon={<FreeMoveIcon />}
+            onClick={toggleFreeMove}
             size="toolbar"
           />
           <IconButton
@@ -1631,6 +1640,27 @@ function RangeSelectIcon() {
       />
       <path
         d="M8 8h8v8H8z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function FreeMoveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <circle cx="12" cy="12" r="2.4" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 4v4M12 16v4M4 12h4M16 12h4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 4l-2 2M12 4l2 2M12 20l-2-2M12 20l2-2M4 12l2-2M4 12l2 2M20 12l-2-2M20 12l-2 2"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
