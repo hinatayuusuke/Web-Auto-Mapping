@@ -2806,3 +2806,37 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-28 11:10 (Asia/Taipei) — 範囲選択 toolbar ボタン追加**
+
+### Summary
+- Map Canvas ヘッダーに範囲選択ボタンを追加し、selection mode を切り替えられるようにした
+
+### Context / Goal
+- `Shift + drag` だけでは範囲選択機能が見つけづらいため、既存 toolbar と同じ形式の SVG アイコンボタンを追加する
+- `Escape` で選択解除し、selection mode も OFF にする方針で統一する
+
+### Changes
+- app store に `selectionModeEnabled`、`setSelectionModeEnabled`、`toggleSelectionMode` を追加
+- Map Canvas の範囲選択開始条件を `Shift + drag` または selection mode ON に変更
+- selection mode ON 中は右クリック等の通常 paint / erase 操作を開始しないようにした
+- Map Canvas ヘッダーの toolbar に `Range select` ボタンと同じ線画スタイルの SVG アイコンを追加
+- `Escape` キーで選択範囲を解除し、selection mode も OFF にするようにした
+
+### Files Touched
+- `src/store/appStore.ts` — selection mode state と切り替え action を追加
+- `src/components/MapCanvas.tsx` — selection mode 中の selection 優先分岐を追加
+- `src/App.tsx` — toolbar ボタン、SVG アイコン、Escape 終了処理を追加
+
+### Behavioral Impact
+- toolbar の `Range select` ボタンを押すと、Shift を押さなくても Canvas drag で範囲選択できる
+- selection mode 中は通常の Cell / Edge 編集より範囲選択が優先される
+- `Escape` で選択範囲と selection mode の両方が解除される
+
+### Risk & Mitigation
+- Risk: selection mode ON のまま通常編集しようとしても paint / erase が実行されない
+- Mitigation: toolbar ボタンを active 表示し、`Escape` で明示的に mode OFF へ戻せるようにした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

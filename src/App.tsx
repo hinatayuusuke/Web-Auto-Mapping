@@ -63,6 +63,7 @@ function App() {
   const mode = useAppStore((state) => state.mode);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
   const selectedMapRect = useAppStore((state) => state.selectedMapRect);
+  const selectionModeEnabled = useAppStore((state) => state.selectionModeEnabled);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedFloor = useSelectedFloor();
   const viewport = useAppStore((state) => state.viewport);
@@ -93,10 +94,12 @@ function App() {
   const setMapTitle = useAppStore((state) => state.setMapTitle);
   const setMode = useAppStore((state) => state.setMode);
   const setPlayerFacing = useAppStore((state) => state.setPlayerFacing);
+  const setSelectionModeEnabled = useAppStore((state) => state.setSelectionModeEnabled);
   const setSelectedCellIconKind = useAppStore((state) => state.setSelectedCellIconKind);
   const setSelectedFloor = useAppStore((state) => state.setSelectedFloor);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
   const setViewport = useAppStore((state) => state.setViewport);
+  const toggleSelectionMode = useAppStore((state) => state.toggleSelectionMode);
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
@@ -400,6 +403,7 @@ function App() {
           case 'Escape':
             event.preventDefault();
             clearSelectedMapRect();
+            setSelectionModeEnabled(false);
             return;
           case 'Delete':
             if (selectedMapRect) {
@@ -470,6 +474,7 @@ function App() {
     placeSelectedIconAtForwardCell,
     redo,
     removeCurrentCellIcon,
+    setSelectionModeEnabled,
     setPlayerFacing,
     selectedFloor,
     selectedMapRect,
@@ -671,6 +676,13 @@ function App() {
                 : 'Global Arrow is available only in Tauri'
             }
             onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
+          />
+          <IconButton
+            active={selectionModeEnabled || Boolean(selectedMapRect)}
+            label="Range select"
+            icon={<RangeSelectIcon />}
+            onClick={toggleSelectionMode}
+            size="toolbar"
           />
           <IconButton
             label="Undo"
@@ -1601,6 +1613,29 @@ function ArrowIcon({ direction }: ArrowIconProps) {
           strokeLinejoin="round"
         />
       </g>
+    </svg>
+  );
+}
+
+function RangeSelectIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <rect
+        x="5"
+        y="5"
+        width="14"
+        height="14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeDasharray="3 2.5"
+      />
+      <path
+        d="M8 8h8v8H8z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

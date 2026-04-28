@@ -59,6 +59,7 @@ type AppState = {
   mode: AppMode;
   persistenceReady: boolean;
   mapClipboard: MapClipboardPayload | null;
+  selectionModeEnabled: boolean;
   selectedCellIconKind: CellIconKind;
   selectedFloorId: string;
   selectedMapRect: CellRect | null;
@@ -106,8 +107,10 @@ type AppActions = {
   setSelectedFloorCellState: (coordinate: CellCoordinate, state: CellState) => void;
   setSelectedFloorEdgeState: (coordinate: EdgeCoordinate, state: EdgeState) => void;
   setSelectedMapRect: (rect: CellRect | null) => void;
+  setSelectionModeEnabled: (enabled: boolean) => void;
   setSelectedTool: (tool: EditTool) => void;
   setViewport: (viewport: Partial<ViewportState>) => void;
+  toggleSelectionMode: () => void;
   toggleMode: () => void;
   undo: () => void;
 };
@@ -394,6 +397,7 @@ export const useAppStore = create<AppStore>((set) => ({
         ...toAppState(clonePersistedDocument(snapshot)),
         mapClipboard: state.mapClipboard,
         persistenceReady: state.persistenceReady,
+        selectionModeEnabled: state.selectionModeEnabled,
         selectedMapRect: null,
         history: {
           undoStack: trimHistory([
@@ -521,6 +525,8 @@ export const useAppStore = create<AppStore>((set) => ({
     ),
   setSelectedMapRect: (rect) =>
     set((state) => (isSameCellRect(state.selectedMapRect, rect) ? {} : { selectedMapRect: rect })),
+  setSelectionModeEnabled: (enabled) =>
+    set((state) => (state.selectionModeEnabled === enabled ? {} : { selectionModeEnabled: enabled })),
   setSelectedTool: (tool) => set((state) => (state.selectedTool === tool ? {} : { selectedTool: tool })),
   setViewport: (viewport) =>
     set((state) => {
@@ -535,6 +541,10 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({
       mode: state.mode === 'explore' ? 'map' : 'explore',
     })),
+  toggleSelectionMode: () =>
+    set((state) => ({
+      selectionModeEnabled: !state.selectionModeEnabled,
+    })),
   undo: () =>
     set((state) => {
       const snapshot = state.history.undoStack[state.history.undoStack.length - 1];
@@ -547,6 +557,7 @@ export const useAppStore = create<AppStore>((set) => ({
         ...toAppState(clonePersistedDocument(snapshot)),
         mapClipboard: state.mapClipboard,
         persistenceReady: state.persistenceReady,
+        selectionModeEnabled: state.selectionModeEnabled,
         selectedMapRect: null,
         history: {
           undoStack: state.history.undoStack.slice(0, -1),
@@ -698,6 +709,7 @@ function toAppState(document: PersistedDocument): Omit<AppState, 'history'> {
     mode: document.settings.mode,
     persistenceReady: false,
     mapClipboard: null,
+    selectionModeEnabled: false,
     selectedCellIconKind: document.settings.selectedCellIconKind,
     selectedFloorId,
     selectedMapRect: null,

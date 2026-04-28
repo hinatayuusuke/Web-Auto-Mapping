@@ -70,6 +70,7 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const mode = useAppStore((state) => state.mode);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedMapRect = useAppStore((state) => state.selectedMapRect);
+  const selectionModeEnabled = useAppStore((state) => state.selectionModeEnabled);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
   const setSelectedCellIconMessage = useAppStore((state) => state.setSelectedCellIconMessage);
@@ -307,7 +308,12 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
 
-    if (event.button === 0 && event.shiftKey) {
+    if (selectionModeEnabled && event.button !== 0) {
+      event.preventDefault();
+      return;
+    }
+
+    if (event.button === 0 && (event.shiftKey || selectionModeEnabled)) {
       const coordinate = getCellCoordinateAtCanvasPoint(localX, localY, selectedFloor, layout);
 
       if (!coordinate) {
