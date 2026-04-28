@@ -260,7 +260,7 @@ function App() {
     if ((selectedFloorStats?.knownCells ?? 0) === 0) {
       return {
         tone: 'info',
-        message: '空の階層です。Explore で移動するか、Map モードで floor を配置して開始してください。',
+        message: '空の階層です。Explore で移動するか、Edit Tool で floor を配置して開始してください。',
       };
     }
 
@@ -636,7 +636,7 @@ function App() {
       title="Workspace"
     >
       <section className="space-y-3">
-        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Terrain edits require Map mode" />
+        <PanelHeading eyebrow="Mouse" title="Edit Tool" body="Available in Explore and Map" />
         <div className="grid grid-cols-4 gap-px bg-[var(--color-border)]">
           {EDIT_TOOL_OPTIONS.map((tool) => (
             <EditToolChoiceButton

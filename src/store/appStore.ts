@@ -143,9 +143,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          canApplyCanvasPrimaryInteraction(state.mode, state.selectedTool, target)
-            ? applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target)
-            : floor,
+          applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target),
         ),
       })),
     ),
@@ -153,34 +151,20 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyUntrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          canApplyCanvasPrimaryInteraction(state.mode, state.selectedTool, target)
-            ? applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target)
-            : floor,
+          applyCanvasPrimaryEdit(floor, state.selectedTool, state.selectedCellIconKind, target),
         ),
       })),
     ),
   applyCanvasSecondaryInteraction: (target) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
-        floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map'
-            ? applyCanvasSecondaryEdit(floor, target)
-            : canApplyExploreCellIconInteraction(state.mode, state.selectedTool, target)
-              ? removeCellIconAt(floor, target.coordinate)
-              : floor,
-        ),
+        floors: updateSelectedFloor(state, (floor) => applyCanvasSecondaryEdit(floor, target)),
       })),
     ),
   applyCanvasSecondaryInteractionPreview: (target) =>
     set((state) =>
       applyUntrackedMutation(state, () => ({
-        floors: updateSelectedFloor(state, (floor) =>
-          state.mode === 'map'
-            ? applyCanvasSecondaryEdit(floor, target)
-            : canApplyExploreCellIconInteraction(state.mode, state.selectedTool, target)
-              ? removeCellIconAt(floor, target.coordinate)
-              : floor,
-        ),
+        floors: updateSelectedFloor(state, (floor) => applyCanvasSecondaryEdit(floor, target)),
       })),
     ),
   applyForwardEdgeShortcut: (intent) =>
@@ -570,23 +554,6 @@ function hasTrackableDocumentChanged(previous: PersistedDocument, next: Persiste
     previous.selectedFloorId !== next.selectedFloorId ||
     JSON.stringify(previous.floors) !== JSON.stringify(next.floors)
   );
-}
-
-function canApplyCanvasPrimaryInteraction(
-  mode: AppMode,
-  selectedTool: EditTool,
-  target: MapInteractionTarget,
-) {
-  return mode === 'map' || canApplyExploreCellIconInteraction(mode, selectedTool, target);
-}
-
-function canApplyExploreCellIconInteraction(
-  mode: AppMode,
-  selectedTool: EditTool,
-  target: MapInteractionTarget,
-) {
-  // WHY: Explore は地形編集を閉じる一方、発見物メモとしての Cell Icon だけは移動中に記録できるようにする。
-  return mode === 'explore' && selectedTool === 'cell-icon' && target.kind === 'cell';
 }
 
 function cycleIconKind(current: CellIconKind, direction: 1 | -1): CellIconKind {

@@ -66,9 +66,6 @@ export function MapCanvas() {
   const applyCanvasPrimaryInteractionPreview = useAppStore(
     (state) => state.applyCanvasPrimaryInteractionPreview,
   );
-  const applyCanvasSecondaryInteraction = useAppStore(
-    (state) => state.applyCanvasSecondaryInteraction,
-  );
   const applyCanvasSecondaryInteractionPreview = useAppStore(
     (state) => state.applyCanvasSecondaryInteractionPreview,
   );
@@ -310,14 +307,8 @@ export function MapCanvas() {
 
     if (event.button === 2) {
       event.preventDefault();
-
-      if (mode === 'map') {
-        clearPendingCellIconClick();
-        beginDragPaint(target, 'erase');
-        return;
-      }
-
-      applyCanvasSecondaryInteraction(target);
+      clearPendingCellIconClick();
+      beginDragPaint(target, 'erase');
       return;
     }
 
@@ -349,12 +340,7 @@ export function MapCanvas() {
         return;
       }
 
-      if (mode === 'map') {
-        beginDragPaint(target, 'paint');
-        return;
-      }
-
-      applyCanvasPrimaryInteraction(target);
+      beginDragPaint(target, 'paint');
     }
   };
 

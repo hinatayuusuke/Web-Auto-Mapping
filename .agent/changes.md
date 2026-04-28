@@ -2499,6 +2499,40 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-28 09:42 (Asia/Taipei) — Explore Mode の Edit Tool 自由編集化**
+
+### Summary
+- Explore Mode でも Edit Tool による Canvas 編集とドラッグ編集を Map Mode 同様に使えるようにした
+
+### Context / Goal
+- 以前は Explore Mode の Canvas 編集を Cell Icon に限定していた
+- Explore 中でも floor / unknown / edge 系ツールを自由に使える方が運用しやすいため、Map Mode 限定の編集ゲートを外したかった
+
+### Changes
+- Canvas primary / secondary interaction を Explore / Map 共通で既存編集関数へ通すようにした
+- Explore Mode でも左ドラッグ paint と右ドラッグ erase が開始できるようにした
+- Workspace の Edit Tool 説明文と空階層 notice を新仕様に合わせて更新した
+- Explore Mode の Cell Icon だけを許可する特例 helper を削除した
+
+### Files Touched
+- `src/store/appStore.ts` — Canvas 編集の mode 制限と Cell Icon 特例分岐を削除
+- `src/components/MapCanvas.tsx` — Explore Mode でも drag paint / erase を開始するように変更
+- `src/App.tsx` — Edit Tool と空階層 notice の文言を更新
+
+### Behavioral Impact
+- Explore Mode で `cell-floor` / `cell-unknown` / `edge-*` / `cell-icon` のクリック・ドラッグ編集ができる
+- 右クリック / 右ドラッグの消去も Explore Mode で Map Mode と同じ挙動になる
+- 移動時の Explore auto mapping 挙動自体は変更していない
+
+### Risk & Mitigation
+- Risk: Explore Mode 中に手動編集と移動による auto mapping が混在し、意図しない上書きに見える可能性がある
+- Mitigation: 既存の Edit Tool 選択と Undo 履歴をそのまま使い、編集経路を Map Mode と共通化して挙動差を減らした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-27 14:39 (Asia/Taipei) — Global Shortcut 設定のモーダル化**
 
 ### Summary
