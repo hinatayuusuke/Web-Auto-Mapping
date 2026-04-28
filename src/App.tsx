@@ -576,13 +576,17 @@ function App() {
       }`}
     >
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--color-border)] px-3 py-1.5 xl:flex-row xl:items-center xl:justify-between">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--color-muted)]">
             Map Canvas
           </p>
-          <h2 className="mt-0.5 text-[13px] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
-            Floor Workspace
-          </h2>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h2 className="text-[13px] font-semibold tracking-[-0.02em] text-[var(--color-text-strong)]">
+              Floor Workspace
+            </h2>
+            <CoordinateStatus label="Player" value={playerCoordinateLabel} />
+            <CoordinateStatus label="Hover" value={hoverCoordinateLabel} />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5">
@@ -641,8 +645,6 @@ function App() {
             onClick={resetViewport}
             size="toolbar"
           />
-          <CoordinateStatus label="Player" value={playerCoordinateLabel} />
-          <CoordinateStatus label="Hover" value={hoverCoordinateLabel} />
           <div className="px-1 py-1.5 text-center text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
             {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
           </div>
@@ -921,9 +923,11 @@ type CoordinateStatusProps = {
 
 function CoordinateStatus({ label, value }: CoordinateStatusProps) {
   return (
-    <div className="flex items-baseline gap-1.5 px-1 py-1.5 text-[11px] leading-none">
+    <div className="flex items-baseline gap-1.5 text-[11px] leading-none">
       <span className="uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</span>
-      <span className="font-medium tabular-nums text-[var(--color-text-soft)]">{value}</span>
+      <span className="inline-block min-w-[3.75rem] font-medium tabular-nums text-[var(--color-text-soft)]">
+        {value}
+      </span>
     </div>
   );
 }

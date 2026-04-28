@@ -2499,6 +2499,36 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-28 10:30 (Asia/Taipei) — 座標表示の左側移動**
+
+### Summary
+- Map Canvas ヘッダーの座標表示を右側操作群から左側タイトル横へ移動した
+
+### Context / Goal
+- Hover 座標の桁数変動により、右側の操作ボタン位置が左右に揺れる可能性があった
+- 座標表示をボタン群から切り離し、操作 UI の位置を安定させたかった
+
+### Changes
+- `Player` / `Hover` 座標表示を `Floor Workspace` の横へ移動した
+- 右側操作群から座標表示を削除した
+- 座標値に最小幅と `tabular-nums` を指定し、数字変動時の見た目の揺れを抑えた
+
+### Files Touched
+- `src/App.tsx` — Map Canvas ヘッダー内の座標表示位置と `CoordinateStatus` 幅指定を変更
+
+### Behavioral Impact
+- Hover 座標が変わっても、Explore / Map や toolbar ボタンの位置に影響しにくくなる
+- 座標表示は `Floor Workspace` ラベルの近くにまとまり、マップ状態情報として確認しやすくなる
+
+### Risk & Mitigation
+- Risk: 左側タイトル領域の横幅が狭い場合に座標表示が折り返す可能性がある
+- Mitigation: `flex-wrap` を使い、右側ボタン群とは独立して折り返せるようにした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-28 10:22 (Asia/Taipei) — Map Canvas ヘッダー座標表示**
 
 ### Summary
