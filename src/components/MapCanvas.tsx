@@ -987,8 +987,8 @@ function getInteractionTargetAtCanvasPoint(
   const cellX = Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1);
   const cellY = Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1);
 
-  // WHY: アイコン配置時は縮小表示の Edge 判定幅に吸われると Cell を狙えないため、セル判定を固定する。
-  if (selectedTool === 'cell-icon') {
+  // WHY: Cell 系ツールは縮小表示の Edge 判定幅に吸われると対象セルを狙えないため、セル判定を固定する。
+  if (isCellEditTool(selectedTool)) {
     return {
       kind: 'cell',
       coordinate: { x: cellX, y: cellY },
@@ -1022,6 +1022,14 @@ function getInteractionTargetAtCanvasPoint(
     kind: 'cell',
     coordinate: { x: cellX, y: cellY },
   };
+}
+
+function isCellEditTool(selectedTool: EditTool) {
+  return (
+    selectedTool === 'cell-floor' ||
+    selectedTool === 'cell-unknown' ||
+    selectedTool === 'cell-icon'
+  );
 }
 
 function getFrontEdge(floor: FloorState) {

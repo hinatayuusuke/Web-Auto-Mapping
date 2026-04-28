@@ -2499,6 +2499,36 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-28 09:54 (Asia/Taipei) — Cell 系ツールの Cell 優先 hit test**
+
+### Summary
+- `cell-floor` / `cell-unknown` でも縮小表示時に Cell を狙いやすいよう、Cell 系ツール全体で Edge 判定をスキップするようにした
+
+### Context / Goal
+- 既存の `cell-icon` は縮小表示時に Edge 判定へ吸われないよう Cell 固定判定になっていた
+- `cell-floor` / `cell-unknown` は同じ補正がなく、縮小した Map canvas で配置しづらかった
+
+### Changes
+- `getInteractionTargetAtCanvasPoint` の `cell-icon` 専用分岐を Cell 系ツール共通の分岐へ変更した
+- `cell-floor` / `cell-unknown` / `cell-icon` 判定用の `isCellEditTool` helper を追加した
+- コメントを Cell 系ツール全体の理由へ更新した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — Cell 系ツール選択時の hit test を Cell 固定に変更
+
+### Behavioral Impact
+- 縮小表示時でも `cell-floor` / `cell-unknown` / `cell-icon` はクリック位置の Cell を編集しやすくなる
+- `edge-*` ツール選択時の Edge 判定幅と挙動は従来どおり
+
+### Risk & Mitigation
+- Risk: Cell 系ツール選択中は Edge をクリックしても Edge 編集できない
+- Mitigation: Edge 編集は `edge-*` ツールを選択する既存操作に統一し、選択中ツールと編集対象の一貫性を優先した
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-28 09:42 (Asia/Taipei) — Explore Mode の Edit Tool 自由編集化**
 
 ### Summary
