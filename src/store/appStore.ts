@@ -542,9 +542,16 @@ export const useAppStore = create<AppStore>((set) => ({
       mode: state.mode === 'explore' ? 'map' : 'explore',
     })),
   toggleSelectionMode: () =>
-    set((state) => ({
-      selectionModeEnabled: !state.selectionModeEnabled,
-    })),
+    set((state) =>
+      state.selectionModeEnabled
+        ? {
+            selectionModeEnabled: false,
+            selectedMapRect: null,
+          }
+        : {
+            selectionModeEnabled: true,
+          },
+    ),
   undo: () =>
     set((state) => {
       const snapshot = state.history.undoStack[state.history.undoStack.length - 1];

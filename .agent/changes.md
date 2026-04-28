@@ -2840,3 +2840,29 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-28 11:17 (Asia/Taipei) — 範囲選択ボタン再押下時の選択解除**
+
+### Summary
+- Range select ボタンをもう一度押した時に、selection mode OFF と同時に選択範囲も解除するようにした
+
+### Context / Goal
+- `Escape` と同じ解除挙動に揃え、toolbar ボタンだけで範囲選択状態を完全に閉じられるようにする
+
+### Changes
+- `toggleSelectionMode` の OFF 分岐で `selectedMapRect` も `null` にするよう変更
+
+### Files Touched
+- `src/store/appStore.ts` — selection mode の toggle OFF 時に選択範囲をクリア
+
+### Behavioral Impact
+- Range select ボタンを ON にした後、再押下すると選択範囲 overlay も消える
+- Escape の解除挙動と toolbar ボタン再押下の挙動が一致する
+
+### Risk & Mitigation
+- Risk: 既存の選択範囲を残したまま selection mode だけ OFF にする使い方はできなくなる
+- Mitigation: 今回の要求どおり Escape と同じ解除挙動に統一した
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
