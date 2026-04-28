@@ -40,7 +40,11 @@ type PendingCellIconDragState = {
   target: MapInteractionTarget;
 };
 
-export function MapCanvas() {
+type MapCanvasProps = {
+  onHoverCoordinateChange?: (coordinate: CellCoordinate | null) => void;
+};
+
+export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const clickTimeoutRef = useRef<number | null>(null);
   const dragPaintRef = useRef<DragPaintState | null>(null);
@@ -347,14 +351,19 @@ export function MapCanvas() {
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
     if (selectedFloor && layout) {
       const rect = event.currentTarget.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
       const cellIcon = getCellIconAtCanvasPoint(
-        event.clientX - rect.left,
-        event.clientY - rect.top,
+        localX,
+        localY,
         selectedFloor,
         layout,
       );
 
       setHoveredCellIconCoordinate(cellIcon?.position ?? null);
+      onHoverCoordinateChange?.(
+        getCellCoordinateAtCanvasPoint(localX, localY, selectedFloor, layout),
+      );
     }
 
     const pendingCellIconDrag = pendingCellIconDragRef.current;
@@ -438,6 +447,7 @@ export function MapCanvas() {
     finishDragPaint();
     panStateRef.current = null;
     setHoveredCellIconCoordinate(null);
+    onHoverCoordinateChange?.(null);
   };
 
   const handleWheel = (event: WheelEvent<HTMLCanvasElement>) => {
@@ -1410,4 +1420,23 @@ function getCellIconAtCanvasPoint(
   const hitRadius = getCellIconRadius(layout.cellSize) + 4;
 
   return dx * dx + dy * dy <= hitRadius * hitRadius ? cellIcon : null;
+}
+
+function getCellCoordinateAtCanvasPoint(
+  localX: number,
+  localY: number,
+  floor: FloorState,
+  layout: GridLayout,
+): CellCoordinate | null {
+  const gridX = localX - layout.originX;
+  const gridY = localY - layout.originY;
+
+  if (gridX < 0 || gridY < 0 || gridX > layout.gridWidth || gridY > layout.gridHeight) {
+    return null;
+  }
+
+  return {
+    x: Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1),
+    y: Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1),
+  };
 }

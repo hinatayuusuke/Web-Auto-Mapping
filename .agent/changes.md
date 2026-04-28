@@ -2499,6 +2499,41 @@
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
 
+**2026-04-28 10:22 (Asia/Taipei) — Map Canvas ヘッダー座標表示**
+
+### Summary
+- Map Canvas ヘッダーにプレイヤー座標と hover 中 Cell 座標を表示するようにした
+
+### Context / Goal
+- マップ上の位置確認をしやすくするため、Canvas 内 overlay ではなく `Floor Workspace` ヘッダー側に座標情報を出したかった
+- マップ拡張後も現行の左上 `(0,0)` 基準の座標体系と一致する表示にしたかった
+
+### Changes
+- `MapCanvas` に hover Cell 座標を親へ通知する callback prop を追加した
+- App 側で hover 座標 state を持ち、同じ座標の連続通知では state 更新しないようにした
+- Map Canvas ヘッダーのサイズ表示手前に `Player` / `Hover` 座標表示を追加した
+- floor 切替時は hover 座標をクリアするようにした
+- `Doc/MapCoordinateDisplayProposal.md` に実装案を追加した
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — hover Cell 座標計算と callback 通知を追加
+- `src/App.tsx` — Player / Hover 座標 state とヘッダー表示を追加
+- `Doc/MapCoordinateDisplayProposal.md` — Map 座標表示の実装案を追加
+
+### Behavioral Impact
+- Map Canvas ヘッダーで `Player x,y` と `Hover x,y` を確認できる
+- マップ外 hover / mouse leave / floor 切替時は `Hover -` になる
+- 座標は現行 `FloorState` の左上基準で表示され、保存形式は変更しない
+
+### Risk & Mitigation
+- Risk: mousemove ごとの hover 座標通知で再レンダーが増える可能性がある
+- Mitigation: App 側で現在値と同じ座標なら state を更新しないガードを入れた
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
+- TypeScript 型検査と Vite 本番ビルド成功を確認
+
 **2026-04-28 09:54 (Asia/Taipei) — Cell 系ツールの Cell 優先 hit test**
 
 ### Summary

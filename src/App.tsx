@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlobalShortcutSettings } from './components/GlobalShortcutSettings';
 import { MapCanvas } from './components/MapCanvas';
 import { ShellPanel } from './components/ShellPanel';
@@ -7,7 +7,14 @@ import { createPersistedDocument } from './lib/persistence';
 import { isTauriRuntime } from './lib/runtime';
 import { exportDocument, getStorageDescriptor, importDocument } from './lib/storageAdapter';
 import { useAppStore, useSelectedFloor } from './store/appStore';
-import { AutoMappingLevel, CellIconKind, EditTool, EdgeEditIntent, Facing } from './types/map';
+import {
+  AutoMappingLevel,
+  CellCoordinate,
+  CellIconKind,
+  EditTool,
+  EdgeEditIntent,
+  Facing,
+} from './types/map';
 
 const AUTO_MAPPING_LEVELS: AutoMappingLevel[] = ['off', 'basic', 'corridor'];
 const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'stairs-down', 'pit', 'chest', 'marker'];
@@ -44,6 +51,7 @@ type RelativeControlAction = 'forward' | 'turn-left' | 'turn-right' | 'turn-back
 function App() {
   const supportsGlobalArrowCapture = useMemo(() => isTauriRuntime(), []);
   const [ioNotice, setIoNotice] = useState<NoticeState | null>(null);
+  const [hoveredMapCoordinate, setHoveredMapCoordinate] = useState<CellCoordinate | null>(null);
   const [isTallViewport, setIsTallViewport] = useState(false);
   const [globalArrowCaptureEnabled, setGlobalArrowCaptureEnabled] = useState(false);
   const [globalArrowCaptureStatus, setGlobalArrowCaptureStatus] = useState('off');
@@ -87,10 +95,25 @@ function App() {
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
   const storageDescriptor = useMemo(() => getStorageDescriptor(), []);
+  const playerCoordinateLabel = selectedFloor
+    ? formatCellCoordinate(selectedFloor.player)
+    : '-';
+  const hoverCoordinateLabel = hoveredMapCoordinate
+    ? formatCellCoordinate(hoveredMapCoordinate)
+    : '-';
+  const handleHoverCoordinateChange = useCallback((coordinate: CellCoordinate | null) => {
+    setHoveredMapCoordinate((current) =>
+      areSameOptionalCellCoordinate(current, coordinate) ? current : coordinate,
+    );
+  }, []);
 
   useEffect(() => {
     void hydratePersistedState();
   }, [hydratePersistedState]);
+
+  useEffect(() => {
+    setHoveredMapCoordinate(null);
+  }, [selectedFloor?.id]);
 
   useEffect(() => {
     if (!supportsGlobalArrowCapture) {
@@ -618,6 +641,8 @@ function App() {
             onClick={resetViewport}
             size="toolbar"
           />
+          <CoordinateStatus label="Player" value={playerCoordinateLabel} />
+          <CoordinateStatus label="Hover" value={hoverCoordinateLabel} />
           <div className="px-1 py-1.5 text-center text-[11px] uppercase tracking-[0.18em] text-[var(--color-muted)]">
             {selectedFloor?.width ?? 0} x {selectedFloor?.height ?? 0}
           </div>
@@ -625,7 +650,7 @@ function App() {
       </div>
 
       <div className="min-h-0 flex-1 p-0">
-        <MapCanvas />
+        <MapCanvas onHoverCoordinateChange={handleHoverCoordinateChange} />
       </div>
     </section>
   );
@@ -885,6 +910,20 @@ function NoticeCard({ message, tone }: NoticeCardProps) {
   return (
     <div className={`border-l-2 pl-3 text-sm leading-6 ${toneClass}`}>
       {message}
+    </div>
+  );
+}
+
+type CoordinateStatusProps = {
+  label: string;
+  value: string;
+};
+
+function CoordinateStatus({ label, value }: CoordinateStatusProps) {
+  return (
+    <div className="flex items-baseline gap-1.5 px-1 py-1.5 text-[11px] leading-none">
+      <span className="uppercase tracking-[0.18em] text-[var(--color-muted)]">{label}</span>
+      <span className="font-medium tabular-nums text-[var(--color-text-soft)]">{value}</span>
     </div>
   );
 }
@@ -1760,6 +1799,17 @@ function getCellIconKindLabel(kind: CellIconKind) {
     case 'marker':
       return 'marker';
   }
+}
+
+function formatCellCoordinate(coordinate: CellCoordinate) {
+  return `${coordinate.x},${coordinate.y}`;
+}
+
+function areSameOptionalCellCoordinate(
+  left: CellCoordinate | null,
+  right: CellCoordinate | null,
+) {
+  return left?.x === right?.x && left?.y === right?.y;
 }
 
 function getEditToolLabel(tool: EditTool) {
