@@ -3,6 +3,7 @@ import { createPersistedDocument } from '../lib/persistence';
 import { useAppStore, useSelectedFloor } from '../store/appStore';
 import {
   CellCoordinate,
+  CellRect,
   EditTool,
   EdgeAxis,
   Facing,
@@ -40,6 +41,11 @@ type PendingCellIconDragState = {
   target: MapInteractionTarget;
 };
 
+type SelectionDragState = {
+  current: CellCoordinate;
+  start: CellCoordinate;
+};
+
 type MapCanvasProps = {
   onHoverCoordinateChange?: (coordinate: CellCoordinate | null) => void;
 };
@@ -52,6 +58,7 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const frameRef = useRef<HTMLDivElement | null>(null);
   const panStateRef = useRef<PanState | null>(null);
   const pendingCellIconDragRef = useRef<PendingCellIconDragState | null>(null);
+  const selectionDragRef = useRef<SelectionDragState | null>(null);
   const [editingCellIconCoordinate, setEditingCellIconCoordinate] = useState<CellCoordinate | null>(
     null,
   );
@@ -62,9 +69,11 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const mode = useAppStore((state) => state.mode);
   const selectedTool = useAppStore((state) => state.selectedTool);
+  const selectedMapRect = useAppStore((state) => state.selectedMapRect);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
   const setSelectedCellIconMessage = useAppStore((state) => state.setSelectedCellIconMessage);
+  const setSelectedMapRect = useAppStore((state) => state.setSelectedMapRect);
   const selectedFloor = useSelectedFloor();
   const applyCanvasPrimaryInteraction = useAppStore((state) => state.applyCanvasPrimaryInteraction);
   const applyCanvasPrimaryInteractionPreview = useAppStore(
@@ -274,8 +283,9 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
       height: cssHeight,
       floor: selectedFloor,
       layout,
+      selectedMapRect,
     });
-  }, [layout, selectedFloor, size.height, size.width]);
+  }, [layout, selectedFloor, selectedMapRect, size.height, size.width]);
 
   const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
     if (!selectedFloor || !layout) {
@@ -296,6 +306,25 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
     const rect = event.currentTarget.getBoundingClientRect();
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
+
+    if (event.button === 0 && event.shiftKey) {
+      const coordinate = getCellCoordinateAtCanvasPoint(localX, localY, selectedFloor, layout);
+
+      if (!coordinate) {
+        return;
+      }
+
+      event.preventDefault();
+      clearPendingCellIconClick();
+      finishDragPaint();
+      selectionDragRef.current = {
+        current: coordinate,
+        start: coordinate,
+      };
+      setSelectedMapRect(getCellRectBetweenCoordinates(coordinate, coordinate));
+      return;
+    }
+
     const target = getInteractionTargetAtCanvasPoint(
       localX,
       localY,
@@ -368,6 +397,28 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
 
     const pendingCellIconDrag = pendingCellIconDragRef.current;
     const panState = panStateRef.current;
+    const selectionDrag = selectionDragRef.current;
+
+    if (selectionDrag && selectedFloor && layout) {
+      event.preventDefault();
+
+      if ((event.buttons & 1) !== 1) {
+        selectionDragRef.current = null;
+        return;
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const localX = event.clientX - rect.left;
+      const localY = event.clientY - rect.top;
+      const coordinate = getCellCoordinateAtCanvasPoint(localX, localY, selectedFloor, layout);
+
+      if (coordinate && !areSameCellCoordinate(coordinate, selectionDrag.current)) {
+        selectionDrag.current = coordinate;
+        setSelectedMapRect(getCellRectBetweenCoordinates(selectionDrag.start, coordinate));
+      }
+
+      return;
+    }
 
     if (!panState) {
       if (selectedFloor && layout) {
@@ -428,6 +479,11 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
     panStateRef.current = null;
 
+    if (selectionDragRef.current && event.button === 0) {
+      selectionDragRef.current = null;
+      return;
+    }
+
     const dragPaint = dragPaintRef.current;
 
     if (!dragPaint) {
@@ -446,6 +502,7 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
     clearPendingCellIconClick();
     finishDragPaint();
     panStateRef.current = null;
+    selectionDragRef.current = null;
     setHoveredCellIconCoordinate(null);
     onHoverCoordinateChange?.(null);
   };
@@ -585,9 +642,10 @@ type DrawSceneArgs = {
   height: number;
   floor: FloorState;
   layout: GridLayout;
+  selectedMapRect: CellRect | null;
 };
 
-function drawScene({ context, width, height, floor, layout }: DrawSceneArgs) {
+function drawScene({ context, width, height, floor, layout, selectedMapRect }: DrawSceneArgs) {
   context.fillStyle = '#0b1320';
   context.fillRect(0, 0, width, height);
 
@@ -597,6 +655,7 @@ function drawScene({ context, width, height, floor, layout }: DrawSceneArgs) {
   drawEdges(context, floor, layout, 'horizontal');
   drawEdges(context, floor, layout, 'vertical');
   drawIcons(context, floor, layout);
+  drawSelection(context, layout, selectedMapRect);
   drawPlayerFocus(context, floor, layout);
   drawPlayer(context, floor, layout);
 }
@@ -734,6 +793,27 @@ function drawCellGrid(context: CanvasRenderingContext2D, floor: FloorState, layo
     context.lineTo(layout.originX + layout.gridWidth, y);
     context.stroke();
   }
+}
+
+function drawSelection(
+  context: CanvasRenderingContext2D,
+  layout: GridLayout,
+  selectedMapRect: CellRect | null,
+) {
+  if (!selectedMapRect) {
+    return;
+  }
+
+  const left = layout.originX + selectedMapRect.x * layout.cellSize;
+  const top = layout.originY + selectedMapRect.y * layout.cellSize;
+  const width = selectedMapRect.width * layout.cellSize;
+  const height = selectedMapRect.height * layout.cellSize;
+
+  context.fillStyle = 'rgba(87, 159, 255, 0.16)';
+  context.fillRect(left, top, width, height);
+  context.strokeStyle = 'rgba(246, 213, 141, 0.92)';
+  context.lineWidth = 2;
+  context.strokeRect(left + 1, top + 1, Math.max(0, width - 2), Math.max(0, height - 2));
 }
 
 function drawEdges(
@@ -1439,4 +1519,20 @@ function getCellCoordinateAtCanvasPoint(
     x: Math.min(Math.floor(gridX / layout.cellSize), floor.width - 1),
     y: Math.min(Math.floor(gridY / layout.cellSize), floor.height - 1),
   };
+}
+
+function getCellRectBetweenCoordinates(start: CellCoordinate, end: CellCoordinate): CellRect {
+  const x = Math.min(start.x, end.x);
+  const y = Math.min(start.y, end.y);
+
+  return {
+    x,
+    y,
+    width: Math.abs(start.x - end.x) + 1,
+    height: Math.abs(start.y - end.y) + 1,
+  };
+}
+
+function areSameCellCoordinate(left: CellCoordinate, right: CellCoordinate) {
+  return left.x === right.x && left.y === right.y;
 }

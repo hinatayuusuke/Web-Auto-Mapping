@@ -62,12 +62,17 @@ function App() {
   const mapTitle = useAppStore((state) => state.mapTitle);
   const mode = useAppStore((state) => state.mode);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
+  const selectedMapRect = useAppStore((state) => state.selectedMapRect);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedFloor = useSelectedFloor();
   const viewport = useAppStore((state) => state.viewport);
   const addFloor = useAppStore((state) => state.addFloor);
   const applyForwardEdgeShortcut = useAppStore((state) => state.applyForwardEdgeShortcut);
+  const clearSelectedMapRect = useAppStore((state) => state.clearSelectedMapRect);
+  const clearSelectedMapRectContents = useAppStore((state) => state.clearSelectedMapRectContents);
+  const copySelectedMapRect = useAppStore((state) => state.copySelectedMapRect);
   const cycleSelectedCellIcon = useAppStore((state) => state.cycleSelectedCellIcon);
+  const cutSelectedMapRect = useAppStore((state) => state.cutSelectedMapRect);
   const duplicateSelectedFloor = useAppStore((state) => state.duplicateSelectedFloor);
   const expandSelectedFloorLeft = useAppStore((state) => state.expandSelectedFloorLeft);
   const expandSelectedFloorUp = useAppStore((state) => state.expandSelectedFloorUp);
@@ -78,6 +83,7 @@ function App() {
   const moveInDirection = useAppStore((state) => state.moveInDirection);
   const placeSelectedIconAtCurrentCell = useAppStore((state) => state.placeSelectedIconAtCurrentCell);
   const placeSelectedIconAtForwardCell = useAppStore((state) => state.placeSelectedIconAtForwardCell);
+  const pasteMapClipboardAt = useAppStore((state) => state.pasteMapClipboardAt);
   const redo = useAppStore((state) => state.redo);
   const removeCurrentCellIcon = useAppStore((state) => state.removeCurrentCellIcon);
   const removeFloor = useAppStore((state) => state.removeFloor);
@@ -321,6 +327,37 @@ function App() {
         return;
       }
 
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+        switch (event.key.toLowerCase()) {
+          case 'c':
+            event.preventDefault();
+            copySelectedMapRect();
+            return;
+          case 'x':
+            event.preventDefault();
+            cutSelectedMapRect();
+            return;
+          case 'v': {
+            const pasteTarget = hoveredMapCoordinate ?? (
+              selectedFloor
+                ? {
+                    x: selectedFloor.player.x,
+                    y: selectedFloor.player.y,
+                  }
+                : null
+            );
+
+            if (pasteTarget) {
+              event.preventDefault();
+              pasteMapClipboardAt(pasteTarget);
+            }
+            return;
+          }
+          default:
+            break;
+        }
+      }
+
       if (event.key === 'Tab') {
         event.preventDefault();
         toggleMode();
@@ -360,9 +397,23 @@ function App() {
             event.preventDefault();
             placeSelectedIconAtCurrentCell();
             return;
+          case 'Escape':
+            event.preventDefault();
+            clearSelectedMapRect();
+            return;
+          case 'Delete':
+            if (selectedMapRect) {
+              event.preventDefault();
+              clearSelectedMapRectContents();
+            }
+            return;
           case 'Backspace':
             event.preventDefault();
-            removeCurrentCellIcon();
+            if (selectedMapRect) {
+              clearSelectedMapRectContents();
+            } else {
+              removeCurrentCellIcon();
+            }
             return;
           case '[':
             event.preventDefault();
@@ -406,14 +457,22 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     applyForwardEdgeShortcut,
+    clearSelectedMapRect,
+    clearSelectedMapRectContents,
+    copySelectedMapRect,
     cycleSelectedCellIcon,
     currentFacing,
+    cutSelectedMapRect,
+    hoveredMapCoordinate,
     moveInDirection,
+    pasteMapClipboardAt,
     placeSelectedIconAtCurrentCell,
     placeSelectedIconAtForwardCell,
     redo,
     removeCurrentCellIcon,
     setPlayerFacing,
+    selectedFloor,
+    selectedMapRect,
     supportsGlobalArrowCapture,
     toggleMode,
     undo,

@@ -17,6 +17,11 @@ import {
   updateFloorPlayer,
 } from '../lib/mapModel';
 import {
+  clearMapRect,
+  copyMapRect,
+  pasteMapClipboard,
+} from '../lib/mapClipboard';
+import {
   createPersistedDocument,
   parsePersistedDocument,
 } from '../lib/persistence';
@@ -26,6 +31,7 @@ import {
   AutoMappingLevel,
   CellCoordinate,
   CellIconKind,
+  CellRect,
   CellState,
   EditTool,
   EdgeCoordinate,
@@ -35,6 +41,7 @@ import {
   FloorState,
   GridDimensions,
   MapInteractionTarget,
+  MapClipboardPayload,
   PersistedDocument,
   ViewportState,
 } from '../types/map';
@@ -51,8 +58,10 @@ type AppState = {
   mapTitle: string;
   mode: AppMode;
   persistenceReady: boolean;
+  mapClipboard: MapClipboardPayload | null;
   selectedCellIconKind: CellIconKind;
   selectedFloorId: string;
+  selectedMapRect: CellRect | null;
   selectedTool: EditTool;
   viewport: ViewportState;
 };
@@ -64,8 +73,12 @@ type AppActions = {
   applyCanvasSecondaryInteraction: (target: MapInteractionTarget) => void;
   applyCanvasSecondaryInteractionPreview: (target: MapInteractionTarget) => void;
   applyForwardEdgeShortcut: (intent: EdgeEditIntent) => void;
+  clearSelectedMapRect: () => void;
+  clearSelectedMapRectContents: () => void;
   commitCanvasInteractionSession: (snapshot: PersistedDocument) => void;
+  copySelectedMapRect: () => void;
   cycleSelectedCellIcon: (direction: 1 | -1) => void;
+  cutSelectedMapRect: () => void;
   duplicateSelectedFloor: () => void;
   expandSelectedFloorLeft: (amount?: number) => void;
   expandSelectedFloorUp: (amount?: number) => void;
@@ -76,6 +89,7 @@ type AppActions = {
   moveInDirection: (facing: Facing) => void;
   placeSelectedIconAtCurrentCell: () => void;
   placeSelectedIconAtForwardCell: () => void;
+  pasteMapClipboardAt: (coordinate: CellCoordinate) => void;
   redo: () => void;
   removeCurrentCellIcon: () => void;
   removeFloor: (floorId: string) => void;
@@ -91,6 +105,7 @@ type AppActions = {
   setSelectedFloor: (floorId: string) => void;
   setSelectedFloorCellState: (coordinate: CellCoordinate, state: CellState) => void;
   setSelectedFloorEdgeState: (coordinate: EdgeCoordinate, state: EdgeState) => void;
+  setSelectedMapRect: (rect: CellRect | null) => void;
   setSelectedTool: (tool: EditTool) => void;
   setViewport: (viewport: Partial<ViewportState>) => void;
   toggleMode: () => void;
@@ -136,6 +151,7 @@ export const useAppStore = create<AppStore>((set) => ({
         return {
           floors: [...state.floors, nextFloor],
           selectedFloorId: nextFloor.id,
+          selectedMapRect: null,
         };
       }),
     ),
@@ -173,6 +189,20 @@ export const useAppStore = create<AppStore>((set) => ({
         floors: updateSelectedFloor(state, (floor) => applyForwardEdgeEdit(floor, intent)),
       })),
     ),
+  clearSelectedMapRect: () =>
+    set((state) => (state.selectedMapRect ? { selectedMapRect: null } : {})),
+  clearSelectedMapRectContents: () =>
+    set((state) =>
+      applyTrackedMutation(state, () => {
+        if (!state.selectedMapRect) {
+          return null;
+        }
+
+        return {
+          floors: updateSelectedFloor(state, (floor) => clearMapRect(floor, state.selectedMapRect!)),
+        };
+      }),
+    ),
   commitCanvasInteractionSession: (snapshot) =>
     set((state) => {
       const currentDocument = createPersistedDocument(state);
@@ -188,10 +218,43 @@ export const useAppStore = create<AppStore>((set) => ({
         },
       };
     }),
+  copySelectedMapRect: () =>
+    set((state) => {
+      const selectedFloor = getSelectedFloorFromState(state);
+
+      if (!selectedFloor || !state.selectedMapRect) {
+        return {};
+      }
+
+      const payload = copyMapRect(selectedFloor, state.selectedMapRect);
+
+      return payload ? { mapClipboard: payload } : {};
+    }),
   cycleSelectedCellIcon: (direction) =>
     set((state) => ({
       selectedCellIconKind: cycleIconKind(state.selectedCellIconKind, direction),
     })),
+  cutSelectedMapRect: () =>
+    set((state) =>
+      applyTrackedMutation(state, () => {
+        const selectedFloor = getSelectedFloorFromState(state);
+
+        if (!selectedFloor || !state.selectedMapRect) {
+          return null;
+        }
+
+        const payload = copyMapRect(selectedFloor, state.selectedMapRect);
+
+        if (!payload) {
+          return null;
+        }
+
+        return {
+          floors: updateSelectedFloor(state, (floor) => clearMapRect(floor, state.selectedMapRect!)),
+          mapClipboard: payload,
+        };
+      }),
+    ),
   duplicateSelectedFloor: () =>
     set((state) =>
       applyTrackedMutation(state, () => {
@@ -210,6 +273,7 @@ export const useAppStore = create<AppStore>((set) => ({
         return {
           floors: [...state.floors, duplicate],
           selectedFloorId: duplicate.id,
+          selectedMapRect: null,
         };
       }),
     ),
@@ -298,6 +362,26 @@ export const useAppStore = create<AppStore>((set) => ({
         ),
       })),
     ),
+  pasteMapClipboardAt: (coordinate) =>
+    set((state) =>
+      applyTrackedMutation(state, () => {
+        if (!state.mapClipboard) {
+          return null;
+        }
+
+        return {
+          floors: updateSelectedFloor(state, (floor) =>
+            pasteMapClipboard(floor, state.mapClipboard!, coordinate),
+          ),
+          selectedMapRect: {
+            x: Math.floor(coordinate.x),
+            y: Math.floor(coordinate.y),
+            width: state.mapClipboard.width,
+            height: state.mapClipboard.height,
+          },
+        };
+      }),
+    ),
   redo: () =>
     set((state) => {
       const snapshot = state.history.redoStack[state.history.redoStack.length - 1];
@@ -308,7 +392,9 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
+        mapClipboard: state.mapClipboard,
         persistenceReady: state.persistenceReady,
+        selectedMapRect: null,
         history: {
           undoStack: trimHistory([
             ...state.history.undoStack,
@@ -343,6 +429,7 @@ export const useAppStore = create<AppStore>((set) => ({
           floors: nextFloors,
           selectedFloorId:
             state.selectedFloorId === floorId ? nextFloors[0].id : state.selectedFloorId,
+          selectedMapRect: state.selectedFloorId === floorId ? null : state.selectedMapRect,
         };
       }),
     ),
@@ -406,11 +493,16 @@ export const useAppStore = create<AppStore>((set) => ({
         : 'cell-icon',
     })),
   setSelectedFloor: (floorId) =>
-    set((state) => ({
-      selectedFloorId: state.floors.some((floor) => floor.id === floorId)
-        ? floorId
-        : state.selectedFloorId,
-    })),
+    set((state) => {
+      const canSelectFloor = state.floors.some((floor) => floor.id === floorId);
+      const nextSelectedFloorId = canSelectFloor ? floorId : state.selectedFloorId;
+
+      return {
+        selectedFloorId: nextSelectedFloorId,
+        selectedMapRect:
+          nextSelectedFloorId === state.selectedFloorId ? state.selectedMapRect : null,
+      };
+    }),
   setSelectedFloorCellState: (coordinate, nextState) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
@@ -427,6 +519,8 @@ export const useAppStore = create<AppStore>((set) => ({
         ),
       })),
     ),
+  setSelectedMapRect: (rect) =>
+    set((state) => (isSameCellRect(state.selectedMapRect, rect) ? {} : { selectedMapRect: rect })),
   setSelectedTool: (tool) => set((state) => (state.selectedTool === tool ? {} : { selectedTool: tool })),
   setViewport: (viewport) =>
     set((state) => {
@@ -451,7 +545,9 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
+        mapClipboard: state.mapClipboard,
         persistenceReady: state.persistenceReady,
+        selectedMapRect: null,
         history: {
           undoStack: state.history.undoStack.slice(0, -1),
           redoStack: trimHistory([
@@ -601,8 +697,10 @@ function toAppState(document: PersistedDocument): Omit<AppState, 'history'> {
     mapTitle: sanitizeDocumentTitle(document.title),
     mode: document.settings.mode,
     persistenceReady: false,
+    mapClipboard: null,
     selectedCellIconKind: document.settings.selectedCellIconKind,
     selectedFloorId,
+    selectedMapRect: null,
     selectedTool: document.settings.selectedTool,
     viewport: sanitizeViewport(document.viewport),
   };
@@ -715,5 +813,14 @@ function isSameViewport(left: ViewportState, right: ViewportState) {
     left.zoom === right.zoom &&
     left.offsetX === right.offsetX &&
     left.offsetY === right.offsetY
+  );
+}
+
+function isSameCellRect(left: CellRect | null, right: CellRect | null) {
+  return (
+    left?.x === right?.x &&
+    left?.y === right?.y &&
+    left?.width === right?.width &&
+    left?.height === right?.height
   );
 }

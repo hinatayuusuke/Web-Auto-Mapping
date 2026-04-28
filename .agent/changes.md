@@ -2768,3 +2768,41 @@
 ### Tests / Verification
 - `npm run build`
 - TypeScript 型検査と Vite 本番ビルド成功を確認
+
+**2026-04-28 10:53 (Asia/Taipei) — Map 範囲選択 / クリップボード実装**
+
+### Summary
+- Map Canvas の矩形範囲選択と、アプリ内 copy / cut / paste を実装した
+
+### Context / Goal
+- `Doc/MapSelectionClipboardProposal.md` の仕様に沿って、Cell / Edge / Icon をまとめて複製・移動できるようにする
+- 保存形式は変えず、OS clipboard ではなくアプリ内 clipboard として扱う
+
+### Changes
+- `Shift + drag` による Cell 矩形選択と Canvas overlay 表示を追加
+- 選択範囲の `Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Escape` / `Delete` / `Backspace` 操作を追加
+- Cell、外周 Edge、Cell Icon、Edge Icon を相対座標 payload として copy / cut / paste する pure function を追加
+- paste が右 / 下にはみ出す場合、既存の map 拡張処理で自動拡張するようにした
+- Undo / Redo では clipboard を保持し、階層切り替えや Undo / Redo 後の selection はクリアするようにした
+
+### Files Touched
+- `src/types/map.ts` — `CellRect` / `MapClipboardPayload` 型を追加
+- `src/lib/mapClipboard.ts` — copy / clear / paste の map clipboard 処理を追加
+- `src/store/appStore.ts` — selection / clipboard state と copy / cut / paste actions を追加
+- `src/components/MapCanvas.tsx` — `Shift + drag` selection interaction と overlay 描画を追加
+- `src/App.tsx` — keyboard shortcut を store actions に接続
+
+### Behavioral Impact
+- Map Canvas 上で範囲選択し、選択範囲内の Cell / Edge / Icon をまとめて copy / cut / paste できる
+- paste 先は hover Cell を優先し、hover が無い場合は player Cell を左上として扱う
+- copy は履歴に積まず、cut / paste / selection contents clear は既存 Undo / Redo の 1 操作として扱う
+
+### Risk & Mitigation
+- Risk: Edge の copy 範囲が Cell と異なり、外周 Edge の扱いを誤る可能性がある
+- Mitigation: `hEdges = height + 1`、`vEdges = width + 1` として明示的に分離し、payload validate を追加
+- Risk: selection と既存 drag paint が競合する可能性がある
+- Mitigation: `Shift + drag` 中は selection を優先し、paint / erase を開始しない
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

@@ -36,6 +36,13 @@ export type CellCoordinate = {
   y: number;
 };
 
+export type CellRect = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type EdgeCoordinate = CellCoordinate & {
   axis: EdgeAxis;
 };
@@ -73,6 +80,16 @@ export type FloorState = GridDimensions & {
   id: string;
   name: string;
   player: PlayerState;
+  cells: CellState[][];
+  hEdges: EdgeState[][];
+  vEdges: EdgeState[][];
+  cellIcons: CellIcon[];
+  edgeIcons: EdgeIcon[];
+};
+
+export type MapClipboardPayload = {
+  width: number;
+  height: number;
   cells: CellState[][];
   hEdges: EdgeState[][];
   vEdges: EdgeState[][];
