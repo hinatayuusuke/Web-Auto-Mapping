@@ -2866,3 +2866,39 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-28 13:11 (Asia/Taipei) — Tauri Windows prerelease workflow 追加**
+
+### Summary
+- `main` push 時に Windows 版 Tauri パッケージをビルドし、GitHub prerelease へ添付する workflow を追加した
+
+### Context / Goal
+- 手動ビルドなしで、確認用の Tauri 配布パッケージを GitHub Release に残せるようにする
+- 初期実装として Windows の `.msi` / `.exe` を対象にし、正式 release ではなく prerelease として扱う
+
+### Changes
+- `.github/workflows/tauri-prerelease.yml` を追加
+- trigger を `push` to `main` に設定
+- `contents: write` permission を設定し、GitHub Release 作成を許可
+- `npm ci`、Rust toolchain setup、`npm run tauri:build` を Windows runner で実行する構成にした
+- CI 内だけ `package.json` / `src-tauri/tauri.conf.json` / `src-tauri/Cargo.toml` の version を `0.1.${{ github.run_number }}` に更新
+- `v0.1.${{ github.run_number }}` tag の prerelease を作成し、MSI / NSIS installer を assets として添付
+
+### Files Touched
+- `.github/workflows/tauri-prerelease.yml` — Tauri Windows prerelease 用 GitHub Actions workflow を追加
+
+### Behavioral Impact
+- `main` に push すると GitHub Actions が Windows Tauri build を実行し、成功時に prerelease を作成する
+- prerelease の tag / name / app version は GitHub Actions run number ベースで自動採番される
+- リポジトリ内の version ファイルは workflow 実行中だけ変更され、commit はされない
+
+### Risk & Mitigation
+- Risk: Windows runner 上の Tauri bundler 依存関係や GitHub Release 権限設定により、初回 CI で失敗する可能性がある
+- Mitigation: `contents: write` を明示し、まず Windows の MSI / NSIS のみを対象にした。失敗時は Actions log から不足 dependency を追加する
+- Risk: `main` push ごとに prerelease が増える
+- Mitigation: tag を run number で一意にし、正式 release ではなく prerelease として扱う
+
+### Tests / Verification
+- `git diff --check`
+- `npm run build`
+- GitHub Actions 上の Tauri build / release 作成は未実施（remote runner 実行が必要）
