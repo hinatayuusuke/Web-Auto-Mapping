@@ -11,6 +11,7 @@ import {
   placeSelectedCellIconAtPlayer,
   placeSelectedCellIconInFront,
   removeCellIconAt,
+  trimFloorGridToContent,
   updateCellIconMessageAt,
   updateFloorCellState,
   updateFloorEdgeState,
@@ -115,6 +116,7 @@ type AppActions = {
   togglePlayerPlacementMode: () => void;
   toggleSelectionMode: () => void;
   toggleMode: () => void;
+  trimSelectedFloorToContent: () => void;
   undo: () => void;
 };
 
@@ -573,6 +575,13 @@ export const useAppStore = create<AppStore>((set) => ({
             playerPlacementModeEnabled: false,
             selectionModeEnabled: true,
           },
+    ),
+  trimSelectedFloorToContent: () =>
+    set((state) =>
+      applyTrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, trimFloorGridToContent),
+        selectedMapRect: null,
+      })),
     ),
   undo: () =>
     set((state) => {

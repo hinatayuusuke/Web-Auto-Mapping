@@ -106,6 +106,7 @@ function App() {
   const togglePlayerPlacementMode = useAppStore((state) => state.togglePlayerPlacementMode);
   const toggleSelectionMode = useAppStore((state) => state.toggleSelectionMode);
   const toggleMode = useAppStore((state) => state.toggleMode);
+  const trimSelectedFloorToContent = useAppStore((state) => state.trimSelectedFloorToContent);
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
   const storageDescriptor = useMemo(() => getStorageDescriptor(), []);
@@ -696,6 +697,13 @@ function App() {
             label="Place player"
             icon={<PlacePlayerIcon />}
             onClick={togglePlayerPlacementMode}
+            size="toolbar"
+          />
+          <IconButton
+            label="Trim map"
+            icon={<TrimMapIcon />}
+            onClick={trimSelectedFloorToContent}
+            disabled={!selectedFloor}
             size="toolbar"
           />
           <IconButton
@@ -1670,6 +1678,33 @@ function PlacePlayerIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrimMapIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
+      <path
+        d="M7 3v4H3M17 3v4h4M7 21v-4H3M17 21v-4h4"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect
+        x="7"
+        y="7"
+        width="10"
+        height="10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M10 10h4v4h-4z"
+        stroke="currentColor"
+        strokeWidth="1.8"
       />
     </svg>
   );

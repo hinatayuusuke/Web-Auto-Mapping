@@ -2972,3 +2972,38 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-29 09:47 (Asia/Taipei) — Trim Map ボタン追加**
+
+### Summary
+- Map Canvas ヘッダーに Trim map ボタンを追加し、書いた領域とプレイヤー位置に合わせてマップ余白を削除できるようにした
+
+### Context / Goal
+- 拡張しすぎた Map を、Cell / Edge / Icon / Player を含む最小領域まで縮小できるようにする
+- トリミング後も player / icon / edge icon の座標整合性を維持し、Undo / Redo 対象にする
+
+### Changes
+- `trimFloorGridToContent(floor)` を追加し、`floor` Cell、既知 Edge、Cell Icon、Edge Icon、Player 位置から Cell bounding box を計算するようにした
+- bounding box 外の余白を上下左右から削除し、`cells` / `hEdges` / `vEdges` を切り出すようにした
+- トリミング後に `player` / `cellIcons` / `edgeIcons` の座標と icon id を左上基準へシフトするようにした
+- `trimSelectedFloorToContent` store action を追加し、既存の tracked mutation 経由で Undo / Redo 対象にした
+- Map Canvas toolbar に `Trim map` ボタンと同じ線画スタイルの SVG アイコンを追加
+
+### Files Touched
+- `src/lib/mapModel.ts` — content bounding box 計算と grid trim 処理を追加
+- `src/store/appStore.ts` — 選択中 floor の trim action を追加
+- `src/App.tsx` — Trim map toolbar ボタンと SVG アイコンを追加
+
+### Behavioral Impact
+- `Trim map` を押すと、書いた領域と Player を含む最小 Cell 範囲まで Map が縮小される
+- 空に見える Map でも Player 位置を含めるため最低 1 Cell は残る
+- Edge は隣接 Cell に変換して範囲計算し、切り出し時は下端 / 右端の境界 Edge も残る
+- 既存の選択範囲はトリミング後に解除される
+
+### Risk & Mitigation
+- Risk: Edge は Cell 境界上にあるため、範囲計算を誤ると外周 Edge が欠ける可能性がある
+- Mitigation: Edge を隣接 Cell に変換して bounding box に含め、切り出し時に `hEdges` は height + 1、`vEdges` は width + 1 を残すようにした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

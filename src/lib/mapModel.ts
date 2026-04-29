@@ -19,6 +19,13 @@ import {
 const UNKNOWN_CELL: CellState = 'unknown';
 const UNKNOWN_EDGE: EdgeState = 'unknown';
 
+type CellBounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
 export function createEmptyFloorState(
   id: string,
   name: string,
@@ -147,6 +154,117 @@ export function expandFloorGrid(
         edge,
       };
     }),
+  };
+}
+
+export function trimFloorGridToContent(floor: FloorState): FloorState {
+  let bounds: CellBounds | null = null;
+
+  if (isCellInBounds(floor, floor.player)) {
+    bounds = includeCellInBounds(bounds, floor.player);
+  }
+
+  for (let y = 0; y < floor.height; y += 1) {
+    for (let x = 0; x < floor.width; x += 1) {
+      if (floor.cells[y][x] === 'floor') {
+        bounds = includeCellInBounds(bounds, { x, y });
+      }
+    }
+  }
+
+  for (let y = 0; y < floor.hEdges.length; y += 1) {
+    for (let x = 0; x < floor.hEdges[y].length; x += 1) {
+      if (floor.hEdges[y][x] !== 'unknown') {
+        bounds = includeEdgeAdjacentCellsInBounds(bounds, floor, {
+          axis: 'horizontal',
+          x,
+          y,
+        });
+      }
+    }
+  }
+
+  for (let y = 0; y < floor.vEdges.length; y += 1) {
+    for (let x = 0; x < floor.vEdges[y].length; x += 1) {
+      if (floor.vEdges[y][x] !== 'unknown') {
+        bounds = includeEdgeAdjacentCellsInBounds(bounds, floor, {
+          axis: 'vertical',
+          x,
+          y,
+        });
+      }
+    }
+  }
+
+  for (const icon of floor.cellIcons) {
+    if (isCellInBounds(floor, icon.position)) {
+      bounds = includeCellInBounds(bounds, icon.position);
+    }
+  }
+
+  for (const icon of floor.edgeIcons) {
+    bounds = includeEdgeAdjacentCellsInBounds(bounds, floor, icon.edge);
+  }
+
+  if (!bounds) {
+    return floor;
+  }
+
+  const width = bounds.maxX - bounds.minX + 1;
+  const height = bounds.maxY - bounds.minY + 1;
+
+  if (bounds.minX === 0 && bounds.minY === 0 && width === floor.width && height === floor.height) {
+    return floor;
+  }
+
+  return {
+    ...floor,
+    width,
+    height,
+    cells: floor.cells
+      .slice(bounds.minY, bounds.maxY + 1)
+      .map((row) => row.slice(bounds.minX, bounds.maxX + 1)),
+    // WHY: Edge は Cell 境界にあるため、Cell の bounding box より下端/右端を1本多く残す。
+    hEdges: floor.hEdges
+      .slice(bounds.minY, bounds.maxY + 2)
+      .map((row) => row.slice(bounds.minX, bounds.maxX + 1)),
+    vEdges: floor.vEdges
+      .slice(bounds.minY, bounds.maxY + 1)
+      .map((row) => row.slice(bounds.minX, bounds.maxX + 2)),
+    player: {
+      ...floor.player,
+      x: floor.player.x - bounds.minX,
+      y: floor.player.y - bounds.minY,
+    },
+    cellIcons: floor.cellIcons
+      .filter((icon) => isCellInCellBounds(icon.position, bounds))
+      .map((icon) => {
+        const position = {
+          x: icon.position.x - bounds.minX,
+          y: icon.position.y - bounds.minY,
+        };
+
+        return {
+          ...icon,
+          id: createCellIconId(icon.kind, position),
+          position,
+        };
+      }),
+    edgeIcons: floor.edgeIcons
+      .filter((icon) => isEdgeInCellBounds(icon.edge, bounds))
+      .map((icon) => {
+        const edge = {
+          ...icon.edge,
+          x: icon.edge.x - bounds.minX,
+          y: icon.edge.y - bounds.minY,
+        };
+
+        return {
+          ...icon,
+          id: createEdgeIconId(icon.kind, edge),
+          edge,
+        };
+      }),
   };
 }
 
@@ -728,6 +846,87 @@ function getVectorForFacing(facing: Facing) {
     case 'west':
       return { x: -1, y: 0 };
   }
+}
+
+function includeCellInBounds(bounds: CellBounds | null, coordinate: CellCoordinate): CellBounds {
+  if (!bounds) {
+    return {
+      minX: coordinate.x,
+      minY: coordinate.y,
+      maxX: coordinate.x,
+      maxY: coordinate.y,
+    };
+  }
+
+  return {
+    minX: Math.min(bounds.minX, coordinate.x),
+    minY: Math.min(bounds.minY, coordinate.y),
+    maxX: Math.max(bounds.maxX, coordinate.x),
+    maxY: Math.max(bounds.maxY, coordinate.y),
+  };
+}
+
+function includeEdgeAdjacentCellsInBounds(
+  bounds: CellBounds | null,
+  floor: FloorState,
+  edge: EdgeCoordinate,
+): CellBounds | null {
+  if (!isEdgeInBounds(floor, edge)) {
+    return bounds;
+  }
+
+  let nextBounds = bounds;
+
+  if (edge.axis === 'horizontal') {
+    nextBounds = includeCellInBounds(nextBounds, {
+      x: edge.x,
+      y: Math.max(0, edge.y - 1),
+    });
+    nextBounds = includeCellInBounds(nextBounds, {
+      x: edge.x,
+      y: Math.min(floor.height - 1, edge.y),
+    });
+
+    return nextBounds;
+  }
+
+  nextBounds = includeCellInBounds(nextBounds, {
+    x: Math.max(0, edge.x - 1),
+    y: edge.y,
+  });
+  nextBounds = includeCellInBounds(nextBounds, {
+    x: Math.min(floor.width - 1, edge.x),
+    y: edge.y,
+  });
+
+  return nextBounds;
+}
+
+function isCellInCellBounds(coordinate: CellCoordinate, bounds: CellBounds) {
+  return (
+    coordinate.x >= bounds.minX &&
+    coordinate.x <= bounds.maxX &&
+    coordinate.y >= bounds.minY &&
+    coordinate.y <= bounds.maxY
+  );
+}
+
+function isEdgeInCellBounds(edge: EdgeCoordinate, bounds: CellBounds) {
+  if (edge.axis === 'horizontal') {
+    return (
+      edge.x >= bounds.minX &&
+      edge.x <= bounds.maxX &&
+      edge.y >= bounds.minY &&
+      edge.y <= bounds.maxY + 1
+    );
+  }
+
+  return (
+    edge.x >= bounds.minX &&
+    edge.x <= bounds.maxX + 1 &&
+    edge.y >= bounds.minY &&
+    edge.y <= bounds.maxY
+  );
 }
 
 function createMatrix<T>(height: number, width: number, initialValue: T): T[][] {
