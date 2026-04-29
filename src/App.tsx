@@ -662,6 +662,7 @@ function App() {
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-1.5">
+          
           <div className="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-0.5">
             <CompactToggleButton
               active={mode === 'explore'}
@@ -686,6 +687,20 @@ function App() {
             onClick={() => setGlobalArrowCaptureEnabled((enabled) => !enabled)}
           />
           <IconButton
+            label="Undo"
+            icon={<UndoIcon />}
+            onClick={undo}
+            disabled={!canUndo}
+            size="toolbar"
+          />
+          <IconButton
+            label="Redo"
+            icon={<RedoIcon />}
+            onClick={redo}
+            disabled={!canRedo}
+            size="toolbar"
+          />
+          <IconButton
             active={selectionModeEnabled || Boolean(selectedMapRect)}
             label="Range select"
             icon={<RangeSelectIcon />}
@@ -704,20 +719,6 @@ function App() {
             icon={<TrimMapIcon />}
             onClick={trimSelectedFloorToContent}
             disabled={!selectedFloor}
-            size="toolbar"
-          />
-          <IconButton
-            label="Undo"
-            icon={<UndoIcon />}
-            onClick={undo}
-            disabled={!canUndo}
-            size="toolbar"
-          />
-          <IconButton
-            label="Redo"
-            icon={<RedoIcon />}
-            onClick={redo}
-            disabled={!canRedo}
             size="toolbar"
           />
           <IconButton

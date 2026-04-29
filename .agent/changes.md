@@ -3007,3 +3007,30 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-29 09:52 (Asia/Taipei) — Map Canvas toolbar Undo / Redo 左寄せ**
+
+### Summary
+- Map Canvas ヘッダーの toolbar で Undo / Redo を一番左へ移動した
+
+### Context / Goal
+- 操作頻度の高い Undo / Redo を toolbar の先頭に置き、配置を分かりやすくする
+
+### Changes
+- `Undo` / `Redo` の `IconButton` を Map Canvas toolbar の先頭へ移動
+- ボタンの処理、disabled 条件、ショートカット挙動は変更なし
+
+### Files Touched
+- `src/App.tsx` — Map Canvas toolbar 内のボタン順序を変更
+
+### Behavioral Impact
+- Map Canvas toolbar の左端から Undo / Redo が表示される
+- Undo / Redo の機能自体には変更なし
+
+### Risk & Mitigation
+- Risk: toolbar 幅が狭い場合の折り返し順が変わる
+- Mitigation: 既存の `flex-wrap` レイアウトを維持し、順序変更のみとした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`
