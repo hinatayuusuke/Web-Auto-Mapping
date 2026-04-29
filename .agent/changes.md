@@ -3034,3 +3034,32 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-29 10:07 (Asia/Taipei) — Player focus 表示の弱化**
+
+### Summary
+- Player 周囲の黄色い枠を削除し、前方 Edge ハイライトを弱めた
+
+### Context / Goal
+- Player 周囲の黄色枠が Cell Icon と重なり、縮小表示やアイコン密集時の視認性に影響していた
+- facing の確認用として前方 Edge 表示は残しつつ、主張を下げる
+
+### Changes
+- `drawPlayerFocus` から Player Cell の黄色い矩形枠描画を削除
+- 前方 Edge ハイライトの alpha と線幅を下げた
+
+### Files Touched
+- `src/components/MapCanvas.tsx` — Player focus の Canvas 描画を調整
+
+### Behavioral Impact
+- Player がいる Cell の周囲に黄色枠が表示されなくなる
+- 前方 Edge の向き表示は残るが、以前より薄く細く表示される
+- Player 本体の青い円と向き三角は変更なし
+
+### Risk & Mitigation
+- Risk: Player 位置の強調が少し弱くなる
+- Mitigation: Player 本体と向き三角は維持し、前方 Edge も薄く残した
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

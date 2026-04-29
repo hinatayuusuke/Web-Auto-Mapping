@@ -1038,18 +1038,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
 }
 
 function drawPlayerFocus(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
-  const currentLeft = layout.originX + floor.player.x * layout.cellSize;
-  const currentTop = layout.originY + floor.player.y * layout.cellSize;
-
-  context.strokeStyle = 'rgba(246, 213, 141, 0.88)';
-  context.lineWidth = 2;
-  context.strokeRect(currentLeft + 2, currentTop + 2, layout.cellSize - 4, layout.cellSize - 4);
-
   const front = getFrontEdge(floor);
 
   context.beginPath();
-  context.strokeStyle = 'rgba(246, 213, 141, 0.92)';
-  context.lineWidth = Math.max(2, layout.cellSize * 0.12);
+  context.strokeStyle = 'rgba(246, 213, 141, 0.46)';
+  context.lineWidth = Math.max(1.5, layout.cellSize * 0.08);
 
   if (front.axis === 'horizontal') {
     const startX = layout.originX + front.x * layout.cellSize;
