@@ -2935,3 +2935,40 @@
 ### Tests / Verification
 - `npm run typecheck`
 - `npm run build`
+
+**2026-04-28 16:50 (Asia/Taipei) — Place Player 任意配置モードへ変更**
+
+### Summary
+- Free Move を廃止し、ボタンON後に任意Cellクリックでプレイヤーを配置する Place Player モードへ変更した
+
+### Context / Goal
+- プレイヤー位置調整は連続自由移動よりも、地図に影響しない任意配置として扱う方が既存の Explore / Map 移動仕様と混ざりにくい
+- 配置では Cell / Edge / Icon / Auto Mapping に影響させず、プレイヤー座標だけを変更したい
+
+### Changes
+- `freeMoveEnabled` / `toggleFreeMove` / `setFreeMoveEnabled` を削除し、`playerPlacementModeEnabled` 系の state / action に置き換えた
+- キーボード移動の Free Move 専用分岐を削除し、既存の Explore / Map 移動仕様へ戻した
+- Map Canvas で Place Player ON 中の左クリックをプレイヤー配置として処理し、配置後に自動で OFF にするようにした
+- Place Player ON 中は通常 paint / erase / icon edit よりプレイヤー配置を優先するようにした
+- Range Select と Place Player が同時に ON にならないよう、toggle 時に片方をOFFにするようにした
+- toolbar ボタンの表示を `Free move` から `Place player` に変更し、SVGアイコンも配置向けに調整した
+- `Escape` で Place Player も OFF にするようにした
+
+### Files Touched
+- `src/store/appStore.ts` — Free Move state / 移動分岐を削除し、Place Player mode state を追加
+- `src/components/MapCanvas.tsx` — Place Player ON 中の Cell click 配置処理を追加
+- `src/App.tsx` — toolbar ボタン名 / アイコン / Escape 終了処理を Place Player 向けに変更
+
+### Behavioral Impact
+- `Place player` ボタンON後、任意Cellを左クリックするとプレイヤーがそのCellへ移動し、モードは自動でOFFになる
+- 配置時は `player.x` / `player.y` のみ更新し、`facing` は維持する
+- Cell / Edge / Icon / Auto Mapping / wall / floor / unknown 判定には影響しない
+- キーボード移動は通常の Explore / Map 仕様に戻る
+
+### Risk & Mitigation
+- Risk: Place Player ON中は通常クリック編集ではなく配置が優先される
+- Mitigation: toolbar の active 表示と、配置後の自動OFF / Escape OFF でモードが残り続けにくいようにした
+
+### Tests / Verification
+- `npm run typecheck`
+- `npm run build`

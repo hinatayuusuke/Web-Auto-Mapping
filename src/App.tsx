@@ -59,9 +59,9 @@ function App() {
   const canRedo = useAppStore((state) => state.history.redoStack.length > 0);
   const canUndo = useAppStore((state) => state.history.undoStack.length > 0);
   const floors = useAppStore((state) => state.floors);
-  const freeMoveEnabled = useAppStore((state) => state.freeMoveEnabled);
   const mapTitle = useAppStore((state) => state.mapTitle);
   const mode = useAppStore((state) => state.mode);
+  const playerPlacementModeEnabled = useAppStore((state) => state.playerPlacementModeEnabled);
   const selectedCellIconKind = useAppStore((state) => state.selectedCellIconKind);
   const selectedMapRect = useAppStore((state) => state.selectedMapRect);
   const selectionModeEnabled = useAppStore((state) => state.selectionModeEnabled);
@@ -95,12 +95,15 @@ function App() {
   const setMapTitle = useAppStore((state) => state.setMapTitle);
   const setMode = useAppStore((state) => state.setMode);
   const setPlayerFacing = useAppStore((state) => state.setPlayerFacing);
+  const setPlayerPlacementModeEnabled = useAppStore(
+    (state) => state.setPlayerPlacementModeEnabled,
+  );
   const setSelectionModeEnabled = useAppStore((state) => state.setSelectionModeEnabled);
   const setSelectedCellIconKind = useAppStore((state) => state.setSelectedCellIconKind);
   const setSelectedFloor = useAppStore((state) => state.setSelectedFloor);
   const setSelectedTool = useAppStore((state) => state.setSelectedTool);
   const setViewport = useAppStore((state) => state.setViewport);
-  const toggleFreeMove = useAppStore((state) => state.toggleFreeMove);
+  const togglePlayerPlacementMode = useAppStore((state) => state.togglePlayerPlacementMode);
   const toggleSelectionMode = useAppStore((state) => state.toggleSelectionMode);
   const toggleMode = useAppStore((state) => state.toggleMode);
   const undo = useAppStore((state) => state.undo);
@@ -405,6 +408,7 @@ function App() {
           case 'Escape':
             event.preventDefault();
             clearSelectedMapRect();
+            setPlayerPlacementModeEnabled(false);
             setSelectionModeEnabled(false);
             return;
           case 'Delete':
@@ -476,6 +480,7 @@ function App() {
     placeSelectedIconAtForwardCell,
     redo,
     removeCurrentCellIcon,
+    setPlayerPlacementModeEnabled,
     setSelectionModeEnabled,
     setPlayerFacing,
     selectedFloor,
@@ -687,10 +692,10 @@ function App() {
             size="toolbar"
           />
           <IconButton
-            active={freeMoveEnabled}
-            label="Free move"
-            icon={<FreeMoveIcon />}
-            onClick={toggleFreeMove}
+            active={playerPlacementModeEnabled}
+            label="Place player"
+            icon={<PlacePlayerIcon />}
+            onClick={togglePlayerPlacementMode}
             size="toolbar"
           />
           <IconButton
@@ -1649,18 +1654,18 @@ function RangeSelectIcon() {
   );
 }
 
-function FreeMoveIcon() {
+function PlacePlayerIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" className="size-full" aria-hidden="true">
-      <circle cx="12" cy="12" r="2.4" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
       <path
-        d="M12 4v4M12 16v4M4 12h4M16 12h4"
+        d="M12 3.5v4M12 16.5v4M3.5 12h4M16.5 12h4"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"
       />
       <path
-        d="M12 4l-2 2M12 4l2 2M12 20l-2-2M12 20l2-2M4 12l2-2M4 12l2 2M20 12l-2-2M20 12l-2 2"
+        d="M12 3.5l-1.7 1.7M12 3.5l1.7 1.7M12 20.5l-1.7-1.7M12 20.5l1.7-1.7M3.5 12l1.7-1.7M3.5 12l1.7 1.7M20.5 12l-1.7-1.7M20.5 12l-1.7 1.7"
         stroke="currentColor"
         strokeWidth="1.8"
         strokeLinecap="round"

@@ -68,11 +68,16 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
   const [messageDraft, setMessageDraft] = useState('');
   const [size, setSize] = useState({ width: 0, height: 0 });
   const mode = useAppStore((state) => state.mode);
+  const playerPlacementModeEnabled = useAppStore((state) => state.playerPlacementModeEnabled);
   const selectedTool = useAppStore((state) => state.selectedTool);
   const selectedMapRect = useAppStore((state) => state.selectedMapRect);
   const selectionModeEnabled = useAppStore((state) => state.selectionModeEnabled);
   const viewport = useAppStore((state) => state.viewport);
   const setViewport = useAppStore((state) => state.setViewport);
+  const setPlayerPlacementModeEnabled = useAppStore(
+    (state) => state.setPlayerPlacementModeEnabled,
+  );
+  const setPlayerPosition = useAppStore((state) => state.setPlayerPosition);
   const setSelectedCellIconMessage = useAppStore((state) => state.setSelectedCellIconMessage);
   const setSelectedMapRect = useAppStore((state) => state.setSelectedMapRect);
   const selectedFloor = useSelectedFloor();
@@ -307,6 +312,26 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
     const rect = event.currentTarget.getBoundingClientRect();
     const localX = event.clientX - rect.left;
     const localY = event.clientY - rect.top;
+
+    if (playerPlacementModeEnabled) {
+      event.preventDefault();
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      const coordinate = getCellCoordinateAtCanvasPoint(localX, localY, selectedFloor, layout);
+
+      if (!coordinate) {
+        return;
+      }
+
+      clearPendingCellIconClick();
+      finishDragPaint();
+      setPlayerPosition(coordinate);
+      setPlayerPlacementModeEnabled(false);
+      return;
+    }
 
     if (selectionModeEnabled && event.button !== 0) {
       event.preventDefault();

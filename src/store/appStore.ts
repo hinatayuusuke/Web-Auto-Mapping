@@ -57,9 +57,9 @@ type AppState = {
   history: HistoryState;
   mapTitle: string;
   mode: AppMode;
-  freeMoveEnabled: boolean;
   persistenceReady: boolean;
   mapClipboard: MapClipboardPayload | null;
+  playerPlacementModeEnabled: boolean;
   selectionModeEnabled: boolean;
   selectedCellIconKind: CellIconKind;
   selectedFloorId: string;
@@ -98,9 +98,9 @@ type AppActions = {
   renameFloor: (floorId: string, name: string) => void;
   resetViewport: () => void;
   setAutoMapping: (level: AutoMappingLevel) => void;
-  setFreeMoveEnabled: (enabled: boolean) => void;
   setMapTitle: (title: string) => void;
   setMode: (mode: AppMode) => void;
+  setPlayerPlacementModeEnabled: (enabled: boolean) => void;
   setPlayerFacing: (facing: Facing) => void;
   setSelectedCellIconMessage: (coordinate: CellCoordinate, message: string) => void;
   setPlayerPosition: (coordinate: CellCoordinate) => void;
@@ -112,7 +112,7 @@ type AppActions = {
   setSelectionModeEnabled: (enabled: boolean) => void;
   setSelectedTool: (tool: EditTool) => void;
   setViewport: (viewport: Partial<ViewportState>) => void;
-  toggleFreeMove: () => void;
+  togglePlayerPlacementMode: () => void;
   toggleSelectionMode: () => void;
   toggleMode: () => void;
   undo: () => void;
@@ -342,15 +342,13 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) =>
       applyTrackedMutation(state, () => ({
         floors: updateSelectedFloor(state, (floor) =>
-          state.freeMoveEnabled
-            ? movePlayerFreely(floor, facing)
-            : state.mode === 'explore'
-              ? movePlayerInExploreMode(
-                  expandFloorForExploreMove(floor, facing),
-                  facing,
-                  state.autoMapping,
-                )
-              : movePlayerInMapMode(floor, facing),
+          state.mode === 'explore'
+            ? movePlayerInExploreMode(
+                expandFloorForExploreMove(floor, facing),
+                facing,
+                state.autoMapping,
+              )
+            : movePlayerInMapMode(floor, facing),
         ),
       })),
     ),
@@ -400,8 +398,8 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
-        freeMoveEnabled: state.freeMoveEnabled,
         mapClipboard: state.mapClipboard,
+        playerPlacementModeEnabled: state.playerPlacementModeEnabled,
         persistenceReady: state.persistenceReady,
         selectionModeEnabled: state.selectionModeEnabled,
         selectedMapRect: null,
@@ -461,8 +459,6 @@ export const useAppStore = create<AppStore>((set) => ({
     })),
   setAutoMapping: (level) =>
     set((state) => (state.autoMapping === level ? {} : { autoMapping: level })),
-  setFreeMoveEnabled: (enabled) =>
-    set((state) => (state.freeMoveEnabled === enabled ? {} : { freeMoveEnabled: enabled })),
   setMapTitle: (title) =>
     set((state) =>
       applyTrackedMutation(state, () => {
@@ -472,6 +468,12 @@ export const useAppStore = create<AppStore>((set) => ({
       }),
     ),
   setMode: (mode) => set((state) => (state.mode === mode ? {} : { mode })),
+  setPlayerPlacementModeEnabled: (enabled) =>
+    set((state) =>
+      state.playerPlacementModeEnabled === enabled
+        ? {}
+        : { playerPlacementModeEnabled: enabled },
+    ),
   setPlayerFacing: (facing) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
@@ -549,10 +551,17 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({
       mode: state.mode === 'explore' ? 'map' : 'explore',
     })),
-  toggleFreeMove: () =>
-    set((state) => ({
-      freeMoveEnabled: !state.freeMoveEnabled,
-    })),
+  togglePlayerPlacementMode: () =>
+    set((state) =>
+      state.playerPlacementModeEnabled
+        ? {
+            playerPlacementModeEnabled: false,
+          }
+        : {
+            playerPlacementModeEnabled: true,
+            selectionModeEnabled: false,
+          },
+    ),
   toggleSelectionMode: () =>
     set((state) =>
       state.selectionModeEnabled
@@ -561,6 +570,7 @@ export const useAppStore = create<AppStore>((set) => ({
             selectedMapRect: null,
           }
         : {
+            playerPlacementModeEnabled: false,
             selectionModeEnabled: true,
           },
     ),
@@ -574,8 +584,8 @@ export const useAppStore = create<AppStore>((set) => ({
 
       return {
         ...toAppState(clonePersistedDocument(snapshot)),
-        freeMoveEnabled: state.freeMoveEnabled,
         mapClipboard: state.mapClipboard,
+        playerPlacementModeEnabled: state.playerPlacementModeEnabled,
         persistenceReady: state.persistenceReady,
         selectionModeEnabled: state.selectionModeEnabled,
         selectedMapRect: null,
@@ -725,11 +735,11 @@ function toAppState(document: PersistedDocument): Omit<AppState, 'history'> {
   return {
     autoMapping: document.settings.autoMapping,
     floors: document.floors.length > 0 ? document.floors : [fallbackFloor],
-    freeMoveEnabled: false,
     mapTitle: sanitizeDocumentTitle(document.title),
     mode: document.settings.mode,
     persistenceReady: false,
     mapClipboard: null,
+    playerPlacementModeEnabled: false,
     selectionModeEnabled: false,
     selectedCellIconKind: document.settings.selectedCellIconKind,
     selectedFloorId,
@@ -787,31 +797,6 @@ function createEmptyHistory(): HistoryState {
 
 function getSelectedFloorFromState(state: Pick<AppState, 'floors' | 'selectedFloorId'>) {
   return state.floors.find((floor) => floor.id === state.selectedFloorId);
-}
-
-function movePlayerFreely(floor: FloorState, facing: Facing): FloorState {
-  const destination = getCoordinateInDirection(
-    {
-      x: floor.player.x,
-      y: floor.player.y,
-    },
-    facing,
-  );
-
-  if (
-    destination.x < 0 ||
-    destination.x >= floor.width ||
-    destination.y < 0 ||
-    destination.y >= floor.height
-  ) {
-    return updateFloorPlayer(floor, { facing });
-  }
-
-  return updateFloorPlayer(floor, {
-    facing,
-    x: destination.x,
-    y: destination.y,
-  });
 }
 
 function expandFloorForExploreMove(floor: FloorState, facing: Facing) {
