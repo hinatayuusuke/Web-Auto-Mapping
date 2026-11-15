@@ -116,6 +116,7 @@ type AppActions = {
   togglePlayerPlacementMode: () => void;
   toggleSelectionMode: () => void;
   toggleMode: () => void;
+  toggleSelectedFloorEdgeWrap: () => void;
   trimSelectedFloorToContent: () => void;
   undo: () => void;
 };
@@ -346,7 +347,7 @@ export const useAppStore = create<AppStore>((set) => ({
         floors: updateSelectedFloor(state, (floor) =>
           state.mode === 'explore'
             ? movePlayerInExploreMode(
-                expandFloorForExploreMove(floor, facing),
+                floor.edgeWrapEnabled ? floor : expandFloorForExploreMove(floor, facing),
                 facing,
                 state.autoMapping,
               )
@@ -553,6 +554,15 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({
       mode: state.mode === 'explore' ? 'map' : 'explore',
     })),
+  toggleSelectedFloorEdgeWrap: () =>
+    set((state) =>
+      applyTrackedMutation(state, () => ({
+        floors: updateSelectedFloor(state, (floor) => ({
+          ...floor,
+          edgeWrapEnabled: !floor.edgeWrapEnabled,
+        })),
+      })),
+    ),
   togglePlayerPlacementMode: () =>
     set((state) =>
       state.playerPlacementModeEnabled

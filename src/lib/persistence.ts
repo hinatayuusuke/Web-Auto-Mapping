@@ -125,6 +125,7 @@ function isFloorState(value: unknown): value is FloorState {
   return (
     typeof value.id === 'string' &&
     typeof value.name === 'string' &&
+    (value.edgeWrapEnabled === undefined || typeof value.edgeWrapEnabled === 'boolean') &&
     typeof value.width === 'number' &&
     typeof value.height === 'number' &&
     isRecord(value.player) &&

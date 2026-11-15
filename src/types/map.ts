@@ -79,6 +79,8 @@ export type EdgeIcon = {
 export type FloorState = GridDimensions & {
   id: string;
   name: string;
+  // COMPAT: v1 の既存保存データはこの項目を持たず、その場合は端ループ無効として扱う。
+  edgeWrapEnabled?: boolean;
   player: PlayerState;
   cells: CellState[][];
   hEdges: EdgeState[][];

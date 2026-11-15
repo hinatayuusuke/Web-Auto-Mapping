@@ -34,6 +34,7 @@ export function createEmptyFloorState(
   return {
     id,
     name,
+    edgeWrapEnabled: false,
     width: dimensions.width,
     height: dimensions.height,
     player: {
@@ -386,7 +387,9 @@ export function movePlayerInExploreMode(
   let nextFloor = updateFloorPlayer(floor, { facing });
 
   if (!isCellInBounds(nextFloor, nextPosition)) {
-    return nextFloor;
+    return floor.edgeWrapEnabled
+      ? movePlayerAcrossMapEdge(nextFloor, facing, autoMapping)
+      : nextFloor;
   }
 
   nextFloor = updateFloorCellState(nextFloor, origin, 'floor');
@@ -404,6 +407,43 @@ export function movePlayerInExploreMode(
 
   if (autoMapping === 'corridor') {
     nextFloor = applyCorridorAutoMapping(nextFloor, origin, nextPosition);
+  }
+
+  return nextFloor;
+}
+
+function movePlayerAcrossMapEdge(
+  floor: FloorState,
+  facing: Facing,
+  autoMapping: AutoMappingLevel,
+): FloorState {
+  const origin = { x: floor.player.x, y: floor.player.y };
+  const exit = getCoordinateInDirection(origin, facing);
+  const destination = {
+    x: (exit.x + floor.width) % floor.width,
+    y: (exit.y + floor.height) % floor.height,
+  };
+  const vector = getVectorForFacing(facing);
+  const entry = {
+    x: destination.x - vector.x,
+    y: destination.y - vector.y,
+  };
+
+  let nextFloor = updateFloorCellState(floor, origin, 'floor');
+  nextFloor = updateFloorCellState(nextFloor, destination, 'floor');
+  // WHY: 反対端は配列上の隣接セルではないため、両側の外周を開き、途中の境界には触れない。
+  nextFloor = updateFloorEdgeState(nextFloor, getEdgeBetweenCells(origin, exit), 'open');
+  nextFloor = updateFloorEdgeState(nextFloor, getEdgeBetweenCells(entry, destination), 'open');
+  nextFloor = updateFloorPlayer(nextFloor, { ...destination, facing });
+
+  if (autoMapping === 'basic' || autoMapping === 'corridor') {
+    nextFloor = applyBasicAutoMapping(nextFloor, destination);
+  }
+
+  if (autoMapping === 'corridor') {
+    // WHY: 幅・高さが1でも移動軸を保つため、外周の仮想隣接セルを使う。範囲外の辺は既存処理が除外する。
+    nextFloor = applyCorridorAutoMapping(nextFloor, origin, exit);
+    nextFloor = applyCorridorAutoMapping(nextFloor, entry, destination);
   }
 
   return nextFloor;

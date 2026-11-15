@@ -106,6 +106,7 @@ function App() {
   const togglePlayerPlacementMode = useAppStore((state) => state.togglePlayerPlacementMode);
   const toggleSelectionMode = useAppStore((state) => state.toggleSelectionMode);
   const toggleMode = useAppStore((state) => state.toggleMode);
+  const toggleSelectedFloorEdgeWrap = useAppStore((state) => state.toggleSelectedFloorEdgeWrap);
   const trimSelectedFloorToContent = useAppStore((state) => state.trimSelectedFloorToContent);
   const undo = useAppStore((state) => state.undo);
   const currentFacing = selectedFloor?.player.facing ?? 'north';
@@ -722,6 +723,14 @@ function App() {
             size="toolbar"
           />
           <IconButton
+            active={Boolean(selectedFloor?.edgeWrapEnabled)}
+            label={`端ループ：${selectedFloor?.edgeWrapEnabled ? '有効' : '無効'}（探索モードのみ）`}
+            icon={<EdgeWrapIcon />}
+            onClick={toggleSelectedFloorEdgeWrap}
+            disabled={!selectedFloor}
+            size="toolbar"
+          />
+          <IconButton
             label="Zoom out"
             icon={<ZoomOutIcon />}
             onClick={() => setViewport({ zoom: viewport.zoom - 0.15 })}
@@ -1169,7 +1178,7 @@ type IconButtonProps = {
 };
 
 function IconButton({
-  active = false,
+  active,
   badge,
   disabled = false,
   icon,
@@ -1198,6 +1207,7 @@ function IconButton({
       onClick={onClick}
       // WHY: アイコンのみでも操作名を露出し、hover と支援技術の両方で認識しやすくする。
       aria-label={label}
+      aria-pressed={active}
       title={label}
       className={`relative inline-flex items-center justify-center border transition ${sizeClass} ${
         disabled
@@ -1707,6 +1717,24 @@ function TrimMapIcon() {
         stroke="currentColor"
         strokeWidth="1.8"
       />
+    </svg>
+  );
+}
+
+function EdgeWrapIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className="size-full"
+      aria-hidden="true"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 9V7a2 2 0 0 1 2-2h14m-4-4 4 4-4 4" />
+      <path d="M20 15v2a2 2 0 0 1-2 2H4m4-4-4 4 4 4" />
     </svg>
   );
 }
