@@ -19,9 +19,12 @@ export type EdgeEditIntent = 'wall' | 'door' | 'closed-door' | 'open' | 'unknown
 export type EditTool =
   | 'cell-floor'
   | 'cell-unknown'
+  | 'cell-dark-zone'
   | 'edge-wall'
   | 'edge-door'
   | 'edge-closed-door'
+  | 'edge-one-way-positive'
+  | 'edge-one-way-negative'
   | 'edge-open'
   | 'edge-unknown'
   | 'cell-icon';
@@ -72,15 +75,19 @@ export type CellIcon = {
 
 export type EdgeIcon = {
   id: string;
-  kind: EdgeIconKind;
   edge: EdgeCoordinate;
-};
+} & (
+  | { kind: 'one-way'; direction: Facing }
+  | { kind: Exclude<EdgeIconKind, 'one-way'> }
+);
 
 export type FloorState = GridDimensions & {
   id: string;
   name: string;
   // COMPAT: v1 の既存保存データはこの項目を持たず、その場合は端ループ無効として扱う。
   edgeWrapEnabled?: boolean;
+  // COMPAT: v1 で省略された場合は暗闇なし。床アイコンと独立させ、同じマスで共存させる。
+  darkZones?: CellCoordinate[];
   player: PlayerState;
   cells: CellState[][];
   hEdges: EdgeState[][];
@@ -93,6 +100,7 @@ export type MapClipboardPayload = {
   width: number;
   height: number;
   cells: CellState[][];
+  darkZones: CellCoordinate[];
   hEdges: EdgeState[][];
   vEdges: EdgeState[][];
   cellIcons: CellIcon[];

@@ -21,9 +21,12 @@ const CELL_ICON_KINDS: CellIconKind[] = ['stairs', 'stairs-down', 'pit', 'chest'
 const EDIT_TOOL_OPTIONS: Array<{ label: string; value: EditTool }> = [
   { label: 'cell floor', value: 'cell-floor' },
   { label: 'cell unknown', value: 'cell-unknown' },
+  { label: 'dark zone', value: 'cell-dark-zone' },
   { label: 'edge wall', value: 'edge-wall' },
   { label: 'edge open door', value: 'edge-door' },
   { label: 'edge closed door', value: 'edge-closed-door' },
+  { label: 'one-way door right / down', value: 'edge-one-way-positive' },
+  { label: 'one-way door left / up', value: 'edge-one-way-negative' },
   { label: 'edge open', value: 'edge-open' },
   { label: 'edge unknown', value: 'edge-unknown' },
 ];
@@ -777,6 +780,16 @@ function App() {
             />
           ))}
         </div>
+        {selectedTool === 'cell-dark-zone' ? (
+          <p className="text-xs leading-5 text-[var(--color-text-soft)]">
+            Left drag: mark dark zone. Right drag: clear darkness, keeping floor icons.
+          </p>
+        ) : selectedTool === 'edge-one-way-positive' || selectedTool === 'edge-one-way-negative' ? (
+          <p className="text-xs leading-5 text-[var(--color-text-soft)]">
+            {selectedTool === 'edge-one-way-positive' ? 'Allows right / down.' : 'Allows left / up.'}
+            {' '}Map mode blocks movement against the arrow.
+          </p>
+        ) : null}
       </section>
 
       <section className="space-y-3">
@@ -1288,6 +1301,7 @@ function EditToolChoiceButton({ active, onClick, tool }: EditToolChoiceButtonPro
       type="button"
       onClick={onClick}
       aria-label={label}
+      aria-pressed={active}
       title={label}
       className={`flex min-h-10 items-center justify-center bg-[var(--color-panel)] p-1 transition ${
         active
@@ -1312,17 +1326,55 @@ function EditToolPreview({ tool }: EditToolPreviewProps) {
       return <CellFloorToolPreview />;
     case 'cell-unknown':
       return <CellUnknownToolPreview />;
+    case 'cell-dark-zone':
+      return <DarkZoneToolPreview />;
     case 'edge-wall':
       return <EdgeToolPreview lineColor="#d9e3ef" lineWidth={4} />;
     case 'edge-door':
       return <OpenDoorToolPreview />;
     case 'edge-closed-door':
       return <EdgeToolPreview lineColor="#ef5b5b" lineWidth={4} />;
+    case 'edge-one-way-positive':
+      return <OneWayDoorToolPreview positive />;
+    case 'edge-one-way-negative':
+      return <OneWayDoorToolPreview positive={false} />;
     case 'edge-open':
       return <EdgeToolPreview lineColor="rgba(108, 188, 255, 0.75)" lineWidth={2.5} />;
     case 'edge-unknown':
       return <UnknownEdgeToolPreview />;
   }
+}
+
+function OneWayDoorToolPreview({ positive }: { positive: boolean }) {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <path d="M4 16H12M20 16H28" fill="none" stroke="#4fd08b" strokeWidth="4" />
+      <g transform={positive ? undefined : 'rotate(180 16 16)'}>
+        <path
+          d="M16 5V27M11 22L16 27L21 22"
+          fill="none"
+          stroke="#b9d9ff"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}
+
+function DarkZoneToolPreview() {
+  return (
+    <svg viewBox="0 0 32 32" className="size-full" aria-hidden="true">
+      <rect x="4" y="4" width="24" height="24" fill="#0d1826" stroke="#8898ad" />
+      <path
+        d="M4 12L12 4M4 20L20 4M4 28L28 4M12 28L28 12M20 28L28 20"
+        fill="none"
+        stroke="#8898ad"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
 }
 
 type ExpandGridButtonProps = {
@@ -2015,12 +2067,18 @@ function getEditToolLabel(tool: EditTool) {
       return 'cell floor';
     case 'cell-unknown':
       return 'cell unknown';
+    case 'cell-dark-zone':
+      return 'dark zone — left drag to mark, right drag to clear darkness';
     case 'edge-wall':
       return 'edge wall';
     case 'edge-door':
       return 'edge open door';
     case 'edge-closed-door':
       return 'edge closed door';
+    case 'edge-one-way-positive':
+      return 'one-way door — allows right / down';
+    case 'edge-one-way-negative':
+      return 'one-way door — allows left / up';
     case 'edge-open':
       return 'edge open';
     case 'edge-unknown':

@@ -30,6 +30,9 @@ export function copyMapRect(
     width,
     height,
     cells: floor.cells.slice(y, y + height).map((row) => row.slice(x, x + width)),
+    darkZones: (floor.darkZones ?? [])
+      .filter((coordinate) => isCellInRect(coordinate, normalizedRect))
+      .map((coordinate) => ({ x: coordinate.x - x, y: coordinate.y - y })),
     hEdges: floor.hEdges.slice(y, y + height + 1).map((row) => row.slice(x, x + width)),
     vEdges: floor.vEdges.slice(y, y + height).map((row) => row.slice(x, x + width + 1)),
     cellIcons: floor.cellIcons
@@ -100,6 +103,7 @@ export function clearMapRect(floor: FloorState, rect: CellRect): FloorState {
     hEdges,
     vEdges,
     cellIcons: floor.cellIcons.filter((icon) => !isCellInRect(icon.position, normalizedRect)),
+    darkZones: (floor.darkZones ?? []).filter((coordinate) => !isCellInRect(coordinate, normalizedRect)),
     edgeIcons: floor.edgeIcons.filter((icon) => !isEdgeInRect(icon.edge, normalizedRect)),
   };
 }
@@ -161,6 +165,11 @@ export function pasteMapClipboard(
     hEdges,
     vEdges,
     cellIcons: nextFloor.cellIcons.filter((icon) => !isCellInRect(icon.position, destinationRect)),
+    // NOTE: 範囲貼り付けは上書きなので、コピー元が通常床なら貼り付け先の暗闇も解除する。
+    darkZones: [
+      ...(nextFloor.darkZones ?? []).filter((coordinate) => !isCellInRect(coordinate, destinationRect)),
+      ...payload.darkZones.map(({ x, y }) => ({ x: destinationX + x, y: destinationY + y })),
+    ],
     edgeIcons: nextFloor.edgeIcons.filter((icon) => !isEdgeInRect(icon.edge, destinationRect)),
   };
 

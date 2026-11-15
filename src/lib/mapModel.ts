@@ -9,6 +9,7 @@ import {
   EdgeIcon,
   EdgeIconKind,
   EdgeState,
+  EditTool,
   Facing,
   FloorState,
   FloorStats,
@@ -35,6 +36,7 @@ export function createEmptyFloorState(
     id,
     name,
     edgeWrapEnabled: false,
+    darkZones: [],
     width: dimensions.width,
     height: dimensions.height,
     player: {
@@ -130,6 +132,7 @@ export function expandFloorGrid(
       x: floor.player.x + left,
       y: floor.player.y + up,
     },
+    darkZones: (floor.darkZones ?? []).map(({ x, y }) => ({ x: x + left, y: y + up })),
     cellIcons: floor.cellIcons.map((icon) => {
       const position = {
         x: icon.position.x + left,
@@ -203,6 +206,12 @@ export function trimFloorGridToContent(floor: FloorState): FloorState {
     }
   }
 
+  for (const coordinate of floor.darkZones ?? []) {
+    if (isCellInBounds(floor, coordinate)) {
+      bounds = includeCellInBounds(bounds, coordinate);
+    }
+  }
+
   for (const icon of floor.edgeIcons) {
     bounds = includeEdgeAdjacentCellsInBounds(bounds, floor, icon.edge);
   }
@@ -237,6 +246,9 @@ export function trimFloorGridToContent(floor: FloorState): FloorState {
       x: floor.player.x - bounds.minX,
       y: floor.player.y - bounds.minY,
     },
+    darkZones: (floor.darkZones ?? [])
+      .filter((coordinate) => isCellInCellBounds(coordinate, bounds))
+      .map(({ x, y }) => ({ x: x - bounds.minX, y: y - bounds.minY })),
     cellIcons: floor.cellIcons
       .filter((icon) => isCellInCellBounds(icon.position, bounds))
       .map((icon) => {
@@ -291,6 +303,8 @@ export function updateFloorCellState(
 
   if (nextState === 'unknown') {
     nextFloor = removeCellIconAt(nextFloor, coordinate);
+    // NOTE: 床自体を消す場合だけ暗闇も消す。アイコン単体の削除では暗闇を保持する。
+    nextFloor.darkZones = (floor.darkZones ?? []).filter((cell) => !isSameCell(cell, coordinate));
   }
 
   return nextFloor;
@@ -466,6 +480,14 @@ export function movePlayerInMapMode(floor: FloorState, facing: Facing): FloorSta
     return nextFloor;
   }
 
+  // WHY: 通路状態は両方向で共有するため、一方通行は境界の絶対方向を別途確認する。
+  const oneWayDoor = nextFloor.edgeIcons.find(
+    (icon) => icon.kind === 'one-way' && isSameEdge(icon.edge, edge),
+  );
+  if (oneWayDoor?.kind === 'one-way' && oneWayDoor.direction !== facing) {
+    return nextFloor;
+  }
+
   if (nextFloor.cells[destination.y][destination.x] !== 'floor') {
     return nextFloor;
   }
@@ -597,9 +619,60 @@ export function updateCellIconMessageAt(
     : floor;
 }
 
+function updateFloorDarkZone(
+  floor: FloorState,
+  coordinate: CellCoordinate,
+  enabled: boolean,
+): FloorState {
+  if (!isCellInBounds(floor, coordinate)) {
+    return floor;
+  }
+
+  const darkZones = floor.darkZones ?? [];
+  if (darkZones.some((cell) => isSameCell(cell, coordinate)) === enabled) {
+    return floor;
+  }
+
+  const nextFloor = enabled ? updateFloorCellState(floor, coordinate, 'floor') : floor;
+  return {
+    ...nextFloor,
+    darkZones: enabled
+      ? [...darkZones, { ...coordinate }]
+      : darkZones.filter((cell) => !isSameCell(cell, coordinate)),
+  };
+}
+
+function placeOneWayDoorAt(
+  floor: FloorState,
+  coordinate: EdgeCoordinate,
+  positive: boolean,
+): FloorState {
+  if (!isEdgeInBounds(floor, coordinate)) {
+    return floor;
+  }
+
+  // WHY: 方向はプレイヤーの向きではなく地図に固定し、コピーや座標移動でも反転させない。
+  const direction: Facing = coordinate.axis === 'horizontal'
+    ? (positive ? 'south' : 'north')
+    : (positive ? 'east' : 'west');
+  const nextFloor = updateFloorEdgeState(floor, coordinate, 'open');
+  return {
+    ...nextFloor,
+    edgeIcons: [
+      ...nextFloor.edgeIcons.filter((icon) => !isSameEdge(icon.edge, coordinate)),
+      {
+        id: createEdgeIconId('one-way', coordinate),
+        kind: 'one-way',
+        edge: { ...coordinate },
+        direction,
+      },
+    ],
+  };
+}
+
 export function applyCanvasPrimaryEdit(
   floor: FloorState,
-  tool: string,
+  tool: EditTool,
   selectedCellIconKind: CellIconKind,
   target:
     | {
@@ -620,6 +693,10 @@ export function applyCanvasPrimaryEdit(
       return updateFloorCellState(floor, target.coordinate, 'unknown');
     }
 
+    if (tool === 'cell-dark-zone') {
+      return updateFloorDarkZone(floor, target.coordinate, true);
+    }
+
     if (tool === 'cell-icon') {
       return placeCellIconAt(floor, target.coordinate, selectedCellIconKind);
     }
@@ -634,6 +711,9 @@ export function applyCanvasPrimaryEdit(
       return applyEdgeEditIntent(floor, target.coordinate, 'door');
     case 'edge-closed-door':
       return applyEdgeEditIntent(floor, target.coordinate, 'closed-door');
+    case 'edge-one-way-positive':
+    case 'edge-one-way-negative':
+      return placeOneWayDoorAt(floor, target.coordinate, tool === 'edge-one-way-positive');
     case 'edge-open':
       return applyEdgeEditIntent(floor, target.coordinate, 'open');
     case 'edge-unknown':
@@ -654,8 +734,13 @@ export function applyCanvasSecondaryEdit(
         kind: 'edge';
         coordinate: EdgeCoordinate;
       },
+  tool: EditTool,
 ): FloorState {
   if (target.kind === 'cell') {
+    if (tool === 'cell-dark-zone') {
+      // NOTE: 暗闇の解除は、床・宝箱・階段・メッセージを消さない。
+      return updateFloorDarkZone(floor, target.coordinate, false);
+    }
     return removeCellIconAt(updateFloorCellState(floor, target.coordinate, 'unknown'), target.coordinate);
   }
 
@@ -842,7 +927,7 @@ function getEdgeState(floor: FloorState, coordinate: EdgeCoordinate): EdgeState 
 function upsertEdgeIconAt(
   floor: FloorState,
   coordinate: EdgeCoordinate,
-  kind: EdgeIconKind,
+  kind: Exclude<EdgeIconKind, 'one-way'>,
 ): FloorState {
   return {
     ...floor,

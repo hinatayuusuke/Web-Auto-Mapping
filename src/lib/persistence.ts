@@ -133,11 +133,47 @@ function isFloorState(value: unknown): value is FloorState {
     typeof value.player.y === 'number' &&
     typeof value.player.facing === 'string' &&
     Array.isArray(value.cells) &&
+    isDarkZones(value.darkZones, value.cells, value.width, value.height) &&
     Array.isArray(value.hEdges) &&
     Array.isArray(value.vEdges) &&
     Array.isArray(value.cellIcons) &&
-    Array.isArray(value.edgeIcons)
+    Array.isArray(value.edgeIcons) &&
+    value.edgeIcons.every((icon) => {
+      if (!isRecord(icon)) {
+        return false;
+      }
+      if (icon.kind !== 'one-way') {
+        return true;
+      }
+      // NOTE: 矢印と移動制限が食い違わないよう、境界を横切る方向だけ受け付ける。
+      return isRecord(icon.edge) && (
+        icon.edge.axis === 'horizontal'
+          ? icon.direction === 'north' || icon.direction === 'south'
+          : icon.edge.axis === 'vertical' && (icon.direction === 'east' || icon.direction === 'west')
+      );
+    })
   );
+}
+
+function isDarkZones(value: unknown, cells: unknown[], width: number, height: number): boolean {
+  // COMPAT: 既存 v1 の省略は暗闇なし。指定された座標は実在する床マスに限定する。
+  if (value === undefined) {
+    return true;
+  }
+
+  return Array.isArray(value) && value.every((coordinate) => {
+    if (
+      !isRecord(coordinate) ||
+      typeof coordinate.x !== 'number' || typeof coordinate.y !== 'number' ||
+      !Number.isInteger(coordinate.x) || !Number.isInteger(coordinate.y) ||
+      coordinate.x < 0 || coordinate.x >= width || coordinate.y < 0 || coordinate.y >= height
+    ) {
+      return false;
+    }
+
+    const row = cells[coordinate.y];
+    return Array.isArray(row) && row[coordinate.x] === 'floor';
+  });
 }
 
 function isViewportState(value: unknown): value is ViewportState {
@@ -171,9 +207,12 @@ function isEditTool(value: unknown): value is EditTool {
   return (
     value === 'cell-floor' ||
     value === 'cell-unknown' ||
+    value === 'cell-dark-zone' ||
     value === 'edge-wall' ||
     value === 'edge-door' ||
     value === 'edge-closed-door' ||
+    value === 'edge-one-way-positive' ||
+    value === 'edge-one-way-negative' ||
     value === 'edge-open' ||
     value === 'edge-unknown' ||
     value === 'cell-icon'

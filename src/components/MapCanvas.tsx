@@ -377,7 +377,7 @@ export function MapCanvas({ onHoverCoordinateChange }: MapCanvasProps) {
     }
 
     if (event.button === 0) {
-      if (cellIcon) {
+      if (cellIcon && selectedTool !== 'cell-dark-zone') {
         if (clickTimeoutRef.current !== null) {
           window.clearTimeout(clickTimeoutRef.current);
           clickTimeoutRef.current = null;
@@ -803,6 +803,31 @@ function drawCells(context: CanvasRenderingContext2D, floor: FloorState, layout:
       }
     }
   }
+  drawDarkZones(context, floor, layout);
+}
+
+function drawDarkZones(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
+  // WHY: 床レイヤーに模様を描き、階段・宝箱・プレイヤーを暗闇で覆わない。
+  for (const coordinate of floor.darkZones ?? []) {
+    const left = layout.originX + coordinate.x * layout.cellSize;
+    const top = layout.originY + coordinate.y * layout.cellSize;
+    const size = layout.cellSize;
+    context.save();
+    context.beginPath();
+    context.rect(left + 1, top + 1, Math.max(size - 2, 1), Math.max(size - 2, 1));
+    context.clip();
+    context.fillStyle = '#0d1826';
+    context.fillRect(left, top, size, size);
+    context.strokeStyle = 'rgba(170, 187, 208, 0.45)';
+    context.lineWidth = 1;
+    context.beginPath();
+    for (let offset = -size; offset < size; offset += Math.max(4, size * 0.2)) {
+      context.moveTo(left + offset, top + size);
+      context.lineTo(left + offset + size, top);
+    }
+    context.stroke();
+    context.restore();
+  }
 }
 
 function drawCellGrid(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
@@ -856,7 +881,7 @@ function drawEdges(
   const rows = axis === 'horizontal' ? floor.hEdges : floor.vEdges;
   const openDoorEdges = new Set(
     floor.edgeIcons
-      .filter((icon) => icon.kind === 'door' && icon.edge.axis === axis)
+      .filter((icon) => (icon.kind === 'door' || icon.kind === 'one-way') && icon.edge.axis === axis)
       .map((icon) => getEdgeKey(icon.edge.x, icon.edge.y, icon.edge.axis)),
   );
   const closedDoorEdges = new Set(
@@ -967,6 +992,41 @@ function drawClosedDoorEdge(
   context.stroke();
 }
 
+function drawOneWayDoorArrow(
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  cellSize: number,
+  direction: Facing,
+) {
+  const angles: Record<Facing, number> = {
+    east: 0,
+    south: Math.PI / 2,
+    west: Math.PI,
+    north: -Math.PI / 2,
+  };
+  const length = cellSize * 0.26;
+  const head = cellSize * 0.11;
+  context.save();
+  context.translate(centerX, centerY);
+  context.rotate(angles[direction]);
+  context.beginPath();
+  context.moveTo(-length, 0);
+  context.lineTo(length, 0);
+  context.moveTo(length - head, -head);
+  context.lineTo(length, 0);
+  context.lineTo(length - head, head);
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.strokeStyle = '#0b1320';
+  context.lineWidth = Math.max(3, cellSize * 0.13);
+  context.stroke();
+  context.strokeStyle = '#b9d9ff';
+  context.lineWidth = Math.max(1.4, cellSize * 0.065);
+  context.stroke();
+  context.restore();
+}
+
 function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout: GridLayout) {
   context.textAlign = 'center';
   context.textBaseline = 'middle';
@@ -1026,6 +1086,11 @@ function drawIcons(context: CanvasRenderingContext2D, floor: FloorState, layout:
       axis === 'horizontal'
         ? layout.originY + y * layout.cellSize
         : layout.originY + y * layout.cellSize + layout.cellSize / 2;
+
+    if (icon.kind === 'one-way') {
+      drawOneWayDoorArrow(context, centerX, centerY, layout.cellSize, icon.direction);
+      continue;
+    }
 
     context.fillStyle = '#95f1c7';
     context.beginPath();
@@ -1142,6 +1207,7 @@ function isCellEditTool(selectedTool: EditTool) {
   return (
     selectedTool === 'cell-floor' ||
     selectedTool === 'cell-unknown' ||
+    selectedTool === 'cell-dark-zone' ||
     selectedTool === 'cell-icon'
   );
 }

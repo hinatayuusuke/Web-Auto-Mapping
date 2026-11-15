@@ -183,13 +183,17 @@ export const useAppStore = create<AppStore>((set) => ({
   applyCanvasSecondaryInteraction: (target) =>
     set((state) =>
       applyTrackedMutation(state, () => ({
-        floors: updateSelectedFloor(state, (floor) => applyCanvasSecondaryEdit(floor, target)),
+        floors: updateSelectedFloor(state, (floor) =>
+          applyCanvasSecondaryEdit(floor, target, state.selectedTool),
+        ),
       })),
     ),
   applyCanvasSecondaryInteractionPreview: (target) =>
     set((state) =>
       applyUntrackedMutation(state, () => ({
-        floors: updateSelectedFloor(state, (floor) => applyCanvasSecondaryEdit(floor, target)),
+        floors: updateSelectedFloor(state, (floor) =>
+          applyCanvasSecondaryEdit(floor, target, state.selectedTool),
+        ),
       })),
     ),
   applyForwardEdgeShortcut: (intent) =>
